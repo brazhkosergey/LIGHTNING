@@ -26,7 +26,6 @@ public class CameraPanel extends JPanel {
         title.setBorder(new LineBorder(new Color(46, 139, 87), 1, true));
         this.setBorder(title);
 //        this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
-
         videoCatcher = new VideoCatcher(this,videoCreator);
         Thread thread = new Thread(videoCatcher);
         thread.start();
