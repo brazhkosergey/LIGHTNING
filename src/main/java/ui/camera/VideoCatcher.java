@@ -8,6 +8,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.BindException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -16,17 +17,17 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoCatcher implements Runnable {
-    int fps = 0;
-    int maxWidth = 0;
-    int maxHeight = 0;
-    boolean isFullSize = false;
+    int fps;
+    int maxWidth ;
+    int maxHeight;
+    boolean isFullSize;
     Deque<BufferedImage> deque;
-    Deque<byte[]> dequeBytes;
+//    Deque<byte[]> dequeBytes;
     VideoCreator videoCreator;
 
     List<BufferedImage> list;
-    List<byte[]> listBytes;
-    int centerEventFrameNumber = 0;
+//    List<byte[]> listBytes;
+    int centerEventFrameNumber;
 
 
     CameraPanel panel;
@@ -34,8 +35,7 @@ public class VideoCatcher implements Runnable {
     HttpURLConnection connection = null;
 
     private BufferedInputStream inputStream;
-
-    boolean catchVideo = false;
+    boolean catchVideo;
     Thread fpsThread;
     int fpsNotZero;
 
@@ -48,20 +48,19 @@ public class VideoCatcher implements Runnable {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                panel.getTitle().setTitle("FPS = " + fps);
 
-                if(fps!=0){
+                panel.getTitle().setTitle("FPS = " + fps);
+                if (fps != 0) {
                     fpsNotZero = fps;
                 }
-
                 fps = 0;
             }
         });
 
         deque = new ConcurrentLinkedDeque<>();
-        dequeBytes = new ConcurrentLinkedDeque<>();
+//        dequeBytes = new ConcurrentLinkedDeque<>();
         list = new ArrayList<>();
-        listBytes = new ArrayList<>();
+//        listBytes = new ArrayList<>();
 
         this.videoCreator = videoCreator;
         this.panel = panel;
@@ -70,11 +69,19 @@ public class VideoCatcher implements Runnable {
     }
 
     private void createInputStream() throws IOException {
-
         MainFrame.getMainFrame().showMessage("Пробуем открыть соединение...");
         connection = (HttpURLConnection) url.openConnection();
         MainFrame.getMainFrame().showMessage("Пробуем открыть поток....");
-        inputStream = new BufferedInputStream(connection.getInputStream());
+        try{
+            inputStream = new BufferedInputStream(connection.getInputStream());
+        }catch (Exception e){
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+            inputStream = new BufferedInputStream(connection.getInputStream());
+        }
         MainFrame.getMainFrame().showMessage("Все ок.");
     }
 
@@ -85,7 +92,7 @@ public class VideoCatcher implements Runnable {
         int x = 0;
         int t = 0;
 
-        BufferedImage image;
+        BufferedImage image = null;
         while (true) {
             while (catchVideo) {
                 if (inputStream == null) {
@@ -111,79 +118,10 @@ public class VideoCatcher implements Runnable {
                         temporaryStream.write(t);
                         temporaryStream.write(x);
                     } else if (x == 217 && t == 255) {//конец изображения
-                        byte[] imageBytes = temporaryStream.toByteArray();
-
+                    byte[] imageBytes = temporaryStream.toByteArray();
                         ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
                         try {
                             image = ImageIO.read(inputStream);
-//                            deque.addFirst(image);
-
-//                            System.out.println("Размер очереди " + deque.size());
-//                            if (MainVideoCreator.isSaveVideo() || deque.size() > 30 * 10) {
-//                                if (MainVideoCreator.isSaveVideo()) {
-//                                    list.add(deque.pollFirst());
-//                                    System.out.println("Размер листа - " + list.size());
-//                                    System.out.println("Размер очереди после добавления в лист " + deque.size());
-//                                    System.out.println("===============================================");
-//                                } else {
-//                                    deque.pollFirst();
-//                                }
-//                            } else {
-//                                if (list.size() > 0) {
-//                                    list.addAll(deque);
-//                                    deque.clear();
-//                                    int num;
-//                                    if (panel.getCameraNumber() % 2 == 0) {
-//                                        num = 2;
-//                                    } else {
-//                                        num = 1;
-//                                    }
-//
-//                                    videoCreator.addList(num, list);
-//                                    list = new ArrayList<>();
-//                                }
-////                                if (saverThread == null&&list.size()>0) {
-////                                    saverThread = new Thread(new Runnable() {
-////                                        @Override
-////                                        public void run() {
-////                                            System.out.println("Начинаем создавать файл");
-////                                            File file = new File(path);
-////
-////                                            if(!file.exists()){
-////                                                try {
-////                                                    file.createNewFile();
-////                                                } catch (IOException e) {
-////                                                    e.printStackTrace();
-////                                                }
-////                                            }
-////
-////                                            list.addAll(deque);
-////                                            deque.clear();
-////                                            SeekableByteChannel out = null;
-////                                            try {
-////                                                out = NIOUtils.writableFileChannel(path);
-////                                                // for Android use: AndroidSequenceEncoder
-////                                                AWTSequenceEncoder encoder = new AWTSequenceEncoder(out, Rational.R(10, 1));
-////
-//////                                                for(BufferedImage bufferedImage:list){
-////                                                for(int i=0;i<list.size();i++){
-////                                                    System.out.println("Добавляем кадр "+i);
-////                                                    encoder.encodeImage(list.get(i));
-////                                                }
-////                                                // Finalize the encoding, i.e. clear the buffers, write the header, etc.
-////                                                encoder.finish();
-////                                            }catch (Exception e){
-////                                                e.printStackTrace();
-////                                            }finally {
-////                                                NIOUtils.closeQuietly(out);
-////                                            }
-////                                            list.clear();
-////                                            System.out.println("Файл создан. Закрываем поток.");
-////                                        }
-////                                    });
-////                                    saverThread.start();
-////                                }
-//                            }
                             panel.setBufferedImage(processImage(image, maxWidth, maxHeight));
                             fps++;
                             panel.repaint();
@@ -191,29 +129,66 @@ public class VideoCatcher implements Runnable {
                             e.printStackTrace();
                         }
 
-                        dequeBytes.addFirst(imageBytes);
+//                        dequeBytes.addFirst(imageBytes);
+                        deque.addFirst(image);
 
                         if (MainVideoCreator.isSaveVideo() || deque.size() > MainFrame.timeToSave * fpsNotZero) {
+
                             if (MainVideoCreator.isSaveVideo()) {
                                 if(centerEventFrameNumber == 0){
-                                    centerEventFrameNumber = dequeBytes.size();
+//                                    centerEventFrameNumber = dequeBytes.size();
+                                    centerEventFrameNumber = deque.size();
                                 }
-                                listBytes.add(dequeBytes.pollFirst());
-                                System.out.println("Размер листа - " + listBytes.size());
-                                System.out.println("Размер очереди после добавления в лист " + dequeBytes.size());
-                                System.out.println("===============================================");
-                                if(listBytes.size()>MainFrame.timeToSave*fpsNotZero*2){
+
+//                                listBytes.add(dequeBytes.pollFirst());
+                                list.add(deque.pollFirst());
+                                System.out.println("Номер панели - "+panel.getCameraNumber());
+                                System.out.println("Размер очереди изображений  - "+deque.size());
+                                System.out.println("Размер листа изображений  - "+list.size());
+
+//                              if(listBytes.size()>MainFrame.timeToSave*fpsNotZero*2||list.size()>MainFrame.timeToSave*fpsNotZero*2){
+                                if(list.size()>MainFrame.timeToSave*fpsNotZero*2){
+                                    System.out.println("Стоп сохранять видео.");
                                     MainVideoCreator.stopCatchVideo();
+                                    int size = deque.size();
+                                    for(int i=0;i<size;i++){
+                                        list.add(deque.pollLast());
+                                    }
                                 }
                             } else {
-                                dequeBytes.pollFirst();
+                                if (list.size() > 0) {
+                                    int size = deque.size();
+                                    for(int i=0;i<size;i++){
+                                        list.add(deque.pollLast());
+                                    }
+
+                                    deque.pollFirst();
+                                }
+//                                dequeBytes.pollFirst();
+                                deque.pollFirst();
                             }
                         } else {
-                            if (listBytes.size() > 0) {
-                                int size = dequeBytes.size();
-                                for(int i=0;i<size;i++){
-                                    listBytes.add(dequeBytes.pollFirst());
-                                }
+//                            if (listBytes.size() > 0) {
+//                                int size = dequeBytes.size();
+//                                for(int i=0;i<size;i++){
+//                                    listBytes.add(dequeBytes.pollFirst());
+//                                }
+//                                int num;
+//                                if (panel.getCameraNumber() % 2 == 0) {
+//                                    num = 2;
+//                                } else {
+//                                    num = 1;
+//                                }
+//
+//                                videoCreator.addListByte(num, listBytes, centerEventFrameNumber);
+//                                listBytes = new ArrayList<>();
+//                                centerEventFrameNumber = 0;
+//
+                            if (list.size() > 0) {
+                                System.out.println("Сохраняем видео с листа изображений ");
+                                System.out.println("Размер очереди изображений  - "+deque.size());
+                                System.out.println("Размер листа изображений  - "+list.size());
+
                                 int num;
                                 if (panel.getCameraNumber() % 2 == 0) {
                                     num = 2;
@@ -221,8 +196,8 @@ public class VideoCatcher implements Runnable {
                                     num = 1;
                                 }
 
-                                videoCreator.addList(num, listBytes, centerEventFrameNumber);
-                                listBytes = new ArrayList<>();
+                                videoCreator.addListImage(num, list, centerEventFrameNumber);
+                                list = new ArrayList<>();
                                 centerEventFrameNumber = 0;
                             }
                         }
@@ -231,7 +206,7 @@ public class VideoCatcher implements Runnable {
             }
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -269,6 +244,10 @@ public class VideoCatcher implements Runnable {
         return bi2;
     }
 
+    public VideoCreator getVideoCreator() {
+        return videoCreator;
+    }
+
     public void setWidthAndHeight(int width, int height) {
 
         if (width > 246) {
@@ -285,6 +264,7 @@ public class VideoCatcher implements Runnable {
     public void startCatchVideo(URL url) {
         this.url = url;
         catchVideo = true;
+        System.out.println("Начинаем схватывать видео - "+catchVideo);
     }
 
     public void stopCatchVideo() {
@@ -298,9 +278,4 @@ public class VideoCatcher implements Runnable {
     public boolean isCatchVideo() {
         return catchVideo;
     }
-
-//
-//    public void setSaveVideo(boolean saveVideo) {
-//        this.saveVideo = saveVideo;
-//    }
 }

@@ -1,6 +1,6 @@
 package ui.video;
 
-import entity.MainPlayerClass;
+import entity.MainVideoCreator;
 import entity.VideoPlayer;
 import ui.main.MainFrame;
 
@@ -96,6 +96,21 @@ public class VideoFilesPanel extends JPanel {
             });
 
             exportButton = new JButton("Експорт");
+            exportButton.addActionListener((e)->{
+                Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
+
+                for(Integer integer:integerFileMap.keySet()){
+                    File file1 = integerFileMap.get(integer);
+                    Thread thread = new Thread(() ->{
+                        MainVideoCreator.encodeVideo(integer,file1);
+//                        MainVideoCreator.encodeVideoHumble(integer,file1);
+                    });
+
+                    thread.start();
+                }
+
+            });
+
 
             mainVideoPanel = new JPanel(new FlowLayout());
             mainVideoPanel.setMaximumSize(new Dimension(900, 40));

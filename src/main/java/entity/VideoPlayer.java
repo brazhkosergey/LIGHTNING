@@ -14,7 +14,6 @@ public class VideoPlayer extends JPanel {
     public static boolean PLAY;
     static int speed = 100;
 
-
     Map<Integer, File> map;
     List<Thread> threadList = new ArrayList<>();
 

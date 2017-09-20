@@ -1,5 +1,6 @@
 package ui.setting;
 
+import ui.camera.CameraPanel;
 import ui.main.MainFrame;
 
 import javax.swing.*;
@@ -14,8 +15,7 @@ public class Setting extends JPanel {
 
     private Setting() {
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
-        this.setPreferredSize(new Dimension(1100, 580));
-//        this.setMaximumSize(new Dimension(1100, 600));
+        this.setPreferredSize(new Dimension(1100, 550));
         buildSetting();
     }
 
@@ -47,6 +47,20 @@ public class Setting extends JPanel {
         timePane.add(timeTextField);
         timePane.add(textLabel);
 
+        JLabel opacityLabel = new JLabel("Прозорість зображення що накладаемо відео - "+30+" відсотків");
+
+        JSlider slider = new JSlider();
+        slider.setPreferredSize(new Dimension(200, 25));
+        slider.setMinorTickSpacing(1);
+        slider.setValue(30);
+        slider.addChangeListener(e ->{
+            System.out.println("Значение на слайдере изменилось на: " + slider.getValue());
+            int value = slider.getValue();
+            Float f =(float) value/100;
+            CameraPanel.setOpacity(f);
+            opacityLabel.setText("Прозорість зображення що накладаемо відео - "+value+" відсотків");
+        });
+
         saveButton = new JButton("Зберегти");
         saveButton.addActionListener((e)->{
             String text = timeTextField.getText();
@@ -62,7 +76,11 @@ public class Setting extends JPanel {
         mainPanel.add(checkBoxPane);
         mainPanel.add(Box.createRigidArea(new Dimension(10,10)));
         mainPanel.add(timePane);
-        mainPanel.add(Box.createRigidArea(new Dimension(10,400)));
+        mainPanel.add(Box.createRigidArea(new Dimension(10,30)));
+        mainPanel.add(opacityLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(10,10)));
+        mainPanel.add(slider);
+        mainPanel.add(Box.createRigidArea(new Dimension(10,300)));
         mainPanel.add(saveButton);
         this.add(mainPanel);
     }

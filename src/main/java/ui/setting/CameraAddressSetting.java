@@ -3,10 +3,14 @@ package ui.setting;
 import entity.AddressSaver;
 import ui.main.MainFrame;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -104,21 +108,35 @@ public class CameraAddressSetting extends JPanel {
 
             JLabel addImageLabel = new JLabel("Додати фонове зображення");
             addImageLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 15));
+            addImageLabel.setPreferredSize(new Dimension(230,30));
             JButton addImageButton = new JButton("Вибрати файл");
+            int number = i;
             addImageButton.addActionListener((e)->{
                 JFileChooser fileChooser = new JFileChooser("Вибрати файл");
                 fileChooser.setFont(new Font("Comic Sans MS", Font.BOLD, 12));
                 fileChooser.setApproveButtonText("Вибрати");
                 int ret = fileChooser.showDialog(null, "Вибрати файл");
                 if (ret == JFileChooser.APPROVE_OPTION) {
-//                    File file = fileChooser.getSelectedFile();
-                    System.out.println("Была нажата кнопка открыть");
+                    File file = fileChooser.getSelectedFile();
+                    BufferedImage bufferedImage=null;
+                    try {
+                        bufferedImage = ImageIO.read(file);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    if(bufferedImage!=null){
+                        MainFrame.creatorMap.get(number).setBufferedImageBack(bufferedImage);
+                        System.out.println("Была нажата кнопка открыть");
+                    }
+
+                    addImageLabel.setText("Зображення додане");
+                    addImageLabel.setForeground(new Color(46, 139, 87));
                 }
             });
             inputPanel.add(cameraBlock);
-            inputPanel.add(Box.createRigidArea(new Dimension(30,20)));
+            inputPanel.add(Box.createRigidArea(new Dimension(10,20)));
             inputPanel.add(addImageLabel);
-            inputPanel.add(Box.createRigidArea(new Dimension(30,20)));
+            inputPanel.add(Box.createRigidArea(new Dimension(10,20)));
             inputPanel.add(addImageButton);
 
             TitledBorder titleMainSetting = BorderFactory.createTitledBorder("Блок - " + i);
@@ -129,7 +147,7 @@ public class CameraAddressSetting extends JPanel {
             blockPanel.setBorder(titleMainSetting);
 
             blockPanel.add(inputPanel);
-            blockPanel.setMaximumSize(new Dimension(1100,130));
+            blockPanel.setMaximumSize(new Dimension(1100,120));
 //            blockPanel.add(fileChooser);
 //            fileChooser.setVisible(false);
             mainCameraSettingPanel.add(blockPanel);

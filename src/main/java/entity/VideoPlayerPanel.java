@@ -39,7 +39,11 @@ public class VideoPlayerPanel extends JPanel {
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }
-                if (fileInputStream != null) {
+
+                BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+
+//                if (fileInputStream != null) {
+                if (bufferedInputStream != null) {
                     ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(65535);
                     int x = 0;
                     int t = 0;
@@ -47,7 +51,8 @@ public class VideoPlayerPanel extends JPanel {
                     while (x >= 0) {
                         t = x;
                         try {
-                            x = fileInputStream.read();
+//                            x = fileInputStream.read();
+                            x = bufferedInputStream.read();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
