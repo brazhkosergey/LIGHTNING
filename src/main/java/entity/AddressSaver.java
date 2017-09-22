@@ -4,6 +4,7 @@ import ui.main.MainFrame;
 import ui.setting.CameraAddressSetting;
 import ui.setting.Setting;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -12,6 +13,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -48,7 +50,7 @@ public class AddressSaver {
     }
 
     private void savePasswordSaverToFile() {
-        String pathFile = "C:\\ipCamera\\address.txt";
+        String pathFile = "C:\\ipCamera\\bytes\\address.txt";
         File file = new File(pathFile);
         try {
             boolean ok = file.exists();
@@ -67,7 +69,7 @@ public class AddressSaver {
     }
 
     public static AddressSaver restorePasswords() {
-        String pathFile = "C:\\ipCamera\\address.txt";
+        String pathFile = "C:\\ipCamera\\bytes\\address.txt";
         File file = new File(pathFile);
 
         Object passwordsSaverObject = null;
@@ -92,6 +94,21 @@ public class AddressSaver {
             }
         }
 
+        for(int i=1;i<5;i++){
+            File imageFile = new File("C:\\ipCamera\\bytes\\"+i+".jpg");
+            if(imageFile.exists()){
+                BufferedImage bufferedImage=null;
+                try {
+                    bufferedImage = ImageIO.read(imageFile);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+                if(bufferedImage!=null){
+                    MainFrame.addImage(bufferedImage,i);
+                }
+            }
+        }
+
         if(passwordSaver!= null){
             return passwordSaver;
         }else {
@@ -101,7 +118,6 @@ public class AddressSaver {
     }
 
     public void setPasswordsToFields() {
-
         Map<Integer, JTextField> textFieldsIpAddressMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsIpAddressMap();
         for(Integer integer:textFieldsIpAddressMap.keySet()){
             textFieldsIpAddressMap.get(integer).setText(arr[integer-1]);
@@ -121,7 +137,6 @@ public class AddressSaver {
     public void setSetting(){
         MainFrame.timeToSave = timeToSave;
         MainFrame.programWork = programWork;
-
         Setting.checkBox.setSelected(programWork);
         Setting.timeTextField.setText(String.valueOf(timeToSave));
     }

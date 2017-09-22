@@ -18,7 +18,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.net.Authenticator;
 import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
@@ -35,27 +34,26 @@ public class MainFrame extends JFrame {
     private static JPanel centralPanel = new JPanel();
     private static JPanel southPanel = new JPanel();
 
-    private static CameraAddressSetting cameraAddressSetting = CameraAddressSetting.getCameraAddressSetting();
-    private static Setting setting = Setting.getSetting();
-    private static VideoFilesPanel videoFilesPanel = VideoFilesPanel.getVideoFilesPanel();
-
+    private static CameraAddressSetting cameraAddressSetting;
+    private static Setting setting;
+    private static VideoFilesPanel videoFilesPanel;
 
     private JPanel allCameraPanel;
     private JLabel messageLabel;
     private JLabel freeMemoryLabel;
     private JLabel usedMemoryLabel;
-
+    private static JLabel informLabel;
 
     private static Map<Integer, CameraPanel> cameras;
     public static Map<Integer, List<String>> camerasAddress;
     private static Map<Integer, JPanel> cameraBlock;
+    public static Map<Integer, BufferedImage> imagesForBlock;
     public static Map<Integer, VideoCreator> creatorMap;
 
     public static int opacity;
 
     private static JLabel mainLabel = new JLabel("Головна");
     JLabel recordLabel;
-
 
     public static AddressSaver addressSaver;
     public static int timeToSave = 30;
@@ -68,13 +66,24 @@ public class MainFrame extends JFrame {
     private MainFrame() {
         super("LIGHTNING");
         opacity = 30;
+        imagesForBlock = new HashMap<>();
         addressSaver = AddressSaver.restorePasswords();
         cameras = new HashMap<>();
         cameraBlock = new HashMap<>();
         camerasAddress = new HashMap<>();
         creatorMap = new HashMap<>();
         mainPanel.setLayout(new BorderLayout());
+
+        cameraAddressSetting = CameraAddressSetting.getCameraAddressSetting();
+        setting = Setting.getSetting();
+        videoFilesPanel = VideoFilesPanel.getVideoFilesPanel();
+
+
+
+
         messageLabel = new JLabel();
+        informLabel = new JLabel("INFORM");
+        informLabel.setPreferredSize(new Dimension(250,30));
         freeMemoryLabel = new JLabel();
         freeMemoryLabel.setPreferredSize(new Dimension(100, 30));
         usedMemoryLabel = new JLabel();
@@ -91,9 +100,10 @@ public class MainFrame extends JFrame {
         cameraAddressSetting.saveAddressToMap();
         showAllCameras();
 
+        File fileTmp = new File("C:\\ipCamera\\bytes\\");
+        fileTmp.mkdirs();
         File file = new File("C:\\ipCamera\\");
         file.mkdirs();
-
     }
 
     public static MainFrame getMainFrame() {
@@ -197,7 +207,6 @@ public class MainFrame extends JFrame {
         JButton startButton = new JButton("REC");
         startButton.addActionListener((e -> {
             VideoPlayer.setShowVideoPlayer(false);
-
             MainVideoCreator.startCatchVideo(new Date(System.currentTimeMillis()));
         }));
 
@@ -208,7 +217,6 @@ public class MainFrame extends JFrame {
         northPanel.add(startButton);
         northPanel.add(Box.createHorizontalStrut(150));
 
-//        northPanel.add(mainLabel);
         northPanel.add(informPane);
         mainPanel.add(northPanel, BorderLayout.NORTH);
 
@@ -255,7 +263,7 @@ public class MainFrame extends JFrame {
                 freeMemoryLabel.repaint();
 
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -272,6 +280,7 @@ public class MainFrame extends JFrame {
         for (int i = 1;i < 5; i++) {
             JPanel blockPanel;
             VideoCreator videoCreator = new VideoCreator(i);
+            videoCreator.setBufferedImageBack(imagesForBlock.get(i));
             creatorMap.put(i,videoCreator);
             CameraPanel cameraOne = new CameraPanel(videoCreator);
             cameraOne.addMouseListener(new MouseAdapter() {
@@ -322,13 +331,12 @@ public class MainFrame extends JFrame {
             cameraBlock.put(i, blockPanel);
             allCameraPanel.add(blockPanel);
         }
-
         centralPanel.add(allCameraPanel);
-
         mainPanel.add(centralPanel, BorderLayout.CENTER);
     }
 
     private void buildSouthPanel() {
+
         southPanel.setLayout(new FlowLayout());
         southPanel.add(Box.createRigidArea(new Dimension(100, 30)));
         southPanel.add(new JLabel("Свободно памяти - "));
@@ -338,6 +346,7 @@ public class MainFrame extends JFrame {
         southPanel.add(new JLabel("Использовано памяти - "));
         southPanel.add(Box.createRigidArea(new Dimension(10, 20)));
         southPanel.add(usedMemoryLabel);
+        southPanel.add(informLabel);
         mainPanel.add(southPanel, BorderLayout.SOUTH);
     }
 
@@ -347,25 +356,42 @@ public class MainFrame extends JFrame {
         messageLabel.repaint();
     }
 
+    public static void showInformMassage(String massage, boolean green){
+        informLabel.setText(massage);
+        if(green){
+            informLabel.setForeground(new Color(29, 142, 27));
+        } else {
+            informLabel.setForeground(Color.DARK_GRAY);
+        }
+        informLabel.repaint();
+    }
+
+    public static void addImage(BufferedImage image, int numberGroup){
+        imagesForBlock.put(numberGroup,image);
+    }
+
     public void showAllCameras() {
         for (Integer addressNumber : camerasAddress.keySet()) {
-            if (!cameras.get(addressNumber).getVideoCatcher().isCatchVideo()) {
+
                 List<String> list = camerasAddress.get(addressNumber);
-                URL url = null;
-                try {
-                    url = new URL(list.get(0));
-                    Authenticator.setDefault(new Authenticator() {
-                        protected PasswordAuthentication getPasswordAuthentication() {
-                            return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
-                        }
-                    });
-                } catch (MalformedURLException ex) {
-                    ex.printStackTrace();
+                if(list!=null){
+                    URL url = null;
+                    try {
+                        url = new URL(list.get(0));
+                        Authenticator.setDefault(new Authenticator() {
+                            protected PasswordAuthentication getPasswordAuthentication() {
+                                return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
+                            }
+                        });
+                    } catch (MalformedURLException ex) {
+                        ex.printStackTrace();
+                    }
+                    if (url != null) {
+                        cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url);
+                    }
+                } else {
+                    cameras.get(addressNumber).getVideoCatcher().stopCatchVideo();
                 }
-                if (url != null) {
-                    cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url);
-                }
-            }
         }
     }
 

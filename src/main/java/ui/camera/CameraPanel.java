@@ -14,71 +14,32 @@ import java.io.IOException;
 
 
 public class CameraPanel extends JPanel {
-//    public static int opacity = 30;
-    public static float opacity = 0.3F;
-    int width;
-    int height;
+    private static float opacity = 0.3F;
+    private int width;
+    private int height;
 
     private int cameraNumber = 0;
     private BufferedImage bufferedImage;
-    private BufferedImage bufferedImageBack;
     private VideoCatcher videoCatcher;
     private CameraWindow cameraWindow;
     private TitledBorder title;
 
+    private JLayer<JPanel> cameraWindowLayer;
+    private JLabel label;
     public CameraPanel(VideoCreator videoCreator) {
+        label = new JLabel("Камера не працюе");
+        label.setHorizontalTextPosition(SwingConstants.RIGHT);
+
         setPreferredSize(new Dimension(260,230));
         cameraWindow = new CameraWindow();
-
-        try {
-            bufferedImageBack = ImageIO.read(new File("C:\\ipCamera\\auto.jpg"));
-            int transparency = bufferedImageBack.getTransparency();
-            System.out.println("Прозрачность равна - " + transparency);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-//
-//        JPanel jPanel1 = new JPanel() {
-//
-//            @Override
-//            protected void paintComponent(Graphics g) {
-//                super.paintComponent(g);
-//                if (bufferedImageBack != null) {
-//                    g.drawImage(bufferedImageBack, 0, 0, null);
-//                }
-//            }
-//
-////            @Override
-////            public void paintComponent( Graphics g ) {
-////                super.paintComponent( g );
-////
-////                // Apply our own painting effect
-////                Graphics2D g2d = (Graphics2D) g.create();
-////                // 50% transparent Alpha
-////                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-////
-////                g2d.setColor(getBackground());
-////                g2d.fillRect( 0, 0, getWidth(), getHeight() );
-////
-////                g2d.dispose();
-////            }
-//        };
-//
-//        jPanel1.add(new JLabel("TSTSSTa"));
-//        jPanel1.setOpaque(true);
-//        jPanel1.setBackground(new Color(255, 255, 255, 50));
-
-
-        JPanel testPane = new JPanel();
-        testPane.add(cameraWindow);
+        JPanel cameraWindowPane = new JPanel();
+        cameraWindowPane.add(cameraWindow);
         LayerUI<JPanel> layerUI = new MyLayer();
-        JLayer<JPanel> layer = new JLayer<JPanel>(testPane, layerUI);
+        cameraWindowLayer = new JLayer<>(cameraWindowPane, layerUI);
 
+        this.setLayout(new BorderLayout());
+        this.add(label);
 
-
-        this.setLayout(new FlowLayout());
-        this.add(layer);
-//        this.add(cameraWindow);
         title = BorderFactory.createTitledBorder("FPS = 0");
         title.setTitleJustification(TitledBorder.CENTER);
         title.setTitleFont((new Font("Comic Sans MS", Font.BOLD, 10)));
@@ -89,26 +50,16 @@ public class CameraPanel extends JPanel {
         videoCatcher = new VideoCatcher(this,videoCreator);
         Thread thread = new Thread(videoCatcher);
         thread.start();
-
     }
 
-
-
-    public BufferedImage animateCircle(BufferedImage originalImage, int type){
-
-        //The opacity exponentially decreases
-//        float opacity = 0.3F;
-
+    public static BufferedImage animateCircle(BufferedImage originalImage, int type){
         BufferedImage resizedImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), type);
         Graphics2D g = resizedImage.createGraphics();
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
-//        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,(float)(opacity/100)));
         g.drawImage(originalImage, 0, 0, originalImage.getWidth(), originalImage.getHeight(), null);
         g.dispose();
-
         return resizedImage;
     }
-
 
     class MyLayer extends LayerUI<JPanel> {
         @Override
@@ -150,7 +101,17 @@ public class CameraPanel extends JPanel {
         return title;
     }
 
-    public int getCameraNumber() {
+    void startShowVideo(){
+        this.removeAll();
+        this.add(cameraWindowLayer);
+    }
+
+    void stopShowVideo(){
+        this.removeAll();
+        this.add(label);
+    }
+
+    int getCameraNumber() {
         return cameraNumber;
     }
 

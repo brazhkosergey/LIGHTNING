@@ -1,33 +1,29 @@
 package entity;
 
+import com.xuggle.mediatool.IMediaWriter;
+import com.xuggle.mediatool.ToolFactory;
+import com.xuggle.xuggler.ICodec;
+//import io.humble.video.*;
+//import io.humble.video.awt.MediaPictureConverter;
+//import io.humble.video.awt.MediaPictureConverterFactory;
+//import jdk.nashorn.internal.runtime.ECMAException;
 import org.jcodec.api.awt.AWTSequenceEncoder;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Rational;
-import ui.video.VideoFilesPanel;
+import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainVideoCreator {
     private static Date date;
-    private static MainVideoCreator mainVideoCreator;
     private static boolean saveVideo = false;
-
-    private MainVideoCreator() {
-    }
-
-    public static MainVideoCreator getMainVideoCreator() {
-        if (mainVideoCreator != null) {
-            return mainVideoCreator;
-        } else {
-            mainVideoCreator = new MainVideoCreator();
-            return mainVideoCreator;
-        }
-    }
 
     public static void startCatchVideo(Date date) {
         MainVideoCreator.date = date;
@@ -38,57 +34,170 @@ public class MainVideoCreator {
         saveVideo = false;
     }
 
-    private static void saveBytes(Integer numberOfGroup,List<byte[]>list){
-        String path = "C:\\ipCamera\\"+date.getTime()+"-"+numberOfGroup+".tmp";
-        System.out.println("Создаем файл - "+path);
+    private static void saveBytes(Integer numberOfGroup, List<byte[]> list, int totalFPS) {
+        String path = "C:\\ipCamera\\bytes\\" + date.getTime() + "-" + numberOfGroup + "(" + totalFPS + ").tmp";
+        System.out.println("Создаем файл - " + path);
+
         File file = new File(path);
-        if(!file.exists()){
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            if (file.createNewFile()) {
+                FileOutputStream fileOutputStream = new FileOutputStream(file);
+                for (byte[] arr : list) {
+                    try {
+                        if (arr != null) {
+                            fileOutputStream.write(arr);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                try {
+                    fileOutputStream.flush();
+                    fileOutputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
+        MainFrame.showInformMassage("Блок - " + numberOfGroup + " збережено.", true);
+    }
+
+    public static void encodeVideo(File file) {
         try {
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            for(byte[] arr:list){
+            String name = file.getName();
+            String[] split = name.split("-");
+            long dateLong = Long.parseLong(split[0]);
+            Date date = new Date(dateLong);
+            SimpleDateFormat dateFormat = new SimpleDateFormat();
+            dateFormat.applyPattern("dd MM yyyy_HH-mm-ss");
+            String dateString = dateFormat.format(date);
+            String[] fpsSplit = split[1].split("\\.");
+            String numberOfGroupCameraString = fpsSplit[0].substring(0, 1);
+            String totalFpsString = fpsSplit[0].substring(2, 4);
+            int totalFPS = Integer.parseInt(totalFpsString);
+            String path = "C:\\ipCamera\\" + dateString + "_" + numberOfGroupCameraString + ".mov";
+
+            File videoFile = new File(path);
+            if (!videoFile.exists()) {
                 try {
-                    fileOutputStream.write(arr);
+                    videoFile.createNewFile();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
 
+            SeekableByteChannel out = null;
             try {
-                fileOutputStream.flush();
-                fileOutputStream.close();
+                out = NIOUtils.writableFileChannel(path);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            AWTSequenceEncoder encoder = null;
+            try {
+                encoder = new AWTSequenceEncoder(out, Rational.R(totalFPS, 1));
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } catch (FileNotFoundException e) {
+
+            FileInputStream fileInputStream = null;
+            try {
+                fileInputStream = new FileInputStream(file);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+
+            if (bufferedInputStream != null) {
+                ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(65535);
+                int count = 0;
+                int x = 0;
+                int t = 0;
+
+                BufferedImage image = null;
+                while (x >= 0) {
+                    t = x;
+                    try {
+                        x = bufferedInputStream.read();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    temporaryStream.write(x);
+                    if (x == 216 && t == 255) {// начало изображения
+                        temporaryStream.reset();
+
+                        temporaryStream.write(t);
+                        temporaryStream.write(x);
+                    } else if (x == 217 && t == 255) {//конец изображения
+                        byte[] imageBytes = temporaryStream.toByteArray();
+                        ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+
+                        try {
+                            image = ImageIO.read(inputStream);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        if (image != null) {
+                            try {
+                                encoder.encodeImage(image);
+//                            encoder.encodeImage(imageToConnect);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            System.out.println("Пишем изображение - " + count++);
+                            MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
+                            image = null;
+                        }
+                    }
+                }
+
+                try {
+                    encoder.finish();
+                    bufferedInputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                NIOUtils.closeQuietly(out);
+                System.out.println("Сохраняем файл. Количесво изображений - " + count);
+                MainFrame.showInformMassage("Файл збережено. Всьго кадрів - " + count, true);
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
 
-//    public static void encodeVideoHumble(Integer numberOfGroup,File file){
-//        String path = null;
-////        if(date!=null){
-////            path = "C:\\ipCamera\\"+date.getTime()+"-"+numberOfGroup+".mpeg";
-////        }else {
-////            path = "C:\\ipCamera\\"+System.currentTimeMillis()+"-"+numberOfGroup+".mpeg";
-////        }
+//        public static void encodeVideoHumble(File file) {
 //
-//        if(date!=null){
-//            path = "C:\\ipCamera\\"+date.getTime()+"-"+numberOfGroup+".mp4";
-//        }else {
-//            path = "C:\\ipCamera\\"+System.currentTimeMillis()+"-"+numberOfGroup+".mp4";
+//        String name = file.getName();
+//        String[] split = name.split("-");
+//        long dateLong = Long.parseLong(split[0]);
+//        Date date = new Date(dateLong);
+//        SimpleDateFormat dateFormat = new SimpleDateFormat();
+//        dateFormat.applyPattern("dd MM yyyy_HH-mm-ss");
+//        String dateString = dateFormat.format(date);
+//        String[] fpsSplit = split[1].split("\\.");
+//        String numberOfGroupCameraString = fpsSplit[0].substring(0, 1);
+//        String totalFpsString = fpsSplit[0].substring(2, 4);
+//        int totalFPS = Integer.parseInt(totalFpsString);
+//        String path = "C:\\ipCamera\\" + dateString + "_" + numberOfGroupCameraString + ".mov";
+//
+//        File videoFile = new File(path);
+//        if (!videoFile.exists()) {
+//            try {
+//                videoFile.createNewFile();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
 //        }
 //
-//        System.out.println("Сохраняем видео в файл "+path);
-//        File videoFile = new File(path);
-//        if(!videoFile.exists()){
+//        System.out.println("Сохраняем видео в файл " + path);
+//        if (!videoFile.exists()) {
 //            try {
 //                videoFile.createNewFile();
 //            } catch (IOException e) {
@@ -117,10 +226,11 @@ public class MainVideoCreator {
 //         */
 //        final MuxerFormat format = muxer.getFormat();
 //        final Codec codec;
+//
 ////        if (codecname != null) {
 ////            codec = Codec.findEncodingCodecByName(codecname);
 ////        } else {
-//            codec = Codec.findEncodingCodec(format.getDefaultVideoCodecId());
+//        codec = Codec.findEncodingCodec(format.getDefaultVideoCodecId());
 ////        }
 //
 //        /**
@@ -182,9 +292,6 @@ public class MainVideoCreator {
 //         * We're going to encode and then write out any resulting packets. */
 //
 //        final MediaPacket packet = MediaPacket.make();
-////        ========================================================================
-////        ========================================================================
-////        ========================================================================
 //
 //
 //        FileInputStream fileInputStream = null;
@@ -225,11 +332,10 @@ public class MainVideoCreator {
 //                        e.printStackTrace();
 //                    }
 //
-//                    if(image!=null){
+//                    if (image != null) {
 //                        if (converter == null)
 //                            converter = MediaPictureConverterFactory.createConverter(image, picture);
 //                        converter.toPicture(picture, image, count++);
-//
 //                        do {
 //                            encoder.encode(packet, picture);
 //                            if (packet.isComplete())
@@ -241,7 +347,6 @@ public class MainVideoCreator {
 //                    }
 //                }
 //            }
-//
 //
 //            /** Encoders, like decoders, sometimes cache pictures so it can do the right key-frame optimizations.
 //             * So, they need to be flushed as well. As with the decoders, the convention is to pass in a null
@@ -256,30 +361,24 @@ public class MainVideoCreator {
 //            /** Finally, let's clean up after ourselves. */
 //            muxer.close();
 //        }
-//
 //    }
 
+    public static void encodeVideoXuggle(File file) {
+        String name = file.getName();
+        String[] split = name.split("-");
+        long dateLong = Long.parseLong(split[0]);
+        Date date = new Date(dateLong);
+        SimpleDateFormat dateFormat = new SimpleDateFormat();
+        dateFormat.applyPattern("dd MM yyyy_HH-mm-ss");
+        String dateString = dateFormat.format(date);
+        String[] fpsSplit = split[1].split("\\.");
+        String numberOfGroupCameraString = fpsSplit[0].substring(0, 1);
+        String totalFpsString = fpsSplit[0].substring(2, 4);
+        int totalFPS = Integer.parseInt(totalFpsString);
+        String path = "C:\\ipCamera\\" + dateString + "_" + numberOfGroupCameraString + ".mp4";
 
-
-
-
-    public static void encodeVideo(Integer numberOfGroup,File file){
-        String path = null;
-//        if(date!=null){
-//            path = "C:\\ipCamera\\"+date.getTime()+"-"+numberOfGroup+".mpeg";
-//        }else {
-//            path = "C:\\ipCamera\\"+System.currentTimeMillis()+"-"+numberOfGroup+".mpeg";
-//        }
-
-        if(date!=null){
-            path = "C:\\ipCamera\\"+date.getTime()+"-"+numberOfGroup+".mp4";
-        }else {
-            path = "C:\\ipCamera\\"+System.currentTimeMillis()+"-"+numberOfGroup+".mp4";
-        }
-
-        System.out.println("Сохраняем видео в файл "+path);
         File videoFile = new File(path);
-        if(!videoFile.exists()){
+        if (!videoFile.exists()) {
             try {
                 videoFile.createNewFile();
             } catch (IOException e) {
@@ -288,67 +387,13 @@ public class MainVideoCreator {
         }
 
 
-//        ===============================================
-//        ===============================================
-//        ===============================================
-//        ===============================================
-//        ===============================================
-        File imageFile = new File("C:\\ipCamera\\auto.jpg");
-        BufferedImage imageToConnect = null;
-        try{
-            FileInputStream fileInputStream = new FileInputStream(imageFile);
-                ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(65535);
-                int x = 0;
-                int t = 0;
-                while (x >= 0) {
-                    t = x;
-                    try {
-                        x = fileInputStream.read();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+        final IMediaWriter writer = ToolFactory.makeWriter(path);
+        boolean addVideoStream = false;
 
-                    temporaryStream.write(x);
-                    if (x == 216 && t == 255) {// начало изображения
-                        temporaryStream.reset();
+        long nextFrameTime = 0;
 
-                        temporaryStream.write(t);
-                        temporaryStream.write(x);
-                    } else if (x == 217 && t == 255) {//конец изображения
-                        byte[] imageBytes = temporaryStream.toByteArray();
-                        ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
-
-                        try {
-                            imageToConnect = ImageIO.read(inputStream);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-        System.out.println(imageToConnect);
-//        ===============================================
-//        ===============================================
-//        ===============================================
-//        ===============================================
-//        ===============================================
-
-        SeekableByteChannel out = null;
-        try {
-            out = NIOUtils.writableFileChannel(path);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        AWTSequenceEncoder encoder = null;
-        try {
-            encoder = new AWTSequenceEncoder(out, Rational.R(20, 1));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        final long frameRate = 10;
+        final long frameRate = 1000/totalFPS;
 
         FileInputStream fileInputStream = null;
         try {
@@ -356,6 +401,8 @@ public class MainVideoCreator {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+
+
         BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
 
         if (bufferedInputStream != null) {
@@ -389,109 +436,52 @@ public class MainVideoCreator {
                     }
 
                     if(image!=null){
-                        try {
-                            encoder.encodeImage(image);
-                            encoder.encodeImage(imageToConnect);
-                        } catch (IOException e) {
-                            e.printStackTrace();
+
+                        if(!addVideoStream){
+                            writer.addVideoStream(0, 0,
+                                    ICodec.ID.CODEC_ID_MPEG4,
+                                    image.getWidth(), image.getHeight());
+                            addVideoStream = true;
                         }
+
+                        writer.encodeVideo(0, image,nextFrameTime,
+                                TimeUnit.MILLISECONDS);
+                        nextFrameTime += frameRate;
                         System.out.println("Пишем изображение - " + count++);
+                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
                         image = null;
                     }
                 }
             }
-
-            try {
-                encoder.finish();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            NIOUtils.closeQuietly(out);
+            writer.flush();
+            writer.close();
 
             System.out.println("Сохраняем файл. Количесво изображений - " + count);
+            MainFrame.showInformMassage("Файл збережено. Всьго кадрів - " + count, true);
         }
-//====================================================================
-//        final IMediaWriter writer = ToolFactory.makeWriter(path);
-//        writer.addVideoStream(0, 0,
-//                ICodec.ID.CODEC_ID_MPEG4,
-//                1920, 1080);
-//
-//        long nextFrameTime = 0;
-//        final long frameRate = 10;
-//
-//        FileInputStream fileInputStream = null;
-//        try {
-//            fileInputStream = new FileInputStream(file);
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        }
-//
-//
-//        BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
-//
-//        if (bufferedInputStream != null) {
-//            ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(65535);
-//            int count = 0;
-//            int x = 0;
-//            int t = 0;
-//            BufferedImage image = null;
-//            while (x >= 0) {
-//                t = x;
-//                try {
-//                    x = bufferedInputStream.read();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//
-//                temporaryStream.write(x);
-//                if (x == 216 && t == 255) {// начало изображения
-//                    temporaryStream.reset();
-//
-//                    temporaryStream.write(t);
-//                    temporaryStream.write(x);
-//                } else if (x == 217 && t == 255) {//конец изображения
-//                    byte[] imageBytes = temporaryStream.toByteArray();
-//                    ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
-//
-//                    try {
-//                        image = ImageIO.read(inputStream);
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                    if(image!=null){
-//                        writer.encodeVideo(0, image,nextFrameTime,
-//                                TimeUnit.MILLISECONDS);
-//                        nextFrameTime += frameRate;
-//                        System.out.println("Пишем изображение - " + count++);
-//                        image = null;
-//                    }
-//                }
-//            }
-//            writer.flush();
-//            writer.close();
-//            System.out.println("Сохраняем файл. Количесво изображений - " + count);
-//        }
+        try {
+            bufferedInputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public static void saveVideo(Integer numberOfGroup,List<BufferedImage>list, int fps){
-        String path = null;
-        if(date!=null){
-            path = "C:\\ipCamera\\"+date.getTime()+"-"+numberOfGroup+".mpeg";
-        }else {
-            path = "C:\\ipCamera\\"+System.currentTimeMillis()+"-"+numberOfGroup+".mpeg";
+    public static void putVideoFromCameraGroup(Integer numberOfGroup, List<byte[]> list, int totalFps) {
+        MainFrame.showInformMassage("Зберігаем файл - " + numberOfGroup, true);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        System.out.println("Сохраняем видео в файл "+path);
+        Thread thread = new Thread(() -> saveBytes(numberOfGroup, list, totalFps));
+        thread.start();
+        System.out.println("Номер группы - " + numberOfGroup + ". Размер листа в изображениями - " + list.size());
+    }
 
-        System.out.println("Создаем файл - "+path);
-        File file = new File(path);
-        if(!file.exists()){
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    public static boolean isSaveVideo() {
+        return saveVideo;
+    }
+}
 
 //        final IMediaWriter writer = ToolFactory.makeWriter(path);
 //        writer.addVideoStream(0, 0, ICodec.ID.CODEC_ID_MPEG4,
@@ -525,29 +515,3 @@ public class MainVideoCreator {
 //        }finally {
 //            NIOUtils.closeQuietly(out);
 //        }
-
-        System.out.println("Файл создан");
-    }
-
-    public static void putVideoImagesFromCameraGroup(Integer numberOfGroup, List<BufferedImage> list) {
-
-        Thread thread = new Thread(() -> saveVideo(numberOfGroup,list,40));
-        thread.start();
-    }
-
-
-    public static void putVideoFromCameraGroup(Integer numberOfGroup, List<byte[]> list) {
-
-        saveBytes(numberOfGroup,list);
-        System.out.println("Номер группы - " + numberOfGroup + ". Размер листа в изображениями - " + list.size());
-        System.out.println("размер общей мапы равен: " + VideoFilesPanel.map.size());
-    }
-
-    public static boolean isSaveVideo() {
-        return saveVideo;
-    }
-
-    public static void setSaveVideo(boolean saveVideo) {
-        MainVideoCreator.saveVideo = saveVideo;
-    }
-}
