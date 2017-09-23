@@ -3,6 +3,7 @@ package ui.main;
 import entity.AddressSaver;
 import entity.MainVideoCreator;
 import entity.VideoPlayer;
+import entity.VideoPlayerPanel;
 import ui.camera.CameraPanel;
 import ui.camera.VideoCreator;
 import ui.setting.CameraAddressSetting;
@@ -77,9 +78,6 @@ public class MainFrame extends JFrame {
         cameraAddressSetting = CameraAddressSetting.getCameraAddressSetting();
         setting = Setting.getSetting();
         videoFilesPanel = VideoFilesPanel.getVideoFilesPanel();
-
-
-
 
         messageLabel = new JLabel();
         informLabel = new JLabel("INFORM");
@@ -207,7 +205,7 @@ public class MainFrame extends JFrame {
         JButton startButton = new JButton("REC");
         startButton.addActionListener((e -> {
             VideoPlayer.setShowVideoPlayer(false);
-            MainVideoCreator.startCatchVideo(new Date(System.currentTimeMillis()));
+            MainVideoCreator.startCatchVideo();
         }));
 
         northPanel.add(mainWindowButton);
@@ -221,6 +219,7 @@ public class MainFrame extends JFrame {
         mainPanel.add(northPanel, BorderLayout.NORTH);
 
         Thread thread = new Thread(() -> {
+            int playInt=0;
             boolean red = false;
             boolean startRec = true;
             while (true) {
@@ -261,6 +260,18 @@ public class MainFrame extends JFrame {
                 usedMemoryLabel.repaint();
                 freeMemoryLabel.setText(String.valueOf(totalMemory - usedMemory) + " mb");
                 freeMemoryLabel.repaint();
+
+                if(VideoPlayer.isShowVideoPlayer()){
+                    if(playInt==0){
+                        VideoPlayer.informLabel.setForeground(Color.RED);
+                        VideoPlayer.informLabel.repaint();
+                        playInt++;
+                    } else {
+                        playInt = 0;
+                        VideoPlayer.informLabel.setForeground(Color.LIGHT_GRAY);
+                        VideoPlayer.informLabel.repaint();
+                    }
+                }
 
                 try {
                     Thread.sleep(500);
@@ -400,6 +411,10 @@ public class MainFrame extends JFrame {
         centralPanel.add(panel);
         centralPanel.revalidate();
         centralPanel.repaint();
+    }
+
+    public static JPanel getCentralPanel() {
+        return centralPanel;
     }
 }
 

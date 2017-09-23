@@ -32,13 +32,14 @@ public class VideoCatcher implements Runnable {
     boolean catchVideo;
     Thread fpsThread;
     int fpsNotZero;
-
+    boolean mainCamera;
 
     int stopSaveVideoInt;
     int sizeVideoSecond;
 
     boolean stopSaveVideo;
     boolean startSaveVideo;
+    boolean continueSaveVideo;
 
     public VideoCatcher(CameraPanel panel, VideoCreator videoCreator) {
         startSaveVideo = false;
@@ -50,11 +51,13 @@ public class VideoCatcher implements Runnable {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
                 if (catchVideo) {
                     panel.getTitle().setTitle("FPS = " + fps);
                     if (fps != 0) {
                         fpsNotZero = fps;
                     }
+
                     fps = 0;
 
                     if (sizeVideoSecond != MainFrame.timeToSave) {
@@ -75,9 +78,27 @@ public class VideoCatcher implements Runnable {
                     }
 
                     if (startSaveVideo) {
-                        stopSaveVideoInt++;
-                        if (stopSaveVideoInt == sizeVideoSecond) {
-                            stopSaveVideo = true;
+
+                        if(continueSaveVideo){
+                            if(!MainVideoCreator.isContinueSaveVideo()){
+                                stopSaveVideo = true;
+                            }
+                            if(mainCamera){
+                                MainFrame.showInformMassage("Продовжуемо",true);
+                            }
+                        } else {
+                            if(MainVideoCreator.isContinueSaveVideo()){
+                                continueSaveVideo = true;
+                                System.out.println("Сохраняем видео дальше, еще одна молния.");
+                            }
+
+                            stopSaveVideoInt++;
+                            if (stopSaveVideoInt == sizeVideoSecond) {
+                                stopSaveVideo = true;
+                                if(mainCamera){
+                                    MainFrame.showInformMassage("Залишилось секунд "+(sizeVideoSecond-stopSaveVideoInt),true);
+                                }
+                            }
                         }
                     }
                 }
@@ -184,6 +205,7 @@ public class VideoCatcher implements Runnable {
                             stopSaveVideoInt = 0;
                             stopSaveVideo = false;
                             startSaveVideo = false;
+                            continueSaveVideo = false;
                         }
                     }
                 }
@@ -212,6 +234,7 @@ public class VideoCatcher implements Runnable {
                 max = maxHeight;
                 size = bi.getHeight();
             }
+
             if (size > 0 && size > max) {
                 double trans = 1.0 / (size / max);
                 AffineTransform tr = new AffineTransform();
@@ -255,6 +278,10 @@ public class VideoCatcher implements Runnable {
     public void stopCatchVideo() {
         panel.stopShowVideo();
         catchVideo = false;
+    }
+
+    public void setMainCamera(boolean mainCamera) {
+        this.mainCamera = mainCamera;
     }
 
     public boolean isFullSize() {

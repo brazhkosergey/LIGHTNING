@@ -2,51 +2,53 @@ package entity;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class VideoPlayer extends JPanel {
+    private static boolean showVideoPlayer = false;
+    private static boolean STOP;
+    private static boolean PAUSE;
+    private static boolean PLAY;
+    private static boolean SetPOSITION;
+    private static boolean NextIMAGE;
+    private static boolean PrewIMAGE;
 
+    private static int nextImagesInt;
+    private static int prewImagesInt;
 
-    public static boolean showVideoPlayer = false;
-
-    public static boolean STOP;
-    public static boolean PAUSE;
-    public static boolean PLAY;
-    public static boolean SetPOSITION;
     private static int position;
 
+    private static List<JLabel> list;
+    //    private static List<JPanel> listP;
+    private static JPanel sliderPanel;
 
+    private static int countDoNotShowImage;
 
-    static int speed = 50;
+    private static int speed = 0;
 
-    Map<Integer, File> map;
-    List<Thread> threadList = new ArrayList<>();
-
-    JButton playButton;
-    JLabel label;
-    JPanel mainVideoPane;
-    JPanel buttonsPane;
-    JPanel southPane;
-    public static JSlider slider;
-
+    public static JLabel informLabel;
+    private static JLabel sliderLabel;
 
     public VideoPlayer(Map<Integer, File> map, String date) {
-
-        this.map = map;
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         this.setPreferredSize(new Dimension(1100, 550));
         this.setLayout(new BorderLayout());
-        mainVideoPane = new JPanel(new FlowLayout());
+        JPanel mainVideoPane = new JPanel(new FlowLayout());
         mainVideoPane.setPreferredSize(new Dimension(800, 510));
-        boolean setMainPane=false;
+        boolean setMainPane = false;
+
+        list = new ArrayList<>();
+
+        List<Thread> threadList = new ArrayList<>();
         for (int j = 1; j < 5; j++) {
             File file = map.get(j);
-            VideoPlayerPanel videoPlayer = new VideoPlayerPanel(file,j);
-            if(!setMainPane){
-                if(file!=null){
+            VideoPlayerPanel videoPlayer = new VideoPlayerPanel(file, j);
+            if (!setMainPane) {
+                if (file != null) {
                     videoPlayer.setMainPanel(true);
                     setMainPane = true;
                 }
@@ -55,67 +57,125 @@ public class VideoPlayer extends JPanel {
             mainVideoPane.add(videoPlayer);
         }
 
-        for(Thread thread:threadList){
-            if(thread!=null){
+        for (Thread thread : threadList) {
+            if (thread != null) {
                 thread.start();
             }
         }
 
-        this.add(mainVideoPane,BorderLayout.CENTER);
-
-        slider = new JSlider();
-        slider.setPreferredSize(new Dimension(1090, 25));
-        slider.setValue(1);
-        slider.addChangeListener(e ->{
-            System.out.println("Значение на слайдере изменилось на: " + slider.getValue());
-//            setSetPOSITION(true);
-//            setPLAY(false);
-//            position = slider.getValue();
-            System.out.println("Установили SETPOSSITION - "+SetPOSITION);
-        });
-
-        buttonsPane = new JPanel(new FlowLayout());
+        this.add(mainVideoPane, BorderLayout.CENTER);
+        JPanel buttonsPane = new JPanel(new FlowLayout());
         buttonsPane.setPreferredSize(new Dimension(1090, 35));
 
         JButton nextImage = new JButton("NEXT");
+        nextImage.addActionListener((e) -> {
+            setPLAY(false);
+            setSTOP(false);
+            setPAUSE(true);
+            setNextIMAGE(true);
+            setPrewIMAGE(false);
+
+            informLabel.setText("NEXT");
+            prewImagesInt = 0;
+            nextImagesInt++;
+        });
+
+        JButton previousImage = new JButton("PREV");
+        previousImage.addActionListener((e) -> {
+            setPLAY(false);
+            setSTOP(false);
+            setPAUSE(true);
+            setNextIMAGE(false);
+            setPrewIMAGE(true);
+            informLabel.setText("PREV");
+            prewImagesInt++;
+            nextImagesInt = 0;
+        });
+
         JButton slowerButton = new JButton("<<");
-        slowerButton.addActionListener((e)->{
-            VideoPlayer.speed = (int) (VideoPlayer.speed*2);
-            if(speed > 1000){
+        slowerButton.addActionListener((e) -> {
+            if (countDoNotShowImage == 0) {
+                informLabel.setText("<<");
+                VideoPlayer.speed = ((VideoPlayer.speed + 1) * 20);
+            } else {
+                countDoNotShowImage--;
+                informLabel.setText((countDoNotShowImage * 2) + "X");
+                if (countDoNotShowImage < 1) {
+                    countDoNotShowImage = 0;
+                }
+            }
+
+            if (speed > 1000) {
                 speed = 1000;
             }
+
+
+            System.out.println("Пропускаем кадров - " + countDoNotShowImage);
+            System.out.println("Засыпаем на милисекунд - " + speed);
         });
-        playButton = new JButton("PLAY");
+
+        JButton fasterButton = new JButton(">>");
+        fasterButton.addActionListener((e) -> {
+            if (speed == 0) {
+                countDoNotShowImage++;
+                informLabel.setText((countDoNotShowImage * 2) + "X");
+                if (countDoNotShowImage > 9) {
+                    countDoNotShowImage = 10;
+                }
+            } else {
+                informLabel.setText(">>");
+                VideoPlayer.speed = (int) ((VideoPlayer.speed + 1) * 0.05);
+            }
+
+            if (speed < 1) {
+                speed = 0;
+            }
+
+            System.out.println("Пропускаем кадров - " + countDoNotShowImage);
+            System.out.println("Засыпаем на милисекунд - " + speed);
+        });
+
+        JButton playButton = new JButton("PLAY");
         playButton.addActionListener(actionEvent -> {
             setPLAY(true);
             setSTOP(false);
             setPAUSE(false);
+            setNextIMAGE(false);
+            setPrewIMAGE(false);
+            informLabel.setText("PLAY");
         });
 
         JButton pauseButton = new JButton("PAUSE");
-        pauseButton.addActionListener((e)->{
+        pauseButton.addActionListener((e) -> {
             setPLAY(false);
             setSTOP(false);
             setPAUSE(true);
+            setNextIMAGE(false);
+            setPrewIMAGE(false);
+            informLabel.setText("PAUSE");
         });
         JButton stopButton = new JButton("STOP");
         stopButton.addActionListener(actionEvent -> {
             setPLAY(false);
             setSTOP(true);
             setPAUSE(false);
+            setNextIMAGE(false);
+            setPrewIMAGE(false);
+            informLabel.setText("STOP");
         });
 
-        JButton fasterButton = new JButton(">>");
-        fasterButton.addActionListener((e)->{
-            VideoPlayer.speed = (int) (VideoPlayer.speed*0.5);
-            if(speed < 1){
-                speed = 1;
-            }
-        });
 
-        JButton previousImage = new JButton("PREV");
-        label = new JLabel(date);
-        buttonsPane.add(label);
+        JLabel label1 = new JLabel(date);
+        sliderLabel = new JLabel("0 %");
+        sliderLabel.setPreferredSize(new Dimension(50, 10));
+        informLabel = new JLabel("STOP");
+        informLabel.setPreferredSize(new Dimension(50, 10));
+        buttonsPane.add(label1);
+        buttonsPane.add(Box.createRigidArea(new Dimension(20, 10)));
+        buttonsPane.add(informLabel);
+        buttonsPane.add(Box.createRigidArea(new Dimension(20, 10)));
+        buttonsPane.add(sliderLabel);
+        buttonsPane.add(Box.createRigidArea(new Dimension(20, 10)));
         buttonsPane.add(previousImage);
         buttonsPane.add(slowerButton);
         buttonsPane.add(playButton);
@@ -123,59 +183,153 @@ public class VideoPlayer extends JPanel {
         buttonsPane.add(stopButton);
         buttonsPane.add(fasterButton);
         buttonsPane.add(nextImage);
-        southPane = new JPanel();
-        southPane.setLayout(new BoxLayout(southPane,BoxLayout.Y_AXIS));
-        southPane.add(slider);
+        buttonsPane.add(Box.createRigidArea(new Dimension(250, 10)));
+        JPanel southPane = new JPanel();
+
+        sliderPanel = new JPanel();
+        GridLayout layout = new GridLayout(1, 100, 0, 0);
+        sliderPanel.setLayout(layout);
+        sliderPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+        sliderPanel.setPreferredSize(new Dimension(800, 30));
+        for (int i = 1; i < 100; i++) {
+//            JPanel panel = new JPanel();
+//            panel.setPreferredSize(new Dimension(10,10));
+//            panel.setBackground(Color.cyan);
+//            int finalI = i;
+//            panel.addMouseListener(new MouseAdapter() {
+//                @Override
+//                public void mouseClicked(MouseEvent e) {
+//                    System.out.println("Значение на слайдере изменилось на: " + finalI);
+//                    setSetPOSITION(true);
+//                    position = finalI;
+//                    System.out.println("Установили SETPOSSITION - "+finalI);
+//                }
+//            });
+//
+//            sliderPanel.add(panel);
+//            listP.add(panel);
+
+//            if(i==99){
+//                sliderPanel.add(new JLabel("!"));
+//            }
+
+//            JLabel label = new JLabel(String.valueOf((char) 8623));
+            JLabel label = new JLabel(String.valueOf((char) 9899));
+            label.setForeground(Color.LIGHT_GRAY);
+//            JLabel label = new JLabel(String.valueOf((char) 8226));
+//            label.setFont(new Font("Comic Sans MS",Font.BOLD,12));
+            int finalI = i;
+            label.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    System.out.println("Значение на слайдере изменилось на: " + finalI);
+                    setSetPOSITION(true);
+                    position = finalI;
+                    System.out.println("Установили SETPOSSITION - " + finalI);
+                }
+            });
+            sliderPanel.add(label);
+            list.add(label);
+        }
+        southPane.setLayout(new BoxLayout(southPane, BoxLayout.Y_AXIS));
+        southPane.add(sliderPanel);
         southPane.add(buttonsPane);
 
-        this.add(southPane,BorderLayout.SOUTH);
+        this.add(southPane, BorderLayout.SOUTH);
+        previousImage.addKeyListener(new KeyAdapter() {//TODO ikjhnbgvfgbhnjmk,l.,kmjnhbg
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == 37) {
+                    System.out.println("Нажали клавишу Предидущий кадр");
+                    setPLAY(false);
+                    setSTOP(false);
+                    setPAUSE(true);
+                    setNextIMAGE(false);
+                    setPrewIMAGE(true);
+                    informLabel.setText("PREV");
+                    prewImagesInt++;
+                    nextImagesInt = 0;
+                }
+            }
+        });
+
+        nextImage.addKeyListener(new KeyAdapter() {//TODO ikjhnbgvfgbhnjmk,l.,kmjnhbg
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == 39) {
+                    System.out.println("Нажали клавишу СЛЕДУЮЩИЙ КАДР");
+                    setPLAY(false);
+                    setSTOP(false);
+                    setPAUSE(true);
+                    setNextIMAGE(true);
+                    setPrewIMAGE(false);
+
+                    informLabel.setText("NEXT");
+                    prewImagesInt = 0;
+                    nextImagesInt++;
+                }
+            }
+        });
+
     }
 
-    public static int getPosition() {
+    static int getPosition() {
         return position;
     }
 
-    public static boolean isPLAY() {
+    static boolean isPLAY() {
         return PLAY;
     }
 
-    public static void setPLAY(boolean PLAY) {
+    static void setPLAY(boolean PLAY) {
         VideoPlayer.PLAY = PLAY;
     }
 
-    public static boolean isSTOP() {
+    static boolean isSTOP() {
         return STOP;
     }
 
-    public static boolean isPAUSE() {
+    static boolean isPAUSE() {
         return PAUSE;
     }
 
-    public static void setSTOP(boolean STOP) {
+    static void setSTOP(boolean STOP) {
         VideoPlayer.STOP = STOP;
     }
 
-    public static void setPAUSE(boolean PAUSE) {
+    static void setPAUSE(boolean PAUSE) {
         VideoPlayer.PAUSE = PAUSE;
     }
 
-    public static void setSliderPosition(int position){
-//        slider.setOrientation(position);
-        slider.setValue(position);
-        slider.repaint();
+    static void setSliderPosition(int position) {
+
+        for (int i = 0; i < position - 1; i++) {
+            list.get(i).setForeground(new Color(4, 12, 247));
+        }
+
+        for (int i = position; i < list.size(); i++) {
+            list.get(i).setForeground(Color.LIGHT_GRAY);
+        }
+        sliderPanel.repaint();
+        sliderLabel.setText(position + "%");
+        sliderLabel.repaint();
     }
 
-    public static boolean isSetPOSITION() {
+    static boolean isSetPOSITION() {
         return SetPOSITION;
     }
 
-    public static void setSetPOSITION(boolean setPOSITION) {
+    static void setSetPOSITION(boolean setPOSITION) {
         System.out.println("possition " + setPOSITION);
         SetPOSITION = setPOSITION;
     }
 
-    public static int getSpeed() {
+    static int getSpeed() {
         return speed;
+    }
+
+    static int getCountDoNotShowImage() {
+        return countDoNotShowImage;
     }
 
     public static boolean isShowVideoPlayer() {
@@ -184,5 +338,29 @@ public class VideoPlayer extends JPanel {
 
     public static void setShowVideoPlayer(boolean showVideoPlayer) {
         VideoPlayer.showVideoPlayer = showVideoPlayer;
+    }
+
+    static boolean isPrewIMAGE() {
+        return PrewIMAGE;
+    }
+
+    private static void setNextIMAGE(boolean nextIMAGE) {
+        NextIMAGE = nextIMAGE;
+    }
+
+    private static void setPrewIMAGE(boolean prewIMAGE) {
+        PrewIMAGE = prewIMAGE;
+    }
+
+    static boolean isNextIMAGE() {
+        return NextIMAGE;
+    }
+
+    static int getNextImagesInt() {
+        return nextImagesInt;
+    }
+
+    static int getPrewImagesInt() {
+        return prewImagesInt;
     }
 }

@@ -71,6 +71,7 @@ public class VideoFilesPanel extends JPanel {
         slider.addChangeListener((e)->{
             sliderLabel.setText("FPS = "+slider.getValue());
         });
+
         sliderLabel.setText("FPS = "+slider.getValue());
 //        exportSettingPanel.add(exportSettingLabel);
 //        exportSettingPanel.add(Box.createRigidArea(new Dimension(100,50)));
