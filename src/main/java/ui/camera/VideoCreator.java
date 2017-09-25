@@ -1,6 +1,7 @@
 package ui.camera;
 
 import entity.MainVideoCreator;
+import org.jcodec.common.DictionaryCompressor;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -11,26 +12,35 @@ public class VideoCreator {
     private int cameraGroupNumber;
     private Map<Integer, Map<Long,byte[]>> mapOfMapByte;//должно быть два видео, с дальше слепить их в один файл.
     private List<byte[]> list;
+    private ArrayList<Integer> percentEventOfFrames;
     private BufferedImage bufferedImageBack;
-    int[] arr = new int[3];
+    private int[] arr = new int[3];
+    private List<List<Integer>> listArr;
 
     public VideoCreator(int cameraGroupNumber) {
+        listArr = new ArrayList();
         mapOfMapByte = new HashMap<>();
         list = new ArrayList<>();
         this.cameraGroupNumber = cameraGroupNumber;
     }
 
-    void addMapByte(Integer integer, Map<Long, byte[]> longMap, int fps) {
+    void addMapByte(Integer integer, Map<Long, byte[]> longMap, int fps, List<Integer> framesNumberEvent) {
+        listArr.add(framesNumberEvent);
         arr[integer] = fps;
         mapOfMapByte.put(integer, longMap);
-        if (mapOfMapByte.size() == 2) {//Должно быть два.
-
+        if (mapOfMapByte.size() == 2&&listArr.size()==2) {//Должно быть два.
             saveBytesFromMapToFile(arr[1]+arr[2]);
         }
     }
 
     BufferedImage getBufferedImageBack() {
         return bufferedImageBack;
+    }
+
+    public void startSaveVideoProgram(){
+
+
+
     }
 
     public void setBufferedImageBack(BufferedImage bufferedImageBack) {
@@ -40,6 +50,19 @@ public class VideoCreator {
     private void connectVideoBytesFromMap(){
         Map<Long,byte[]> map1 = mapOfMapByte.get(1);
         Map<Long,byte[]> map2 = mapOfMapByte.get(2);
+
+        percentEventOfFrames = new ArrayList<>();
+        if(listArr.size() == 2){
+                int size=listArr.get(0).size();
+                for(int i=0;i<size;i++){
+                    double d1 = (double)listArr.get(0).get(i)/map1.size();
+                    percentEventOfFrames.add((int) (d1*100));
+                }
+        } else {
+            System.out.println("нет листов... "+ listArr.size());
+        }
+
+        listArr = new ArrayList();
 
         List<Long> listOfLongs = new ArrayList<>();
 
@@ -71,17 +94,13 @@ public class VideoCreator {
                 }
             }
         }
-
-        System.out.println("Размер первой коллекции: " + map1.size());
-        System.out.println("Размер второй коллекции: " + map2.size());
-        System.out.println("Размер общего листа: " + list.size());
+        mapOfMapByte.clear();
     }
 
     private void saveBytesFromMapToFile( int totalFPS){
         connectVideoBytesFromMap();
-        System.out.println("Общая частота кадров - " + totalFPS);
-        MainVideoCreator.putVideoFromCameraGroup(cameraGroupNumber, list,totalFPS);
-        System.out.println(cameraGroupNumber + " номер.  добавляем лист размером  " + list.size());
+        MainVideoCreator.putVideoFromCameraGroup(cameraGroupNumber, list,totalFPS,percentEventOfFrames);
         list = new ArrayList<>();
+        percentEventOfFrames = new ArrayList<>();
     }
 }

@@ -1,6 +1,7 @@
 package ui.setting;
 
 import ui.camera.CameraPanel;
+import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.swing.*;
@@ -11,7 +12,6 @@ public class Setting extends JPanel {
     public JButton saveButton;
     public static JTextField timeTextField;
     public static JCheckBox checkBox;
-
 
     private Setting() {
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
@@ -51,14 +51,37 @@ public class Setting extends JPanel {
 
         JSlider slider = new JSlider();
         slider.setPreferredSize(new Dimension(200, 25));
-        slider.setMinorTickSpacing(1);
+        slider.setMinorTickSpacing(2);
+        slider.setPaintTicks(true);
         slider.setValue(30);
         slider.addChangeListener(e ->{
-            System.out.println("Значение на слайдере изменилось на: " + slider.getValue());
             int value = slider.getValue();
             Float f =(float) value/100;
             CameraPanel.setOpacity(f);
             opacityLabel.setText("Прозорість зображення що накладаемо відео - "+value+" відсотків");
+            MainFrame.getMainFrame().setOpacityLabel(value);
+        });
+
+
+        JLabel framesLabel = new JLabel("Транслюемо відео - "+20+"%");
+
+        JSlider sliderFrames = new JSlider();
+        sliderFrames.setPreferredSize(new Dimension(200, 25));
+        sliderFrames.setMinorTickSpacing(1);
+        sliderFrames.setPaintTicks(true);
+        sliderFrames.setMinimum(0);
+        sliderFrames.setMaximum(20);
+        sliderFrames.setValue(5);
+        sliderFrames.addChangeListener(e ->{
+            int value = sliderFrames.getValue();
+            int s = 100;
+            if (value != 0) {
+                s = 100/value;
+            }
+
+            setCountDoNotShowImages(value);
+            framesLabel.setText("Транслюемо відео - "+s+"%");
+            MainFrame.getMainFrame().setQualityVideoLabel(s);
         });
 
         saveButton = new JButton("Зберегти");
@@ -67,6 +90,7 @@ public class Setting extends JPanel {
             int i = Integer.parseInt(text);
             MainFrame.programWork = checkBox.isSelected();
             MainFrame.timeToSave = i;
+            MainFrame.getMainFrame().setCountSaveVideo(i);
             MainFrame.addressSaver.saveSetting(i,checkBox.isSelected());
             saveButton.setText("Збережено");
             saveButton.setForeground(new Color(46, 139, 87));
@@ -80,12 +104,22 @@ public class Setting extends JPanel {
         mainPanel.add(opacityLabel);
         mainPanel.add(Box.createRigidArea(new Dimension(10,10)));
         mainPanel.add(slider);
-        mainPanel.add(Box.createRigidArea(new Dimension(10,300)));
+       mainPanel.add(Box.createRigidArea(new Dimension(10,30)));
+        mainPanel.add(framesLabel);
+        mainPanel.add(Box.createRigidArea(new Dimension(10,10)));
+        mainPanel.add(sliderFrames);
+        mainPanel.add(Box.createRigidArea(new Dimension(10,200)));
         mainPanel.add(saveButton);
         this.add(mainPanel);
     }
 
     public void setSetting(){
         MainFrame.addressSaver.setSetting();
+    }
+
+
+    private static void setCountDoNotShowImages(int countDoNotShowImages) {
+        VideoCatcher.setSettingCountDoNotShowImages(countDoNotShowImages);
+        System.out.println("пропускаем изображений -" + countDoNotShowImages);
     }
 }

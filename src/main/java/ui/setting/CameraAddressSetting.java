@@ -190,7 +190,6 @@ public class CameraAddressSetting extends JPanel {
             inputPanel.add(Box.createRigidArea(new Dimension(10, 20)));
             inputPanel.add(addImageLabel);
             inputPanel.add(Box.createRigidArea(new Dimension(10, 20)));
-//            inputPanel.add(addImageButton);
             inputPanel.add(buttonPane);
 
             TitledBorder titleMainSetting = BorderFactory.createTitledBorder("Блок - " + i);

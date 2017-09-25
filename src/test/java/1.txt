@@ -2,10 +2,10 @@
 
 http://195.235.198.107:3346/axis-cgi/mjpg/video.cgi?size=640x480
 
-http://95.215.164.69:80/mjpg/video.mjpg?COUNTER - Александрия
+http://95.215.164.69:80/mjpg/video.mjpg?COUNTER - 1 Александрия
 
-http://46.119.81.233/?action=stream  - Енергодар
+http://46.119.81.233/?action=stream  - 2 Енергодар
 
-http://94.244.33.211:80/mjpg/video.mjpg?COUNTER
+http://94.244.33.211:80/mjpg/video.mjpg?COUNTER - 3
 
-http://31.42.168.71:80/mjpg/video.mjpg?COUNTER - камянец подольский
+http://31.42.168.71:80/mjpg/video.mjpg?COUNTER - 4  камянец подольский

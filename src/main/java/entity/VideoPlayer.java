@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public class VideoPlayer extends JPanel {
+
     private static boolean showVideoPlayer = false;
     private static boolean STOP;
     private static boolean PAUSE;
@@ -17,44 +18,175 @@ public class VideoPlayer extends JPanel {
     private static boolean NextIMAGE;
     private static boolean PrewIMAGE;
 
+    private static boolean SaveIMAGE;
+
     private static int nextImagesInt;
     private static int prewImagesInt;
 
     private static int position;
 
     private static List<JLabel> list;
-    //    private static List<JPanel> listP;
     private static JPanel sliderPanel;
 
     private static int countDoNotShowImage;
-
     private static int speed = 0;
 
     public static JLabel informLabel;
+    private static JLabel speedLabel;
+    static JLabel FPSLabel = new JLabel();
     private static JLabel sliderLabel;
+    private static List<Integer> eventPercent;
+    private static List<VideoPlayerPanel> videoPlayerPanels;
+
+    private static JButton saveImageButton;
+    JPanel centralPane;
+    JPanel mainVideoPane;
+
 
     public VideoPlayer(Map<Integer, File> map, String date) {
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         this.setPreferredSize(new Dimension(1100, 550));
-        this.setLayout(new BorderLayout());
-        JPanel mainVideoPane = new JPanel(new FlowLayout());
-        mainVideoPane.setPreferredSize(new Dimension(800, 510));
-        boolean setMainPane = false;
+        centralPane = new JPanel();
+//        centralPane.setPreferredSize(new Dimension(1100,550));
 
-        list = new ArrayList<>();
+        mainVideoPane = new JPanel();
+        GridLayout mainVideoPaneLayout = new GridLayout(2, 2, 5, 5);
+        mainVideoPane.setLayout(mainVideoPaneLayout);
 
-        List<Thread> threadList = new ArrayList<>();
-        for (int j = 1; j < 5; j++) {
-            File file = map.get(j);
-            VideoPlayerPanel videoPlayer = new VideoPlayerPanel(file, j);
-            if (!setMainPane) {
+
+        JButton backButton = new JButton("BACK");
+        backButton.addActionListener((e) -> {
+            setPLAY(false);
+            setSTOP(true);
+            setPAUSE(false);
+            setNextIMAGE(false);
+            setPrewIMAGE(false);
+            informLabel.setText("STOP");
+            saveImageButton.setForeground(Color.LIGHT_GRAY);
+            centralPane.removeAll();
+            mainVideoPane.removeAll();
+            long fileSize = 0;
+            int fileNumber = 0;
+            for (int i=0;i<4;i++) {
+                VideoPlayerPanel playerPanel = videoPlayerPanels.get(i);
+                playerPanel.setMainPanel(false);
+                playerPanel.setWidthAndHeight(535, 222);
+                mainVideoPane.add(playerPanel);
+
+                File file = map.get(i+1);
                 if (file != null) {
-                    videoPlayer.setMainPanel(true);
-                    setMainPane = true;
+                    long l = file.length();
+                    if (l > fileSize) {
+                        fileSize = l;
+                        fileNumber = i;
+                    }
                 }
             }
+
+            if (fileNumber != 0) {
+                VideoPlayerPanel videoPlayerPanel = videoPlayerPanels.get(fileNumber);
+                String name = videoPlayerPanel.getFileName();
+                int first = name.indexOf("[");
+                int second = name.indexOf("]");
+                String substring = name.substring(first + 1, second);
+                System.out.println("Строка получилась " + substring);
+                String[] split = substring.split(",");
+                eventPercent.clear();
+                for (int i = 0; i < split.length; i++) {
+                    System.out.println(split[i]);
+                    try {
+                        int i1 = Integer.parseInt(split[i]);
+                        eventPercent.add(i1);
+                    } catch (Exception exx) {
+                        exx.printStackTrace();
+                    }
+                }
+                videoPlayerPanel.setMainPanel(true);
+            }
+            centralPane.add(mainVideoPane);
+            centralPane.repaint();
+            backButton.setForeground(Color.LIGHT_GRAY);
+        });
+
+        List<Thread> threadList = new ArrayList<>();
+        eventPercent = new ArrayList<>();
+        videoPlayerPanels = new ArrayList<>();
+        int mainPanelNumber = 0;
+        long mainFileSize = 0L;
+        for (int j = 1; j < 5; j++) {
+            File file = map.get(j);
+            if (file != null) {
+                long l = file.length();
+                if (l > mainFileSize) {
+                    mainFileSize = l;
+                    mainPanelNumber = j;
+                }
+            }
+
+            VideoPlayerPanel videoPlayer = new VideoPlayerPanel(file, j);
+            videoPlayer.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2) {
+                        setPLAY(false);
+                        setSTOP(true);
+                        setPAUSE(false);
+                        setNextIMAGE(false);
+                        setPrewIMAGE(false);
+                        informLabel.setText("STOP");
+                        saveImageButton.setForeground(Color.LIGHT_GRAY);
+                        for(VideoPlayerPanel videoPlayerPanel:videoPlayerPanels){
+                            videoPlayerPanel.setMainPanel(false);
+                        }
+
+                        videoPlayer.setWidthAndHeight(1050, 450);
+                        String name = videoPlayer.getFileName();
+                        int first = name.indexOf("[");
+                        int second = name.indexOf("]");
+                        String substring = name.substring(first + 1, second);
+                        System.out.println("Строка получилась " + substring);
+                        String[] split = substring.split(",");
+                        eventPercent.clear();
+                        for (String aSplit : split) {
+                            System.out.println(aSplit);
+                            try {
+                                int i1 = Integer.parseInt(aSplit);
+                                eventPercent.add(i1);
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                        videoPlayer.setMainPanel(true);
+                        centralPane.removeAll();
+                        centralPane.add(videoPlayer);
+                        centralPane.repaint();
+                        backButton.setForeground(Color.GREEN);
+                    }
+                }
+            });
             threadList.add(videoPlayer.getThread());
             mainVideoPane.add(videoPlayer);
+            videoPlayerPanels.add(videoPlayer);
+        }
+
+        if (mainPanelNumber != 0) {
+            VideoPlayerPanel videoPlayerPanel = videoPlayerPanels.get(mainPanelNumber - 1);
+            String name = videoPlayerPanel.getFileName();
+            int first = name.indexOf("[");
+            int second = name.indexOf("]");
+            String substring = name.substring(first + 1, second);
+            System.out.println("Строка получилась " + substring);
+            String[] split = substring.split(",");
+            for (int i = 0; i < split.length; i++) {
+                System.out.println(split[i]);
+                try {
+                    int i1 = Integer.parseInt(split[i]);
+                    eventPercent.add(i1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            videoPlayerPanel.setMainPanel(true);
         }
 
         for (Thread thread : threadList) {
@@ -63,9 +195,18 @@ public class VideoPlayer extends JPanel {
             }
         }
 
-        this.add(mainVideoPane, BorderLayout.CENTER);
+        centralPane.add(mainVideoPane);
+
+        this.add(centralPane, BorderLayout.CENTER);
         JPanel buttonsPane = new JPanel(new FlowLayout());
         buttonsPane.setPreferredSize(new Dimension(1090, 35));
+        saveImageButton = new JButton("КАДР");
+        saveImageButton.addActionListener((e) -> {
+            if (isPAUSE()) {
+                SaveIMAGE = true;
+                saveImageButton.setForeground(Color.blue);
+            }
+        });
 
         JButton nextImage = new JButton("NEXT");
         nextImage.addActionListener((e) -> {
@@ -74,10 +215,10 @@ public class VideoPlayer extends JPanel {
             setPAUSE(true);
             setNextIMAGE(true);
             setPrewIMAGE(false);
-
-            informLabel.setText("NEXT");
             prewImagesInt = 0;
             nextImagesInt++;
+            informLabel.setText("+" + nextImagesInt);
+            saveImageButton.setForeground(new Color(14, 172, 37));
         });
 
         JButton previousImage = new JButton("PREV");
@@ -87,53 +228,60 @@ public class VideoPlayer extends JPanel {
             setPAUSE(true);
             setNextIMAGE(false);
             setPrewIMAGE(true);
-            informLabel.setText("PREV");
             prewImagesInt++;
             nextImagesInt = 0;
+            informLabel.setText("-" + prewImagesInt);
+
+            saveImageButton.setForeground(new Color(14, 172, 37));
         });
 
         JButton slowerButton = new JButton("<<");
         slowerButton.addActionListener((e) -> {
             if (countDoNotShowImage == 0) {
-                informLabel.setText("<<");
-                VideoPlayer.speed = ((VideoPlayer.speed + 1) * 20);
+                VideoPlayer.speed = VideoPlayer.speed + 100;
+                if (speed > 900) {
+                    speed = 900;
+                }
+                double s = (double) (1000 - speed) / 1000;
+                speedLabel.setText((int) (s * 100) + "%");
             } else {
                 countDoNotShowImage--;
-                informLabel.setText((countDoNotShowImage * 2) + "X");
+                speedLabel.setText((countDoNotShowImage * 2) + "X");
                 if (countDoNotShowImage < 1) {
                     countDoNotShowImage = 0;
                 }
             }
-
-            if (speed > 1000) {
-                speed = 1000;
+            if (countDoNotShowImage == 0 && speed == 0) {
+                speedLabel.setText(100 + "%");
             }
-
-
-            System.out.println("Пропускаем кадров - " + countDoNotShowImage);
-            System.out.println("Засыпаем на милисекунд - " + speed);
+            saveImageButton.setForeground(Color.LIGHT_GRAY);
         });
 
         JButton fasterButton = new JButton(">>");
         fasterButton.addActionListener((e) -> {
             if (speed == 0) {
                 countDoNotShowImage++;
-                informLabel.setText((countDoNotShowImage * 2) + "X");
                 if (countDoNotShowImage > 9) {
                     countDoNotShowImage = 10;
                 }
+                speedLabel.setText((countDoNotShowImage * 2) + "X");
             } else {
-                informLabel.setText(">>");
-                VideoPlayer.speed = (int) ((VideoPlayer.speed + 1) * 0.05);
+                speed = speed - 100;
+                if (speed < 1) {
+                    speed = 0;
+                }
+
+                double s = (double) (1000 - speed) / 1000;
+                speedLabel.setText((int) (s * 100) + "%");
             }
 
-            if (speed < 1) {
-                speed = 0;
+            if (countDoNotShowImage == 0 && speed == 0) {
+                speedLabel.setText(100 + "%");
             }
 
-            System.out.println("Пропускаем кадров - " + countDoNotShowImage);
-            System.out.println("Засыпаем на милисекунд - " + speed);
+            saveImageButton.setForeground(Color.LIGHT_GRAY);
         });
+
 
         JButton playButton = new JButton("PLAY");
         playButton.addActionListener(actionEvent -> {
@@ -143,6 +291,14 @@ public class VideoPlayer extends JPanel {
             setNextIMAGE(false);
             setPrewIMAGE(false);
             informLabel.setText("PLAY");
+            if (speed == 0) {
+                speedLabel.setText((countDoNotShowImage * 2) + "X");
+            } else {
+                double s = (1000 - speed) / 1000;
+                speedLabel.setText(s + "X");
+            }
+
+            saveImageButton.setForeground(Color.LIGHT_GRAY);
         });
 
         JButton pauseButton = new JButton("PAUSE");
@@ -153,7 +309,9 @@ public class VideoPlayer extends JPanel {
             setNextIMAGE(false);
             setPrewIMAGE(false);
             informLabel.setText("PAUSE");
+            saveImageButton.setForeground(new Color(14, 172, 37));
         });
+
         JButton stopButton = new JButton("STOP");
         stopButton.addActionListener(actionEvent -> {
             setPLAY(false);
@@ -162,20 +320,25 @@ public class VideoPlayer extends JPanel {
             setNextIMAGE(false);
             setPrewIMAGE(false);
             informLabel.setText("STOP");
+            saveImageButton.setForeground(Color.LIGHT_GRAY);
         });
-
 
         JLabel label1 = new JLabel(date);
         sliderLabel = new JLabel("0 %");
         sliderLabel.setPreferredSize(new Dimension(50, 10));
         informLabel = new JLabel("STOP");
         informLabel.setPreferredSize(new Dimension(50, 10));
+        speedLabel = new JLabel("SPEED");
+        speedLabel.setPreferredSize(new Dimension(50, 10));
+        FPSLabel.setPreferredSize(new Dimension(80, 10));
+        buttonsPane.add(backButton);
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(label1);
-        buttonsPane.add(Box.createRigidArea(new Dimension(20, 10)));
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(informLabel);
-        buttonsPane.add(Box.createRigidArea(new Dimension(20, 10)));
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(sliderLabel);
-        buttonsPane.add(Box.createRigidArea(new Dimension(20, 10)));
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(previousImage);
         buttonsPane.add(slowerButton);
         buttonsPane.add(playButton);
@@ -183,7 +346,13 @@ public class VideoPlayer extends JPanel {
         buttonsPane.add(stopButton);
         buttonsPane.add(fasterButton);
         buttonsPane.add(nextImage);
-        buttonsPane.add(Box.createRigidArea(new Dimension(250, 10)));
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+        buttonsPane.add(speedLabel);
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+        buttonsPane.add(FPSLabel);
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+        buttonsPane.add(saveImageButton);
+        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         JPanel southPane = new JPanel();
 
         sliderPanel = new JPanel();
@@ -191,6 +360,8 @@ public class VideoPlayer extends JPanel {
         sliderPanel.setLayout(layout);
         sliderPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         sliderPanel.setPreferredSize(new Dimension(800, 30));
+
+        list = new ArrayList<>();
         for (int i = 1; i < 100; i++) {
 //            JPanel panel = new JPanel();
 //            panel.setPreferredSize(new Dimension(10,10));
@@ -214,23 +385,22 @@ public class VideoPlayer extends JPanel {
 //            }
 
 //            JLabel label = new JLabel(String.valueOf((char) 8623));
-            JLabel label = new JLabel(String.valueOf((char) 9899));
-            label.setForeground(Color.LIGHT_GRAY);
 //            JLabel label = new JLabel(String.valueOf((char) 8226));
-//            label.setFont(new Font("Comic Sans MS",Font.BOLD,12));
+//            JLabel label = new JLabel(String.valueOf((char) 9899));
+            JLabel label = new JLabel(String.valueOf((char) 8623));
+            label.setForeground(Color.LIGHT_GRAY);
             int finalI = i;
             label.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    System.out.println("Значение на слайдере изменилось на: " + finalI);
                     setSetPOSITION(true);
                     position = finalI;
-                    System.out.println("Установили SETPOSSITION - " + finalI);
                 }
             });
             sliderPanel.add(label);
             list.add(label);
         }
+
         southPane.setLayout(new BoxLayout(southPane, BoxLayout.Y_AXIS));
         southPane.add(sliderPanel);
         southPane.add(buttonsPane);
@@ -240,15 +410,15 @@ public class VideoPlayer extends JPanel {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == 37) {
-                    System.out.println("Нажали клавишу Предидущий кадр");
                     setPLAY(false);
                     setSTOP(false);
                     setPAUSE(true);
                     setNextIMAGE(false);
                     setPrewIMAGE(true);
-                    informLabel.setText("PREV");
                     prewImagesInt++;
                     nextImagesInt = 0;
+                    informLabel.setText("-" + prewImagesInt);
+                    saveImageButton.setForeground(new Color(14, 172, 37));
                 }
             }
         });
@@ -257,20 +427,23 @@ public class VideoPlayer extends JPanel {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == 39) {
-                    System.out.println("Нажали клавишу СЛЕДУЮЩИЙ КАДР");
                     setPLAY(false);
                     setSTOP(false);
                     setPAUSE(true);
                     setNextIMAGE(true);
                     setPrewIMAGE(false);
 
-                    informLabel.setText("NEXT");
                     prewImagesInt = 0;
                     nextImagesInt++;
+                    informLabel.setText("+" + nextImagesInt);
+                    saveImageButton.setForeground(new Color(14, 172, 37));
                 }
             }
         });
+    }
 
+    static void setSetPOSITION(boolean setPOSITION) {
+        SetPOSITION = setPOSITION;
     }
 
     static int getPosition() {
@@ -304,11 +477,19 @@ public class VideoPlayer extends JPanel {
     static void setSliderPosition(int position) {
 
         for (int i = 0; i < position - 1; i++) {
-            list.get(i).setForeground(new Color(4, 12, 247));
+            if (eventPercent.contains(i)) {
+                list.get(i).setForeground(Color.RED);
+            } else {
+                list.get(i).setForeground(new Color(4, 12, 247));
+            }
         }
 
         for (int i = position; i < list.size(); i++) {
-            list.get(i).setForeground(Color.LIGHT_GRAY);
+            if (eventPercent.contains(i)) {
+                list.get(i).setForeground(Color.RED);
+            } else {
+                list.get(i).setForeground(Color.LIGHT_GRAY);
+            }
         }
         sliderPanel.repaint();
         sliderLabel.setText(position + "%");
@@ -317,11 +498,6 @@ public class VideoPlayer extends JPanel {
 
     static boolean isSetPOSITION() {
         return SetPOSITION;
-    }
-
-    static void setSetPOSITION(boolean setPOSITION) {
-        System.out.println("possition " + setPOSITION);
-        SetPOSITION = setPOSITION;
     }
 
     static int getSpeed() {
@@ -362,5 +538,24 @@ public class VideoPlayer extends JPanel {
 
     static int getPrewImagesInt() {
         return prewImagesInt;
+    }
+
+    static void setCountDoNotShowImage(int countDoNotShowImage) {
+        VideoPlayer.countDoNotShowImage = countDoNotShowImage;
+    }
+
+    static void setSpeed(int speed) {
+        VideoPlayer.speed = speed;
+    }
+
+    public static boolean isSaveIMAGE() {
+        return SaveIMAGE;
+    }
+
+    public static void setSaveIMAGE(boolean saveIMAGE) {
+        if (!saveIMAGE) {
+            saveImageButton.setForeground(Color.LIGHT_GRAY);
+        }
+        SaveIMAGE = saveIMAGE;
     }
 }

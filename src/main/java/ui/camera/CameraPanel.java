@@ -1,5 +1,6 @@
 package ui.camera;
 
+import com.sun.javafx.scene.control.behavior.CellBehaviorBase;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
@@ -8,6 +9,8 @@ import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.plaf.LayerUI;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -28,18 +31,22 @@ public class CameraPanel extends JPanel {
     private JLabel label;
     public CameraPanel(VideoCreator videoCreator) {
         label = new JLabel("Камера не працюе");
-        label.setHorizontalTextPosition(SwingConstants.RIGHT);
+        label.setHorizontalAlignment(SwingConstants.CENTER);
 
-        setPreferredSize(new Dimension(260,230));
+
         cameraWindow = new CameraWindow();
-        JPanel cameraWindowPane = new JPanel();
-        cameraWindowPane.add(cameraWindow);
         LayerUI<JPanel> layerUI = new MyLayer();
-        cameraWindowLayer = new JLayer<>(cameraWindowPane, layerUI);
+        cameraWindowLayer = new JLayer<>(cameraWindow, layerUI);
+//        cameraWindow = new CameraWindow();
+//        JPanel cameraWindowPane = new JPanel();
+//        cameraWindowPane.add(cameraWindow);
+//        LayerUI<JPanel> layerUI = new MyLayer();
+//        cameraWindowLayer = new JLayer<>(cameraWindowPane, layerUI);
 
-        this.setLayout(new BorderLayout());
+        GridLayout gridLayoutThis = new GridLayout(1,1);
+        this.setLayout(gridLayoutThis);
+
         this.add(label);
-
         title = BorderFactory.createTitledBorder("FPS = 0");
         title.setTitleJustification(TitledBorder.CENTER);
         title.setTitleFont((new Font("Comic Sans MS", Font.BOLD, 10)));
@@ -65,12 +72,43 @@ public class CameraPanel extends JPanel {
         @Override
         public void paint(Graphics g, JComponent c) {
             super.paint(g, c);
-
             if (videoCatcher.getVideoCreator().getBufferedImageBack() != null) {
-                g.drawImage(animateCircle(VideoCatcher.processImage(videoCatcher.getVideoCreator().getBufferedImageBack(),width,height),BufferedImage.TYPE_INT_ARGB), 0, 0, null);
+                g.drawImage(animateCircle(processImage(videoCatcher.getVideoCreator().getBufferedImageBack(),width,height),BufferedImage.TYPE_INT_ARGB), 0, 0, null);
                 g.dispose();
             }
         }
+    }
+
+    private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
+        BufferedImage bi2 = null;
+        double max;
+        int size;
+        int ww = maxWidth - bi.getWidth();
+        int hh = maxHeight - bi.getHeight();
+
+        if (ww < 0 || hh < 0) {
+            if (ww < hh) {
+                max = maxWidth;
+                size = bi.getWidth();
+            } else {
+                max = maxHeight;
+                size = bi.getHeight();
+            }
+
+            if (size > 0 && size > max) {
+                double trans = 1.0 / (size / max);
+                AffineTransform tr = new AffineTransform();
+                tr.scale(trans, trans);
+                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BILINEAR);
+                Double w = bi.getWidth() * trans;
+                Double h = bi.getHeight() * trans;
+                bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
+                op.filter(bi, bi2);
+            }
+        } else {
+            return bi;
+        }
+        return bi2;
     }
 
     class CameraWindow extends JPanel{
