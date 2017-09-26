@@ -62,7 +62,7 @@ public class CameraAddressSetting extends JPanel {
 //            JTextField firstCameraTextField = new JTextField("http://195.235.198.107:3346/axis-cgi/mjpg/video.cgi?size=640x480");
             firstCameraTextField.setPreferredSize(new Dimension(250, 25));
 
-            JLabel firstCameraUserNameLabel = new JLabel("Username");
+            JLabel firstCameraUserNameLabel = new JLabel("Ім'я");
             JTextField firstCameraUserNameTextField = new JTextField();
             firstCameraUserNameTextField.setPreferredSize(new Dimension(100, 25));
             JLabel firstCameraPasswordLabel = new JLabel("Пароль");
@@ -86,7 +86,7 @@ public class CameraAddressSetting extends JPanel {
             JTextField secondCameraTextField = new JTextField();
             secondCameraTextField.setPreferredSize(new Dimension(250, 25));
 
-            JLabel secondCameraUserNameLabel = new JLabel("Username");
+            JLabel secondCameraUserNameLabel = new JLabel("Ім'я");
             JTextField secondCameraUserNameTextField = new JTextField();
             secondCameraUserNameTextField.setPreferredSize(new Dimension(100, 25));
 
@@ -156,7 +156,6 @@ public class CameraAddressSetting extends JPanel {
                     if (bufferedImage != null) {
                         MainFrame.addImage(bufferedImage, number);
                         MainFrame.creatorMap.get(number).setBufferedImageBack(bufferedImage);
-                        System.out.println("Была нажата кнопка открыть");
                     }
 
                     String text = addImageLabel.getText();
@@ -184,7 +183,6 @@ public class CameraAddressSetting extends JPanel {
             buttonPane.add(addImageButton);
             buttonPane.add(Box.createRigidArea(new Dimension(20, 10)));
             buttonPane.add(removeButton);
-
 
             inputPanel.add(cameraBlock);
             inputPanel.add(Box.createRigidArea(new Dimension(10, 20)));
@@ -215,11 +213,12 @@ public class CameraAddressSetting extends JPanel {
         mainCameraSettingPanel.add(Box.createRigidArea(new Dimension(900, 20)));
         mainCameraSettingPanel.add(saveButton);
 
-        for (Integer integer : MainFrame.imagesForBlock.keySet()) {
-            if (labelMap.containsKey(integer)) {
-                labelMap.get(integer).setText("Зображення додане");
-                labelMap.get(integer).setForeground(new Color(46, 139, 87));
-            }
+    }
+
+    public void setHaveImage(int integer){
+        if (labelMap.containsKey(integer)) {
+            labelMap.get(integer).setText("Зображення додане");
+            labelMap.get(integer).setForeground(new Color(46, 139, 87));
         }
     }
 

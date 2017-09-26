@@ -162,7 +162,6 @@ public class MainFrame extends JFrame {
                     }
                 }
             }
-
             centralPanel.removeAll();
             centralPanel.add(allCameraPanel);
             centralPanel.repaint();
@@ -214,13 +213,11 @@ public class MainFrame extends JFrame {
 
         JButton startButton = new JButton("REC");
         startButton.addActionListener((e -> {
-            VideoPlayer.setShowVideoPlayer(false);
             MainVideoCreator.startCatchVideo(false);
         }));
 
         JButton startButtonProgrammingCatch = new JButton("REC PR");
         startButtonProgrammingCatch.addActionListener((e -> {
-            VideoPlayer.setShowVideoPlayer(false);
             MainVideoCreator.startCatchVideo(true);
         }));
 
@@ -275,14 +272,18 @@ public class MainFrame extends JFrame {
                 usedMemoryLabel.repaint();
 
                 if (VideoPlayer.isShowVideoPlayer()) {
-                    if (playInt == 0) {
-                        VideoPlayer.informLabel.setForeground(Color.RED);
-                        VideoPlayer.informLabel.repaint();
-                        playInt++;
-                    } else {
-                        playInt = 0;
-                        VideoPlayer.informLabel.setForeground(Color.LIGHT_GRAY);
-                        VideoPlayer.informLabel.repaint();
+                    try{
+                        if (playInt == 0) {
+                            VideoPlayer.informLabel.setForeground(Color.RED);
+                            VideoPlayer.informLabel.repaint();
+                            playInt++;
+                        } else {
+                            playInt = 0;
+                            VideoPlayer.informLabel.setForeground(Color.LIGHT_GRAY);
+                            VideoPlayer.informLabel.repaint();
+                        }
+                    } catch (NullPointerException e){
+                        e.printStackTrace();
                     }
                 }
 

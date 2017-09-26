@@ -116,6 +116,8 @@ public class AddressSaver {
             }
         }
 
+
+
         if(passwordSaver!= null){
             return passwordSaver;
         }else {
@@ -138,6 +140,10 @@ public class AddressSaver {
         Map<Integer, JTextField> textFieldsPasswordMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsPasswordMap();
         for(Integer integer:textFieldsPasswordMap.keySet()){
             textFieldsPasswordMap.get(integer).setText(arr[integer+15]);
+        }
+
+        for(Integer integer:MainFrame.imagesForBlock.keySet()){
+            CameraAddressSetting.getCameraAddressSetting().setHaveImage(integer);
         }
     }
 

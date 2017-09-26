@@ -19,7 +19,7 @@ public class VideoCatcher implements Runnable {
 
     private int whitePercent = -1;
     private int numberGRB;
-
+    private boolean programLightCatchWork;
 
 
 
@@ -49,7 +49,6 @@ public class VideoCatcher implements Runnable {
 
     private Thread fpsThread;
     private int fpsNotZero;
-    private boolean mainCamera;
 
     private int stopSaveVideoInt;
     private int sizeVideoSecond;
@@ -75,6 +74,13 @@ public class VideoCatcher implements Runnable {
                     if(settingCountDoNotShowImages!=MainFrame.getDoNotShowImages()){
                         settingCountDoNotShowImages=MainFrame.getDoNotShowImages();
                     }
+
+                    if(MainFrame.isProgramLightCatchWork()){
+                        programLightCatchWork = true;
+                    } else {
+                        programLightCatchWork = false;
+                    }
+
                     panel.getTitle().setTitle("FPS = " + fps + ". WHITE: " + whitePercent + " %");
                     if (fps != 0) {
                         fpsNotZero = fps;
@@ -103,9 +109,6 @@ public class VideoCatcher implements Runnable {
                         stopSaveVideoInt++;
                         if (stopSaveVideoInt == sizeVideoSecond) {
                             stopSaveVideo = true;
-                        }
-                        if (mainCamera) {
-                            MainFrame.showInformMassage("Залишилось секунд " + (sizeVideoSecond - stopSaveVideoInt), true);
                         }
                     }
                 } else {
@@ -191,6 +194,7 @@ public class VideoCatcher implements Runnable {
                                 image = ImageIO.read(inputStream);
                                 inputStream.close();
                                 panel.setBufferedImage(processImage(image, maxWidth, maxHeight));
+//                                panel.setBufferedImage(processImageNew(image, maxWidth, maxHeight));
                                 panel.repaint();
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -283,7 +287,24 @@ public class VideoCatcher implements Runnable {
         stopSaveVideoInt = 0;
     }
 
+    private BufferedImage processImageNew(BufferedImage bi, int maxWidth, int maxHeight) {
+        if(bi.getWidth()<maxWidth||bi.getHeight()<maxHeight){
+            return bi;
+        } else {
+            BufferedImage smallImage = new BufferedImage(maxWidth,maxHeight,BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = smallImage.createGraphics();
+            Image scaled = bi.getScaledInstance(maxWidth,
+                    maxHeight, Image.SCALE_SMOOTH);
+            g.drawImage(scaled, 0, 0, null);
+//            g.drawImage(bi, 0, 0, maxWidth, maxHeight, null);
+            g.dispose();
+            return smallImage;
+        }
+    }
+
+
     private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
+
         BufferedImage bi2 = null;
         double max;
         int size;
@@ -313,12 +334,16 @@ public class VideoCatcher implements Runnable {
             }
         }
 
-        if (bi2 != null) {
+        if (programLightCatchWork) {
             int[] rgb1 = bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), null, 0, 2048);
             int countWhite = 0;
             int allPixels = rgb1.length;
 
             int k = 30 - (settingCountDoNotShowImages*2);
+
+            if(k<10){
+                k=10;
+            }
 
             for (int i = 0; i < allPixels; i=i+k) {
               if (rgb1[i] > numberGRB && rgb1[i] < -1) {
@@ -329,10 +354,8 @@ public class VideoCatcher implements Runnable {
             if(countWhite!=0){
                 countWhite = countWhite * k;
             }
-
             double percent = (double) countWhite / allPixels;
             int percentInt = (int) (percent * 100);
-
             if (whitePercent != -1) {
                 int differentWhitePercent = Math.abs(percentInt - whitePercent);
                 if (differentWhitePercent > MainFrame.getPercentDiffWhite()) {
@@ -346,9 +369,11 @@ public class VideoCatcher implements Runnable {
             } else {
                 whitePercent = percentInt;
             }
+        }
+
+        if(bi2!=null){
             return bi2;
-        } else {
-            whitePercent = -1;
+        }else {
             return bi;
         }
     }
@@ -374,10 +399,6 @@ public class VideoCatcher implements Runnable {
         panel.stopShowVideo();
         url = null;
         catchVideo = false;
-    }
-
-    public void setMainCamera(boolean mainCamera) {
-        this.mainCamera = mainCamera;
     }
 
     public boolean isFullSize() {
