@@ -29,6 +29,7 @@ public class CameraPanel extends JPanel {
     private TitledBorder title;
 
     private JLayer<JPanel> cameraWindowLayer;
+    private LayerUI<JPanel> layerUI;
     private JLabel label;
 
     public CameraPanel(VideoCreator videoCreator) {
@@ -36,7 +37,7 @@ public class CameraPanel extends JPanel {
         label = new JLabel("Камера не працюе");
         label.setHorizontalAlignment(SwingConstants.CENTER);
         cameraWindow = new CameraWindow();
-        LayerUI<JPanel> layerUI = new CameraPanel.MyLayer();
+        layerUI = new CameraPanel.MyLayer();
         cameraWindowLayer = new JLayer<>(cameraWindow, layerUI);
 
         GridLayout gridLayoutThis = new GridLayout(1,1);
@@ -53,6 +54,10 @@ public class CameraPanel extends JPanel {
         videoCatcher = new VideoCatcher(this,videoCreator);
         Thread thread = new Thread(videoCatcher);
         thread.start();
+    }
+
+    public void repaintCameraWindow(){
+        videoCatcher.getVideoCreator().setBufferedImageBack(null);
     }
 
     public void showCopyImage(){

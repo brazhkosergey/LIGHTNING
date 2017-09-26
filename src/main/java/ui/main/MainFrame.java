@@ -45,14 +45,11 @@ public class MainFrame extends JFrame {
     private static JLabel informLabel;
     private JLabel usedMemoryLabel;
 
-
     private static Map<Integer, CameraPanel> cameras;
     public static Map<Integer, List<String>> camerasAddress;
     private static Map<Integer, JPanel> cameraBlock;
     public static Map<Integer, BufferedImage> imagesForBlock;
     public static Map<Integer, VideoCreator> creatorMap;
-
-
 
     private static JLabel mainLabel = new JLabel("Головна");
     private JLabel recordLabel;
@@ -374,6 +371,14 @@ public class MainFrame extends JFrame {
 
     public static Map<Integer, CameraPanel> getCameras() {
         return cameras;
+    }
+
+    public static void removeImageForBlock(int number){
+        imagesForBlock.remove(number);
+        CameraPanel cameraPanel = cameras.get(number * 2 - 1);
+        cameraPanel.repaintCameraWindow();
+        CameraPanel cameraPanel1 = cameras.get(number * 2);
+        cameraPanel1.repaintCameraWindow();
     }
 
     public static void showInformMassage(String massage, boolean green) {

@@ -173,7 +173,9 @@ public class CameraAddressSetting extends JPanel {
                 if (imageFile.exists()) {
                     imageFile.delete();
                 }
-                MainFrame.creatorMap.remove(number);
+
+                MainFrame.removeImageForBlock(number);
+
                 addImageLabel.setText("Вибрати файл");
                 addImageLabel.setForeground(Color.BLACK);
 
