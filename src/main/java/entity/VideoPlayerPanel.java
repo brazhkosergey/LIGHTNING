@@ -1,7 +1,6 @@
 package entity;
 
 import ui.camera.CameraPanel;
-import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
@@ -12,12 +11,23 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoPlayerPanel extends JPanel {
+
+    private int whitePercent = -1;
+    private int numberGRB;
+
+
+
+
+
+
+
+
+
+
     private boolean isFullSize;
 
     private int width;
@@ -31,7 +41,8 @@ public class VideoPlayerPanel extends JPanel {
 
     private int FPS;
     private File file;
-    private Thread thread;
+    private Thread showVideoThread;
+    private Thread mainVideoThread;
 
     private int changeImage;
     private int nextImageInt;
@@ -49,7 +60,6 @@ public class VideoPlayerPanel extends JPanel {
 
     private Map<Integer, byte[]> buffMap;
     private int numberImageInBuffer;
-
 
     VideoPlayerPanel(File file, int numberVideoPanel) {
         this.numberVideoPanel = numberVideoPanel;
@@ -74,11 +84,11 @@ public class VideoPlayerPanel extends JPanel {
 
     void setWidthAndHeight(int width, int height) {
         isFullSize = width > 535;
-
         this.setPreferredSize(new Dimension(width+5,height+5));
         if(videoPlayerToShowOneVideo!=null){
             videoPlayerToShowOneVideo.setPreferredSize(new Dimension(width,height));
         }
+
         this.width = width-4;
         this.height = height-4;
     }
@@ -101,12 +111,11 @@ public class VideoPlayerPanel extends JPanel {
     private void createThread() {
         label = new JLabel("Натистіть PLAY");
         if (blockHaveVideo) {
-            thread = new Thread(() -> {
+            showVideoThread = new Thread(() -> {
                 while (blockHaveVideo) {
 
                     if (!VideoPlayer.isShowVideoPlayer()) {
                         blockHaveVideo = false;
-
                         if(fileInputStream!=null){
                             try {
                                 fileInputStream.close();
@@ -135,7 +144,6 @@ public class VideoPlayerPanel extends JPanel {
                             }
                             temporaryStream = null;
                         }
-                        break;
                     }
 
                     if (VideoPlayer.isPLAY()) {
@@ -174,6 +182,7 @@ public class VideoPlayerPanel extends JPanel {
                             } catch (FileNotFoundException e) {
                                 e.printStackTrace();
                             }
+
                             bufferedInputStream = new BufferedInputStream(fileInputStream);
 
                             if(temporaryStream!=null){
@@ -197,6 +206,7 @@ public class VideoPlayerPanel extends JPanel {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+
                         if (videoPlay) {
                             videoPlay = false;
                             this.remove(videoStreamLayer);
@@ -206,6 +216,8 @@ public class VideoPlayerPanel extends JPanel {
                         }
                     }
                 }
+                buffMap.clear();
+                this.mainPanel = false;
             });
         }
     }
@@ -271,7 +283,8 @@ public class VideoPlayerPanel extends JPanel {
 
                             temporaryStream.write(t);
                             temporaryStream.write(x);
-                        } else if (x == 217 && t == 255) {//конец изображения
+                        } else
+                            if (x == 217 && t == 255) {//конец изображения
                             byte[] imageBytes = temporaryStream.toByteArray();
 
                             buffMap.put(numberImageInBuffer++, imageBytes);
@@ -289,7 +302,7 @@ public class VideoPlayerPanel extends JPanel {
 
                                 if (image != null) {
                                     videoPlayerToShowOneVideo.setBufferedImage(processImage(image, width, height));
-//                                videoPlayerToShowOneVideo.repaint();
+                                videoPlayerToShowOneVideo.repaint();
 
                                     videoStreamLayer.repaint();
                                     changeImage = 0;
@@ -330,15 +343,7 @@ public class VideoPlayerPanel extends JPanel {
                 } else if (VideoPlayer.isPAUSE()) {
                     if(VideoPlayer.isSaveIMAGE()){
                         byte[] bytes = buffMap.get(numberImageInBuffer - countImageFramesChangeIng-1);
-//                        try {
-//                            inputImageStream = new ByteArrayInputStream(bytes);
-//                            bufferedInputImageStream = new BufferedInputStream(inputImageStream);
-//                            image = ImageIO.read(bufferedInputImageStream);
-//                            inputImageStream.close();
-//                            bufferedInputStream.close();
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
+
                         String path = "C:\\ipCamera\\"+System.currentTimeMillis()+"-"+numberVideoPanel+".jpg";
                         File file = new File(path);
                         try {
@@ -500,27 +505,33 @@ public class VideoPlayerPanel extends JPanel {
 
     void setMainPanel(boolean mainPanel) {
         this.mainPanel = mainPanel;
-        if (this.mainPanel) {
+        if (mainPanel) {
+            if(mainVideoThread==null){
+                mainVideoThread = new Thread(() -> {
+                    while (this.mainPanel) {
+                        VideoPlayer.FPSLabel.setText("FPS - " + FPS + ":"+whitePercent);
+                        VideoPlayer.FPSLabel.repaint();
 
-            Thread thread = new Thread(() -> {
-                while (mainPanel) {
-                    VideoPlayer.FPSLabel.setText("FPS - " + FPS);
-                    VideoPlayer.FPSLabel.repaint();
+                        FPS = 0;
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
 
-                    FPS = 0;
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        if(numberGRB!=MainFrame.getColorRGBNumber()){
+                            numberGRB = MainFrame.getColorRGBNumber();
+                        }
+
+                        if (!VideoPlayer.isShowVideoPlayer()) {
+                            break;
+                        }
                     }
-
-                    if (!VideoPlayer.isShowVideoPlayer()) {
-                        break;
-                    }
-                }
-            });
-            thread.start();
-            this.setBorder(BorderFactory.createLineBorder(Color.green));
+                    mainVideoThread = null;
+                });
+                mainVideoThread.start();
+                this.setBorder(BorderFactory.createLineBorder(Color.green));
+            }
         } else {
             this.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         }
@@ -555,15 +566,47 @@ public class VideoPlayerPanel extends JPanel {
         } else {
             return bi;
         }
-        return bi2;
+            int[] rgb1 = bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), null, 0, 2048);
+            int countWhite = 0;
+            int allPixels = rgb1.length;
+
+            int k = 10;
+
+            for (int i = 0; i < allPixels; i=i+k) {
+                if (rgb1[i] > numberGRB && rgb1[i] < -1) {
+                    countWhite++;
+                }
+            }
+
+            if(countWhite!=0){
+                countWhite = countWhite * k;
+            }
+
+            double percent = (double) countWhite / allPixels;
+            int percentInt = (int) (percent * 100);
+
+            if (whitePercent != -1) {
+                int differentWhitePercent = Math.abs(percentInt - whitePercent);
+                if (differentWhitePercent > MainFrame.getPercentDiffWhite()) {
+                    MainVideoCreator.startCatchVideo(true);
+                    whitePercent = -1;
+                } else {
+                    if (percentInt != whitePercent) {
+                        whitePercent = percentInt;
+                    }
+                }
+            } else {
+                whitePercent = percentInt;
+            }
+
+            return bi2;
     }
 
-
-    Thread getThread() {
-        return thread;
+    Thread getShowVideoThread() {
+        return showVideoThread;
     }
 
-    public String getFileName(){
+    String getFileName(){
         if(file!=null){
             return file.getName();
         } else {

@@ -16,9 +16,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoCatcher implements Runnable {
-    private static int settingCountDoNotShowImages = 5;
 
     private int whitePercent = -1;
+    private int numberGRB;
+
+
+
 
     private int fps;
     private int maxWidth;
@@ -26,10 +29,11 @@ public class VideoCatcher implements Runnable {
     private boolean isFullSize;
 
     private int countDoNotShowImages;
+    private int settingCountDoNotShowImages;
 
     private Map<Long, byte[]> bufferBytes;
     private Map<Long, byte[]> mapBytes;
-    private ArrayList<Integer> eventsFramesNumber;
+    private Map<Integer,Boolean> eventsFramesNumber;
     private Deque<Long> timeDeque;
 
     private VideoCreator videoCreator;
@@ -64,6 +68,13 @@ public class VideoCatcher implements Runnable {
                 }
 
                 if (catchVideo) {
+                    if(numberGRB!=MainFrame.getColorRGBNumber()){
+                        numberGRB = MainFrame.getColorRGBNumber();
+                    }
+
+                    if(settingCountDoNotShowImages!=MainFrame.getDoNotShowImages()){
+                        settingCountDoNotShowImages=MainFrame.getDoNotShowImages();
+                    }
                     panel.getTitle().setTitle("FPS = " + fps + ". WHITE: " + whitePercent + " %");
                     if (fps != 0) {
                         fpsNotZero = fps;
@@ -72,12 +83,12 @@ public class VideoCatcher implements Runnable {
                     if (!startSaveVideo) {
                         if (MainVideoCreator.isSaveVideo()) {
                             int frameCount = timeDeque.size();
-                            eventsFramesNumber.add(frameCount);
+                            eventsFramesNumber.put(frameCount,MainVideoCreator.isProgramingLightCatch());
                             startSaveVideo = true;
                         }
 
-                        if (sizeVideoSecond != MainFrame.timeToSave) {
-                            sizeVideoSecond = MainFrame.timeToSave;
+                        if (sizeVideoSecond != MainFrame.getTimeToSave()) {
+                            sizeVideoSecond = MainFrame.getTimeToSave();
                             while (true) {
                                 if (timeDeque.size() > sizeVideoSecond * fpsNotZero) {
                                     bufferBytes.remove(timeDeque.pollLast());
@@ -106,7 +117,7 @@ public class VideoCatcher implements Runnable {
         timeDeque = new ConcurrentLinkedDeque<>();
         bufferBytes = new HashMap<>();
         mapBytes = new HashMap<>();
-        eventsFramesNumber = new ArrayList<>();
+        eventsFramesNumber = new HashMap<>();
         this.videoCreator = videoCreator;
         this.panel = panel;
         setWidthAndHeight(270, 260);
@@ -159,7 +170,6 @@ public class VideoCatcher implements Runnable {
                         e.printStackTrace();
                     }
                 }
-
                 if (bufferedInputStream != null) {
                     t = x;
                     try {
@@ -175,8 +185,6 @@ public class VideoCatcher implements Runnable {
                         temporaryStream.write(x);
                     } else if (x == 217 && t == 255) {//конец изображения
                         byte[] imageBytes = temporaryStream.toByteArray();
-
-
                         if (countDoNotShowImages >= settingCountDoNotShowImages) {
                             ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
                             try {
@@ -221,7 +229,7 @@ public class VideoCatcher implements Runnable {
                             }
                             videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber);
                             mapBytes = new HashMap<>();
-                            eventsFramesNumber = new ArrayList<>();
+                            eventsFramesNumber = new HashMap<>();
                             stopSaveVideoInt = 0;
                             stopSaveVideo = false;
                             startSaveVideo = false;
@@ -271,8 +279,7 @@ public class VideoCatcher implements Runnable {
 
     public void continueSaveVideo() {
         int frameCount = timeDeque.size();
-        System.out.println("Продолжаем снимать видео. Уже сохранили секунд " + stopSaveVideoInt + " .Номер кадра " + frameCount);
-        eventsFramesNumber.add(frameCount);
+        eventsFramesNumber.put(frameCount,MainVideoCreator.isProgramingLightCatch());
         stopSaveVideoInt = 0;
     }
 
@@ -296,7 +303,9 @@ public class VideoCatcher implements Runnable {
                 double trans = 1.0 / (size / max);
                 AffineTransform tr = new AffineTransform();
                 tr.scale(trans, trans);
-                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BILINEAR);
+//                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BILINEAR);
+                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BICUBIC);
+//                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
                 Double w = bi.getWidth() * trans;
                 Double h = bi.getHeight() * trans;
                 bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
@@ -305,25 +314,29 @@ public class VideoCatcher implements Runnable {
         }
 
         if (bi2 != null) {
-
-            int[] rgb1 = bi2.getRGB(0, 0, bi2.getWidth(), bi2.getHeight(), null, 0, 2048);
+            int[] rgb1 = bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), null, 0, 2048);
             int countWhite = 0;
             int allPixels = rgb1.length;
-            for (int i = 0; i < allPixels; i++) {
-                if (rgb1[i] > -3618616 && rgb1[i] < -1) {
+
+            int k = 30 - (settingCountDoNotShowImages*2);
+
+            for (int i = 0; i < allPixels; i=i+k) {
+              if (rgb1[i] > numberGRB && rgb1[i] < -1) {
                     countWhite++;
                 }
+            }
+
+            if(countWhite!=0){
+                countWhite = countWhite * k;
             }
 
             double percent = (double) countWhite / allPixels;
             int percentInt = (int) (percent * 100);
 
-            System.out.println(allPixels + " -  пикселей всего. Белых пикселей - " + countWhite + ".Это процентов - " + percentInt);
-
             if (whitePercent != -1) {
                 int differentWhitePercent = Math.abs(percentInt - whitePercent);
-                if (differentWhitePercent > 10) {
-                    videoCreator.startSaveVideoProgram();
+                if (differentWhitePercent > MainFrame.getPercentDiffWhite()) {
+                    VideoCreator.startSaveVideoProgram();
                     whitePercent = -1;
                 } else {
                     if (percentInt != whitePercent) {
@@ -373,9 +386,5 @@ public class VideoCatcher implements Runnable {
 
     public boolean isCatchVideo() {
         return catchVideo;
-    }
-
-    public static void setSettingCountDoNotShowImages(int settingCountDoNotShowImages) {
-        VideoCatcher.settingCountDoNotShowImages = settingCountDoNotShowImages;
     }
 }

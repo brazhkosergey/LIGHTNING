@@ -36,12 +36,14 @@ public class MainFrame extends JFrame {
 
     private JPanel allCameraPanel;
 
-    private JLabel opacityLabel;
-    private JLabel qualityVideoLabel;
-    private JLabel countSaveVideo;
-    private JLabel usedMemoryLabel;
+    private static JLabel opacityLabel;
+    private static JLabel qualityVideoLabel;
+    private static JLabel countSaveVideo;
+    private static JLabel lightSensitivityLabel;
+    private static JLabel changeWhiteLabel;
 
     private static JLabel informLabel;
+    private JLabel usedMemoryLabel;
 
 
     private static Map<Integer, CameraPanel> cameras;
@@ -50,14 +52,20 @@ public class MainFrame extends JFrame {
     public static Map<Integer, BufferedImage> imagesForBlock;
     public static Map<Integer, VideoCreator> creatorMap;
 
-    public static int opacity;
+
 
     private static JLabel mainLabel = new JLabel("Головна");
-    JLabel recordLabel;
+    private JLabel recordLabel;
 
     public static AddressSaver addressSaver;
-    public static int timeToSave = 30;
-    public static boolean programWork = false;
+
+    private static int opacitySetting;
+    private static int timeToSave = 30;
+    private static int percentDiffWhite = 10;
+    private static int colorLightNumber = 200;
+    private static int colorRGBNumber = new Color(200,200,200).getRGB();
+    private static int doNotShowImages = 5;
+    private static boolean programLightCatchWork;
 
     private MainFrame() {
         super("LIGHTNING");
@@ -65,51 +73,52 @@ public class MainFrame extends JFrame {
         mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel,BoxLayout.Y_AXIS));
         northPanel = new JPanel();
-//        northPanel.setPreferredSize(new Dimension(1100,50));
         centralPanel = new JPanel();
         southPanel = new JPanel();
 
-        opacity = 30;
         imagesForBlock = new HashMap<>();
-        addressSaver = AddressSaver.restorePasswords();
         cameras = new HashMap<>();
         cameraBlock = new HashMap<>();
         camerasAddress = new HashMap<>();
         creatorMap = new HashMap<>();
 
-
         cameraAddressSetting = CameraAddressSetting.getCameraAddressSetting();
-        setting = Setting.getSetting();
         videoFilesPanel = VideoFilesPanel.getVideoFilesPanel();
 
-        informLabel = new JLabel("INFORM");
-        informLabel.setPreferredSize(new Dimension(250, 30));
+        informLabel = new JLabel();
+        informLabel.setPreferredSize(new Dimension(200, 30));
+
         opacityLabel = new JLabel("Прозорість: 30%");
-        opacityLabel.setPreferredSize(new Dimension(100, 30));
-        qualityVideoLabel = new JLabel("Траслюемо відео: 20%");
-        qualityVideoLabel.setPreferredSize(new Dimension(150, 30));
-        countSaveVideo = new JLabel("Зберігаемо "+timeToSave+" секунд");
-        countSaveVideo.setPreferredSize(new Dimension(150,30));
+        opacityLabel.setPreferredSize(new Dimension(110, 30));
+        qualityVideoLabel = new JLabel("Траслюемо: 20%");
+        qualityVideoLabel.setPreferredSize(new Dimension(120, 30));
+        countSaveVideo = new JLabel("Зберігаемо "+timeToSave+"сек.");
+        countSaveVideo.setPreferredSize(new Dimension(120,30));
+
+        lightSensitivityLabel = new JLabel("Чутливість: "+colorLightNumber);
+        changeWhiteLabel = new JLabel("Збільшення світла: "+percentDiffWhite+"%");
 
         usedMemoryLabel = new JLabel();
-        usedMemoryLabel.setPreferredSize(new Dimension(100, 30));
+        usedMemoryLabel.setPreferredSize(new Dimension(50, 30));
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1150, 720));
+        addressSaver = AddressSaver.restorePasswords();
         buildMainWindow();
+
         getContentPane().add(mainPanel, BorderLayout.CENTER);
         setVisible(true);
         pack();
 
-        cameraAddressSetting.restoreAddresses();
-        setting.setSetting();
+        addressSaver.setPasswordsToFields();
+        addressSaver.setSetting();
         cameraAddressSetting.saveAddressToMap();
+        setting = Setting.getSetting();
         showAllCameras();
 
         File fileTmp = new File("C:\\ipCamera\\bytes\\");
         fileTmp.mkdirs();
         File file = new File("C:\\ipCamera\\");
         file.mkdirs();
-        setCountSaveVideo(timeToSave);
     }
 
     public static MainFrame getMainFrame() {
@@ -164,9 +173,7 @@ public class MainFrame extends JFrame {
         cameraButton.setPreferredSize(new Dimension(120, 30));
         cameraButton.addActionListener((e) -> {
             VideoPlayer.setShowVideoPlayer(false);
-
             centralPanel.removeAll();
-            cameraAddressSetting.restoreAddresses();
             centralPanel.add(cameraAddressSetting);
             centralPanel.repaint();
             mainLabel.setText("Камери");
@@ -187,9 +194,7 @@ public class MainFrame extends JFrame {
         settingButton.setPreferredSize(new Dimension(120, 30));
         settingButton.addActionListener((e) -> {
             VideoPlayer.setShowVideoPlayer(false);
-
             centralPanel.removeAll();
-            setting.setSetting();
             setting.saveButton.setForeground(Color.BLACK);
             setting.saveButton.setText("Зберегти");
             centralPanel.add(setting);
@@ -206,11 +211,17 @@ public class MainFrame extends JFrame {
         recordLabel.setForeground(Color.DARK_GRAY);
         informPane.add(mainLabel);
         informPane.add(recordLabel);
-//        ====================================
+
         JButton startButton = new JButton("REC");
         startButton.addActionListener((e -> {
             VideoPlayer.setShowVideoPlayer(false);
-            MainVideoCreator.startCatchVideo();
+            MainVideoCreator.startCatchVideo(false);
+        }));
+
+        JButton startButtonProgrammingCatch = new JButton("REC PR");
+        startButtonProgrammingCatch.addActionListener((e -> {
+            VideoPlayer.setShowVideoPlayer(false);
+            MainVideoCreator.startCatchVideo(true);
         }));
 
         northPanel.add(mainWindowButton);
@@ -218,10 +229,9 @@ public class MainFrame extends JFrame {
         northPanel.add(videoButton);
         northPanel.add(settingButton);
         northPanel.add(startButton);
-        northPanel.add(Box.createHorizontalStrut(150));
+        northPanel.add(startButtonProgrammingCatch);
+        northPanel.add(Box.createHorizontalStrut(100));
         northPanel.add(informPane);
-
-//        mainPanel.add(northPanel, BorderLayout.NORTH);
         mainPanel.add(northPanel);
 
         Thread thread = new Thread(() -> {
@@ -291,7 +301,6 @@ public class MainFrame extends JFrame {
         GridLayout gridLayout = new GridLayout(2,2,2,2);
         allCameraPanel = new JPanel();
         allCameraPanel.setLayout(gridLayout);
-//        allCameraPanel.setPreferredSize(new Dimension(1110, 650));
 
         for (int i = 1; i < 5; i++) {
             JPanel blockPanel;
@@ -345,18 +354,20 @@ public class MainFrame extends JFrame {
 
     private void buildSouthPanel() {
         southPanel.setLayout(new FlowLayout());
-        southPanel.add(Box.createRigidArea(new Dimension(50, 30)));
         southPanel.add(countSaveVideo);
-        southPanel.add(Box.createRigidArea(new Dimension(10, 30)));
+        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
         southPanel.add(qualityVideoLabel);
-        southPanel.add(Box.createRigidArea(new Dimension(10, 30)));
+        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
         southPanel.add(opacityLabel);
-        southPanel.add(Box.createRigidArea(new Dimension(100, 30)));
-        southPanel.add(new JLabel("Використано - "));
-        southPanel.add(Box.createRigidArea(new Dimension(10, 20)));
-        southPanel.add(usedMemoryLabel);
+        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
+        southPanel.add(lightSensitivityLabel);
+        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
+        southPanel.add(changeWhiteLabel);
+        southPanel.add(Box.createRigidArea(new Dimension(20, 10)));
         southPanel.add(informLabel);
-//        mainPanel.add(southPanel, BorderLayout.SOUTH);
+        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
+        southPanel.add(new JLabel("Використано: "));
+        southPanel.add(usedMemoryLabel);
         mainPanel.add(southPanel);
     }
 
@@ -402,6 +413,8 @@ public class MainFrame extends JFrame {
         }
     }
 
+
+
     public void setCentralPanel(JPanel panel) {
         centralPanel.removeAll();
         centralPanel.add(panel);
@@ -409,23 +422,102 @@ public class MainFrame extends JFrame {
         centralPanel.repaint();
     }
 
-    public static JPanel getCentralPanel() {
-        return centralPanel;
-    }
-
-    public void setOpacityLabel(int opacity){
+    public static void setOpacitySetting(int opacity){
+        MainFrame.opacitySetting = opacity;
         opacityLabel.setText("Прозорість: "+opacity+"%");
         opacityLabel.repaint();
+        Float f = (float) opacity / 100;
+        System.out.println(" Прозрачность равна - " + f);
+        CameraPanel.setOpacity(f);
+
+
+
+
+
+        for(Integer integer: imagesForBlock.keySet()){
+            CameraPanel cameraPanel = cameras.get(integer);
+            if(cameraPanel.getVideoCatcher().isCatchVideo()){
+                cameraPanel.showCopyImage();
+            }
+        }
     }
 
-    public void setQualityVideoLabel( int qualityVideo){
-        qualityVideoLabel.setText("Траслюемо відео: "+qualityVideo+"%");
+    public static int getOpacitySetting() {
+        return opacitySetting;
+    }
+
+    public static void setQualityVideoLabel(int qualityVideo){
+        doNotShowImages = qualityVideo;
+
+        int s = 100;
+        if (qualityVideo != 0) {
+            s = 100 / qualityVideo;
+        }
+        qualityVideoLabel.setText("Траслюемо: "+s+"%");
         qualityVideoLabel.repaint();
     }
 
     public void setCountSaveVideo( int countSave){
-        countSaveVideo.setText("Зберігаемо "+countSave+" секунд");
+        timeToSave = countSave;
+        countSaveVideo.setText("Зберігаемо "+countSave+" сек.");
         countSaveVideo.repaint();
+    }
+
+    public static int getPercentDiffWhite() {
+        return percentDiffWhite;
+    }
+
+    public static void setPercentDiffWhite(int percentDiffWhite) {
+
+        MainFrame.percentDiffWhite = percentDiffWhite;
+        changeWhiteLabel.setText("Збільшення світла: "+percentDiffWhite+"%");
+        changeWhiteLabel.repaint();
+    }
+
+    public static int getColorLightNumber() {
+        return colorLightNumber;
+    }
+
+    public static void setColorLightNumber(int colorLightNumber) {
+        MainFrame.colorLightNumber = colorLightNumber;
+        lightSensitivityLabel.setText("Чутливість: "+colorLightNumber);
+        lightSensitivityLabel.repaint();
+        MainFrame.colorRGBNumber = new Color(colorLightNumber,colorLightNumber,colorLightNumber).getRGB();
+    }
+
+    public static int getColorRGBNumber() {
+        return colorRGBNumber;
+    }
+
+    public static boolean isProgramLightCatchWork() {
+        return programLightCatchWork;
+    }
+
+    public static void setProgramLightCatchWork(boolean programLightCatchWork) {
+        MainFrame.programLightCatchWork = programLightCatchWork;
+        if(programLightCatchWork){
+            lightSensitivityLabel.setForeground(new Color(23, 114, 26));
+            changeWhiteLabel.setForeground(new Color(23, 114, 26));
+        } else {
+            lightSensitivityLabel.setForeground(Color.LIGHT_GRAY);
+            changeWhiteLabel.setForeground(Color.LIGHT_GRAY);
+        }
+
+        lightSensitivityLabel.repaint();
+        changeWhiteLabel.repaint();
+    }
+
+    public static int getDoNotShowImages() {
+        return doNotShowImages;
+    }
+
+    public static int getTimeToSave() {
+        return timeToSave;
+    }
+
+    public static void setTimeToSave(int timeToSave) {
+        MainFrame.timeToSave = timeToSave;
+        countSaveVideo.setText("Зберігаемо "+timeToSave+"сек.");
     }
 }
 

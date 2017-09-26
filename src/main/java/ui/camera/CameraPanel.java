@@ -17,6 +17,7 @@ import java.io.IOException;
 
 
 public class CameraPanel extends JPanel {
+
     private static float opacity = 0.3F;
     private int width;
     private int height;
@@ -29,19 +30,14 @@ public class CameraPanel extends JPanel {
 
     private JLayer<JPanel> cameraWindowLayer;
     private JLabel label;
+
     public CameraPanel(VideoCreator videoCreator) {
+
         label = new JLabel("Камера не працюе");
         label.setHorizontalAlignment(SwingConstants.CENTER);
-
-
         cameraWindow = new CameraWindow();
-        LayerUI<JPanel> layerUI = new MyLayer();
+        LayerUI<JPanel> layerUI = new CameraPanel.MyLayer();
         cameraWindowLayer = new JLayer<>(cameraWindow, layerUI);
-//        cameraWindow = new CameraWindow();
-//        JPanel cameraWindowPane = new JPanel();
-//        cameraWindowPane.add(cameraWindow);
-//        LayerUI<JPanel> layerUI = new MyLayer();
-//        cameraWindowLayer = new JLayer<>(cameraWindowPane, layerUI);
 
         GridLayout gridLayoutThis = new GridLayout(1,1);
         this.setLayout(gridLayoutThis);
@@ -57,6 +53,10 @@ public class CameraPanel extends JPanel {
         videoCatcher = new VideoCatcher(this,videoCreator);
         Thread thread = new Thread(videoCatcher);
         thread.start();
+    }
+
+    public void showCopyImage(){
+        cameraWindowLayer.repaint();
     }
 
     public static BufferedImage animateCircle(BufferedImage originalImage, int type){

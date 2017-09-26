@@ -2,6 +2,7 @@ package ui.camera;
 
 import entity.MainVideoCreator;
 import org.jcodec.common.DictionaryCompressor;
+import ui.main.MainFrame;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -12,10 +13,14 @@ public class VideoCreator {
     private int cameraGroupNumber;
     private Map<Integer, Map<Long,byte[]>> mapOfMapByte;//должно быть два видео, с дальше слепить их в один файл.
     private List<byte[]> list;
-    private ArrayList<Integer> percentEventOfFrames;
+    private Map<Integer,Boolean> percentEventOfFrames;
+//    private ArrayList<Integer> percentEventOfFrames;
     private BufferedImage bufferedImageBack;
     private int[] arr = new int[3];
-    private List<List<Integer>> listArr;
+    private List<Map<Integer,Boolean>> listArr;
+//    private List<List<Integer>> listArr;
+
+    private static Thread programCatchThread = null;
 
     public VideoCreator(int cameraGroupNumber) {
         listArr = new ArrayList();
@@ -24,7 +29,8 @@ public class VideoCreator {
         this.cameraGroupNumber = cameraGroupNumber;
     }
 
-    void addMapByte(Integer integer, Map<Long, byte[]> longMap, int fps, List<Integer> framesNumberEvent) {
+    void addMapByte(Integer integer, Map<Long, byte[]> longMap, int fps, Map<Integer,Boolean> framesNumberEvent) {
+
         listArr.add(framesNumberEvent);
         arr[integer] = fps;
         mapOfMapByte.put(integer, longMap);
@@ -37,10 +43,18 @@ public class VideoCreator {
         return bufferedImageBack;
     }
 
-    public void startSaveVideoProgram(){
-
-
-
+    static void startSaveVideoProgram(){
+        if(programCatchThread==null){
+            programCatchThread = new Thread(() -> {
+                MainVideoCreator.startCatchVideo(true);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                programCatchThread = null;
+            });
+        }
     }
 
     public void setBufferedImageBack(BufferedImage bufferedImageBack) {
@@ -51,13 +65,15 @@ public class VideoCreator {
         Map<Long,byte[]> map1 = mapOfMapByte.get(1);
         Map<Long,byte[]> map2 = mapOfMapByte.get(2);
 
-        percentEventOfFrames = new ArrayList<>();
+        percentEventOfFrames = new HashMap<>();
         if(listArr.size() == 2){
-                int size=listArr.get(0).size();
-                for(int i=0;i<size;i++){
-                    double d1 = (double)listArr.get(0).get(i)/map1.size();
-                    percentEventOfFrames.add((int) (d1*100));
-                }
+            Map<Integer, Boolean> integerBooleanMap = listArr.get(0);
+            for(Integer integer:integerBooleanMap.keySet()){
+                Boolean aBoolean = integerBooleanMap.get(integer);
+                double d1 = (double)integer/map1.size();
+                percentEventOfFrames.put((int) (d1*100),aBoolean);
+            }
+
         } else {
             System.out.println("нет листов... "+ listArr.size());
         }
@@ -101,6 +117,6 @@ public class VideoCreator {
         connectVideoBytesFromMap();
         MainVideoCreator.putVideoFromCameraGroup(cameraGroupNumber, list,totalFPS,percentEventOfFrames);
         list = new ArrayList<>();
-        percentEventOfFrames = new ArrayList<>();
+        percentEventOfFrames = new HashMap<>();
     }
 }

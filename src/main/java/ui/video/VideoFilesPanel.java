@@ -7,29 +7,24 @@ import ui.main.MainFrame;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.List;
 
 public class VideoFilesPanel extends JPanel {
-    SimpleDateFormat dateFormat = new SimpleDateFormat();
+    private SimpleDateFormat dateFormat = new SimpleDateFormat();
     private static VideoFilesPanel videoFilesPanel;
 
-    public static Map<Long, Map<Integer, File>> mapOfFiles;
+    private static Map<Long, Map<Integer, File>> mapOfFiles;
 
-    JPanel mainPanel;
-    JScrollPane mainScrollPanel;
-    JPanel exportSettingPanel;
-    JSlider slider;
+    private JPanel mainPanel;
+    private JScrollPane mainScrollPanel;
+    private JPanel exportSettingPanel;
+    private JSlider slider;
 
     boolean play = false;
 
     private VideoFilesPanel() {
-//        map = new HashMap<>();
         mapOfFiles = new HashMap<>();
         buildVideoPanel();
     }
@@ -73,11 +68,6 @@ public class VideoFilesPanel extends JPanel {
         });
 
         sliderLabel.setText("FPS = "+slider.getValue());
-//        exportSettingPanel.add(exportSettingLabel);
-//        exportSettingPanel.add(Box.createRigidArea(new Dimension(100,50)));
-//        exportSettingPanel.add(sliderTextLabel);
-//        exportSettingPanel.add(sliderLabel);
-//        exportSettingPanel.add(slider);
         JPanel centralPanel= new JPanel(new FlowLayout());
         centralPanel.add(mainScrollPanel);
         centralPanel.add(exportSettingPanel);

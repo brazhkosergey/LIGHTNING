@@ -5,28 +5,24 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class VideoPlayer extends JPanel {
 
-    private static boolean showVideoPlayer = false;
+    private static boolean showVideoPlayer;
     private static boolean STOP;
     private static boolean PAUSE;
     private static boolean PLAY;
     private static boolean SetPOSITION;
     private static boolean NextIMAGE;
     private static boolean PrewIMAGE;
-
     private static boolean SaveIMAGE;
 
     private static int nextImagesInt;
     private static int prewImagesInt;
-
     private static int position;
-
-    private static List<JLabel> list;
-    private static JPanel sliderPanel;
 
     private static int countDoNotShowImage;
     private static int speed = 0;
@@ -35,24 +31,22 @@ public class VideoPlayer extends JPanel {
     private static JLabel speedLabel;
     static JLabel FPSLabel = new JLabel();
     private static JLabel sliderLabel;
-    private static List<Integer> eventPercent;
+
+    private static List<JLabel> list;
+    private static Map<Integer,Boolean> eventPercent;
     private static List<VideoPlayerPanel> videoPlayerPanels;
 
     private static JButton saveImageButton;
-    JPanel centralPane;
-    JPanel mainVideoPane;
-
+    private JPanel centralPane;
+    private JPanel mainVideoPane;
 
     public VideoPlayer(Map<Integer, File> map, String date) {
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         this.setPreferredSize(new Dimension(1100, 550));
         centralPane = new JPanel();
-//        centralPane.setPreferredSize(new Dimension(1100,550));
-
         mainVideoPane = new JPanel();
         GridLayout mainVideoPaneLayout = new GridLayout(2, 2, 5, 5);
         mainVideoPane.setLayout(mainVideoPaneLayout);
-
 
         JButton backButton = new JButton("BACK");
         backButton.addActionListener((e) -> {
@@ -89,16 +83,26 @@ public class VideoPlayer extends JPanel {
                 int first = name.indexOf("[");
                 int second = name.indexOf("]");
                 String substring = name.substring(first + 1, second);
-                System.out.println("Строка получилась " + substring);
                 String[] split = substring.split(",");
                 eventPercent.clear();
-                for (int i = 0; i < split.length; i++) {
-                    System.out.println(split[i]);
-                    try {
-                        int i1 = Integer.parseInt(split[i]);
-                        eventPercent.add(i1);
-                    } catch (Exception exx) {
-                        exx.printStackTrace();
+                for (String aSplit : split) {
+                    System.out.println(aSplit);
+                    boolean contains = aSplit.contains("(");
+                    if(contains){
+                        String s = aSplit.substring(1,aSplit.length()-1);
+                        try {
+                            int i1 = Integer.parseInt(s);
+                            eventPercent.put(i1,contains);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    } else {
+                        try {
+                            int i1 = Integer.parseInt(aSplit);
+                            eventPercent.put(i1,contains);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
                     }
                 }
                 videoPlayerPanel.setMainPanel(true);
@@ -109,7 +113,8 @@ public class VideoPlayer extends JPanel {
         });
 
         List<Thread> threadList = new ArrayList<>();
-        eventPercent = new ArrayList<>();
+
+        eventPercent = new HashMap<>();
         videoPlayerPanels = new ArrayList<>();
         int mainPanelNumber = 0;
         long mainFileSize = 0L;
@@ -144,27 +149,37 @@ public class VideoPlayer extends JPanel {
                         int first = name.indexOf("[");
                         int second = name.indexOf("]");
                         String substring = name.substring(first + 1, second);
-                        System.out.println("Строка получилась " + substring);
                         String[] split = substring.split(",");
                         eventPercent.clear();
                         for (String aSplit : split) {
                             System.out.println(aSplit);
-                            try {
-                                int i1 = Integer.parseInt(aSplit);
-                                eventPercent.add(i1);
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
+                            boolean contains = aSplit.contains("(");
+                            if(contains){
+                                String s = aSplit.substring(1,aSplit.length()-1);
+                                try {
+                                    int i1 = Integer.parseInt(s);
+                                    eventPercent.put(i1,contains);
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                            } else {
+                                try {
+                                    int i1 = Integer.parseInt(aSplit);
+                                    eventPercent.put(i1,contains);
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
                             }
                         }
                         videoPlayer.setMainPanel(true);
                         centralPane.removeAll();
                         centralPane.add(videoPlayer);
                         centralPane.repaint();
-                        backButton.setForeground(Color.GREEN);
+                        backButton.setForeground(new Color(23, 114, 26));
                     }
                 }
             });
-            threadList.add(videoPlayer.getThread());
+            threadList.add(videoPlayer.getShowVideoThread());
             mainVideoPane.add(videoPlayer);
             videoPlayerPanels.add(videoPlayer);
         }
@@ -175,15 +190,25 @@ public class VideoPlayer extends JPanel {
             int first = name.indexOf("[");
             int second = name.indexOf("]");
             String substring = name.substring(first + 1, second);
-            System.out.println("Строка получилась " + substring);
             String[] split = substring.split(",");
-            for (int i = 0; i < split.length; i++) {
-                System.out.println(split[i]);
-                try {
-                    int i1 = Integer.parseInt(split[i]);
-                    eventPercent.add(i1);
-                } catch (Exception e) {
-                    e.printStackTrace();
+            for (String aSplit : split) {
+
+                boolean contains = aSplit.contains("(");
+                if(contains){
+                    String s = aSplit.substring(1,aSplit.length()-1);
+                    try {
+                        int i1 = Integer.parseInt(s);
+                        eventPercent.put(i1,contains);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                } else {
+                    try {
+                        int i1 = Integer.parseInt(aSplit);
+                        eventPercent.put(i1,contains);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
             videoPlayerPanel.setMainPanel(true);
@@ -355,7 +380,8 @@ public class VideoPlayer extends JPanel {
         buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         JPanel southPane = new JPanel();
 
-        sliderPanel = new JPanel();
+        JPanel sliderPanel = new JPanel();
+        sliderPanel.setBackground(new Color(206, 247, 188));
         GridLayout layout = new GridLayout(1, 100, 0, 0);
         sliderPanel.setLayout(layout);
         sliderPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
@@ -363,32 +389,9 @@ public class VideoPlayer extends JPanel {
 
         list = new ArrayList<>();
         for (int i = 1; i < 100; i++) {
-//            JPanel panel = new JPanel();
-//            panel.setPreferredSize(new Dimension(10,10));
-//            panel.setBackground(Color.cyan);
-//            int finalI = i;
-//            panel.addMouseListener(new MouseAdapter() {
-//                @Override
-//                public void mouseClicked(MouseEvent e) {
-//                    System.out.println("Значение на слайдере изменилось на: " + finalI);
-//                    setSetPOSITION(true);
-//                    position = finalI;
-//                    System.out.println("Установили SETPOSSITION - "+finalI);
-//                }
-//            });
-//
-//            sliderPanel.add(panel);
-//            listP.add(panel);
-
-//            if(i==99){
-//                sliderPanel.add(new JLabel("!"));
-//            }
-
-//            JLabel label = new JLabel(String.valueOf((char) 8623));
-//            JLabel label = new JLabel(String.valueOf((char) 8226));
-//            JLabel label = new JLabel(String.valueOf((char) 9899));
             JLabel label = new JLabel(String.valueOf((char) 8623));
             label.setForeground(Color.LIGHT_GRAY);
+            label.setFont(new Font(null, Font.BOLD,13));
             int finalI = i;
             label.addMouseListener(new MouseAdapter() {
                 @Override
@@ -432,7 +435,6 @@ public class VideoPlayer extends JPanel {
                     setPAUSE(true);
                     setNextIMAGE(true);
                     setPrewIMAGE(false);
-
                     prewImagesInt = 0;
                     nextImagesInt++;
                     informLabel.setText("+" + nextImagesInt);
@@ -477,23 +479,32 @@ public class VideoPlayer extends JPanel {
     static void setSliderPosition(int position) {
 
         for (int i = 0; i < position - 1; i++) {
-            if (eventPercent.contains(i)) {
-                list.get(i).setForeground(Color.RED);
+            if(eventPercent.containsKey(i)){
+
+                if(eventPercent.get(i)){
+                    list.get(i).setForeground(new Color(23, 182, 42));
+                } else {
+                    list.get(i).setForeground(new Color(197, 99, 39));
+                }
             } else {
-                list.get(i).setForeground(new Color(4, 12, 247));
+                list.get(i).setForeground(new Color(4, 2, 133));
             }
         }
 
         for (int i = position; i < list.size(); i++) {
-            if (eventPercent.contains(i)) {
-                list.get(i).setForeground(Color.RED);
+            if(eventPercent.containsKey(i)){
+                if(eventPercent.get(i)){
+                    list.get(i).setForeground(new Color(24, 227, 42));
+                } else {
+                    list.get(i).setForeground(new Color(255, 113, 44));
+                }
+
             } else {
+//                list.get(i).setForeground(new Color(98, 99, 110));
                 list.get(i).setForeground(Color.LIGHT_GRAY);
             }
         }
-        sliderPanel.repaint();
         sliderLabel.setText(position + "%");
-        sliderLabel.repaint();
     }
 
     static boolean isSetPOSITION() {

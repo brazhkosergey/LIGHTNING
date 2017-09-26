@@ -2,7 +2,6 @@ package entity;
 
 import ui.main.MainFrame;
 import ui.setting.CameraAddressSetting;
-import ui.setting.Setting;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -22,9 +21,13 @@ import java.util.Map;
 @XmlRootElement(name = "address")
 public class AddressSaver {
 
-    String [] arr = new String[24];
-    int timeToSave = 0;
-    boolean programWork = false;
+    private String [] arr = new String[24];
+    private int timeToSave;
+    private boolean programWork;
+    private int changeWhitePercent;
+    private int lightSensitivity;
+    private int opacity;
+    private int doNotShowFrames;
 
     public void savePasswords(int numberOfCamera, String ipAddress,String username, String password){
         int ipAddressInt = numberOfCamera - 1;
@@ -37,7 +40,11 @@ public class AddressSaver {
         savePasswordSaverToFile();
     }
 
-    public void saveSetting(int i,boolean programWork){
+    public void saveSetting(int i,boolean programWork, int sliderChangeWhite, int lightSensitivity, int opacity,int doNotShowFrames){
+        this.changeWhitePercent = sliderChangeWhite;
+        this.lightSensitivity = lightSensitivity;
+        this.opacity = opacity;
+        this.doNotShowFrames = doNotShowFrames;
         timeToSave = i;
         this.programWork = programWork;
         savePasswordSaverToFile();
@@ -135,9 +142,11 @@ public class AddressSaver {
     }
 
     public void setSetting(){
-        MainFrame.timeToSave = timeToSave;
-        MainFrame.programWork = programWork;
-        Setting.checkBox.setSelected(programWork);
-        Setting.timeTextField.setText(String.valueOf(timeToSave));
+        MainFrame.setProgramLightCatchWork(programWork);
+        MainFrame.setPercentDiffWhite(changeWhitePercent);
+        MainFrame.setColorLightNumber(lightSensitivity);
+        MainFrame.setOpacitySetting(opacity);
+        MainFrame.setQualityVideoLabel(doNotShowFrames);
+        MainFrame.setTimeToSave(timeToSave);
     }
 }

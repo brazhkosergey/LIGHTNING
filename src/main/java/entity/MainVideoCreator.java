@@ -4,6 +4,7 @@ import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
 import com.xuggle.xuggler.ICodec;
 import org.jcodec.api.awt.AWTSequenceEncoder;
+import org.jcodec.common.DictionaryCompressor;
 import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.io.SeekableByteChannel;
 import org.jcodec.common.model.Rational;
@@ -12,7 +13,9 @@ import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,28 +27,29 @@ import java.util.concurrent.TimeUnit;
 public class MainVideoCreator {
     private static Date date;
     private static boolean saveVideo = false;
-//    private static boolean continueSaveVideo = false;
+    private static boolean programingLightCatch;
     private static Thread continueVideoThread;
     private static int secondVideoSave;
 
-    public static void startCatchVideo() {
+    public static void startCatchVideo(boolean programingLightCatch) {
 
-        if(!saveVideo){
+        MainVideoCreator.programingLightCatch = programingLightCatch;
+
+        if (!saveVideo) {
             MainVideoCreator.date = new Date(System.currentTimeMillis());
             saveVideo = true;
             continueVideoThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    while (true){
-                        MainFrame.showInformMassage("Збережено "+(secondVideoSave++)+" сек.",true);
-
+                    while (true) {
+                        MainFrame.showInformMassage("Збережено " + (secondVideoSave++) + " сек.", true);
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
 
-                        if(secondVideoSave == MainFrame.timeToSave){
+                        if (secondVideoSave == MainFrame.getTimeToSave()) {
                             break;
                         }
                     }
@@ -56,9 +60,9 @@ public class MainVideoCreator {
             continueVideoThread.start();
         } else {
             secondVideoSave = 0;
-            for(Integer integer:MainFrame.getCameras().keySet()){
+            for (Integer integer : MainFrame.getCameras().keySet()) {
                 VideoCatcher videoCatcher = MainFrame.getCameras().get(integer).getVideoCatcher();
-                if(videoCatcher.isCatchVideo()){
+                if (videoCatcher.isCatchVideo()) {
                     videoCatcher.continueSaveVideo();
                 }
             }
@@ -69,23 +73,28 @@ public class MainVideoCreator {
         saveVideo = false;
     }
 
-    private static void saveBytes(Integer numberOfGroup, List<byte[]> list, int totalFPS,List<Integer> percentOfFramesEvent) {
+    private static void saveBytes(Integer numberOfGroup, List<byte[]> list, int totalFPS, Map<Integer, Boolean> percentOfFramesEvent) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("[");
 
-        for (int i = 0;i<percentOfFramesEvent.size();i++){
-            int num = percentOfFramesEvent.get(i);
-            if(i != percentOfFramesEvent.size()-1){
-                stringBuilder.append(num).append(",");
-            }else {
-                stringBuilder.append(num);
+        int i = 0;
+
+        for (Integer integer : percentOfFramesEvent.keySet()) {
+            i++;
+            if (percentOfFramesEvent.get(integer)) {
+                stringBuilder.append("(").append(integer).append(")");
+            } else {
+                stringBuilder.append(integer);
+            }
+            if (i != percentOfFramesEvent.size()) {
+                stringBuilder.append(",");
             }
         }
 
         stringBuilder.append("]");
         String eventPercent = stringBuilder.toString();
 
-        String path = "C:\\ipCamera\\bytes\\" + date.getTime() + "-" + numberOfGroup + "(" + totalFPS + ")"+eventPercent+".tmp";
+        String path = "C:\\ipCamera\\bytes\\" + date.getTime() + "-" + numberOfGroup + "(" + totalFPS + ")" + eventPercent + ".tmp";
         System.out.println("Создаем файл - " + path);
 
         File file = new File(path);
@@ -232,9 +241,26 @@ public class MainVideoCreator {
         String dateString = dateFormat.format(date);
         String[] fpsSplit = split[1].split("\\.");
         String numberOfGroupCameraString = fpsSplit[0].substring(0, 1);
+        int integer = 0;
+        try {
+            integer = Integer.parseInt(numberOfGroupCameraString);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         String totalFpsString = fpsSplit[0].substring(2, 4);
         int totalFPS = Integer.parseInt(totalFpsString);
         String path = "C:\\ipCamera\\" + dateString + "_" + numberOfGroupCameraString + ".mp4";
+
+        float opacity = 0f;
+        BufferedImage imageToConnect = null;
+        boolean connectImage = false;
+        if (MainFrame.imagesForBlock.containsKey(integer)) {
+            imageToConnect = MainFrame.imagesForBlock.get(integer);
+            opacity = CameraPanel.getOpacity();
+            connectImage = true;
+            System.out.println("Соединяем изображения - " + connectImage + ". Прозрачность - " + opacity);
+        }
 
         File videoFile = new File(path);
         if (!videoFile.exists()) {
@@ -245,13 +271,12 @@ public class MainVideoCreator {
             }
         }
 
-
         final IMediaWriter writer = ToolFactory.makeWriter(path);
         boolean addVideoStream = false;
 
         long nextFrameTime = 0;
 
-        final long frameRate = 1000/totalFPS;
+        final long frameRate = 1000 / totalFPS;
 
         FileInputStream fileInputStream = null;
         try {
@@ -276,11 +301,9 @@ public class MainVideoCreator {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
                 temporaryStream.write(x);
                 if (x == 216 && t == 255) {// начало изображения
                     temporaryStream.reset();
-
                     temporaryStream.write(t);
                     temporaryStream.write(x);
                 } else if (x == 217 && t == 255) {//конец изображения
@@ -293,30 +316,42 @@ public class MainVideoCreator {
                         e.printStackTrace();
                     }
 
-                    if(image!=null){
+                    if (image != null) {
 
-                        if(!addVideoStream){
+                        if (!addVideoStream) {
                             writer.addVideoStream(0, 0,
                                     ICodec.ID.CODEC_ID_MPEG4,
                                     image.getWidth(), image.getHeight());
                             addVideoStream = true;
                         }
 
-                        writer.encodeVideo(0, image,nextFrameTime,
-                                TimeUnit.MILLISECONDS);
-                        nextFrameTime += frameRate;
-                        System.out.println("Пишем изображение - " + count++);
-                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
-                        image = null;
+                        BufferedImage conImage;
+                        if (connectImage) {
+                            conImage = connectImage(image, imageToConnect, opacity);
+                            writer.encodeVideo(0, conImage, nextFrameTime,
+                                    TimeUnit.MILLISECONDS);
+                            nextFrameTime += frameRate;
+                            System.out.println("Пишем изображение - " + count++);
+                            MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
+                        } else {
+                            if (image != null) {
+                                writer.encodeVideo(0, image, nextFrameTime,
+                                        TimeUnit.MILLISECONDS);
+                                nextFrameTime += frameRate;
+                                System.out.println("Пишем изображение - " + count++);
+                                MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
+                                image = null;
+                            }
+                        }
                     }
                 }
             }
 
             writer.flush();
             writer.close();
-            System.out.println("Сохраняем файл. Количесво изображений - " + count);
-            MainFrame.showInformMassage("Файл збережено. Всьго кадрів - " + count, true);
+            MainFrame.showInformMassage("Збережено. Кадрів - " + count, true);
         }
+
         try {
             fileInputStream.close();
             bufferedInputStream.close();
@@ -325,14 +360,25 @@ public class MainVideoCreator {
         }
     }
 
-    public static void putVideoFromCameraGroup(Integer numberOfGroup, List<byte[]> list, int totalFps, ArrayList<Integer> percentOfFramesEvent) {
+    public static BufferedImage connectImage(BufferedImage sourceImage, BufferedImage imageToConnect, float opacity) {
+        BufferedImage image = new BufferedImage(sourceImage.getWidth(), sourceImage.getHeight(), sourceImage.getType());
+        Graphics2D graphics = image.createGraphics();
+        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC, 1.0f));
+        graphics.drawImage(sourceImage, 0, 0, sourceImage.getWidth(), sourceImage.getHeight(), null);
+        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+        graphics.drawImage(imageToConnect, 0, 0, imageToConnect.getWidth(), imageToConnect.getHeight(), null);
+        graphics.dispose();
+        return image;
+    }
+
+    public static void putVideoFromCameraGroup(Integer numberOfGroup, List<byte[]> list, int totalFps, Map<Integer, Boolean> percentOfFramesEvent) {
         MainFrame.showInformMassage("Зберігаем файл - " + numberOfGroup, true);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        Thread thread = new Thread(() -> saveBytes(numberOfGroup, list, totalFps,percentOfFramesEvent));
+        Thread thread = new Thread(() -> saveBytes(numberOfGroup, list, totalFps, percentOfFramesEvent));
         thread.start();
         System.out.println("Номер группы - " + numberOfGroup + ". Размер листа в изображениями - " + list.size());
     }
@@ -340,11 +386,11 @@ public class MainVideoCreator {
     public static boolean isSaveVideo() {
         return saveVideo;
     }
+
+    public static boolean isProgramingLightCatch() {
+        return programingLightCatch;
+    }
 }
-
-
-
-
 
 
 //        public static void encodeVideoHumble(File file) {

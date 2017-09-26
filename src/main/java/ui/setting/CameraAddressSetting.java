@@ -253,8 +253,4 @@ public class CameraAddressSetting extends JPanel {
     public Map<Integer, JTextField> getTextFieldsPasswordMap() {
         return textFieldsPasswordMap;
     }
-
-    public void restoreAddresses() {
-        MainFrame.addressSaver.setPasswordsToFields();
-    }
 }
