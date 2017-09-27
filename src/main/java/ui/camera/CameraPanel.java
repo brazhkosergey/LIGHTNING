@@ -1,9 +1,5 @@
 package ui.camera;
 
-import com.sun.javafx.scene.control.behavior.CellBehaviorBase;
-import ui.main.MainFrame;
-
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
@@ -12,9 +8,6 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-
 
 public class CameraPanel extends JPanel {
 
@@ -29,7 +22,6 @@ public class CameraPanel extends JPanel {
     private TitledBorder title;
 
     private JLayer<JPanel> cameraWindowLayer;
-    private LayerUI<JPanel> layerUI;
     private JLabel label;
 
     public CameraPanel(VideoCreator videoCreator) {
@@ -37,7 +29,7 @@ public class CameraPanel extends JPanel {
         label = new JLabel("Камера не працюе");
         label.setHorizontalAlignment(SwingConstants.CENTER);
         cameraWindow = new CameraWindow();
-        layerUI = new CameraPanel.MyLayer();
+        LayerUI<JPanel> layerUI = new MyLayer();
         cameraWindowLayer = new JLayer<>(cameraWindow, layerUI);
 
         GridLayout gridLayoutThis = new GridLayout(1,1);

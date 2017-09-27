@@ -1,8 +1,6 @@
 package ui.setting;
 
-import entity.AddressSaver;
 import ui.main.MainFrame;
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
@@ -16,15 +14,12 @@ import java.util.List;
 import java.util.Map;
 
 public class CameraAddressSetting extends JPanel {
-
-
     private static CameraAddressSetting cameraAddressSetting;
     private JPanel mainCameraSettingPanel;
     private Map<Integer, JTextField> textFieldsIpAddressMap;
     private Map<Integer, JTextField> textFieldsUsernameMap;
     private Map<Integer, JTextField> textFieldsPasswordMap;
     private Map<Integer, JLabel> labelMap;
-
 
     private CameraAddressSetting() {
         this.setPreferredSize(new Dimension(1100, 600));

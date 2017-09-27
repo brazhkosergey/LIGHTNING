@@ -19,17 +19,6 @@ public class VideoPlayerPanel extends JPanel {
     private int whitePercent = -1;
     private int numberGRB;
 
-
-
-
-
-
-
-
-
-
-    private boolean isFullSize;
-
     private int width;
     private int height;
     private int numberVideoPanel;
@@ -83,7 +72,6 @@ public class VideoPlayerPanel extends JPanel {
     }
 
     void setWidthAndHeight(int width, int height) {
-        isFullSize = width > 535;
         this.setPreferredSize(new Dimension(width+5,height+5));
         if(videoPlayerToShowOneVideo!=null){
             videoPlayerToShowOneVideo.setPreferredSize(new Dimension(width,height));
@@ -91,10 +79,6 @@ public class VideoPlayerPanel extends JPanel {
 
         this.width = width-4;
         this.height = height-4;
-    }
-
-    public boolean isFullSize() {
-        return isFullSize;
     }
 
     class MyLayer extends LayerUI<JPanel> {
@@ -223,7 +207,6 @@ public class VideoPlayerPanel extends JPanel {
     }
 
     private void showFrames(int startBytePercent) {
-
         if (bufferedInputStream != null) {
             temporaryStream = new ByteArrayOutputStream(65535);
             int x = 0;
@@ -231,9 +214,26 @@ public class VideoPlayerPanel extends JPanel {
             BufferedImage image = null;
             if (startBytePercent > 0) {
                 long startByte = (long) (startBytePercent * fileSize) / 100;
-                int buffSize = (int) startByte;//TODO to large buff
+
+                int smallBuff = 0;
+                int maxBuffCount = 0;
+                if(startByte>2147483646){
+                    smallBuff = (int)(startByte%2147483646);
+                    maxBuffCount = (int)(startByte/2147483646);
+                } else {
+                  smallBuff = (int) startByte;
+                }
+
+                for(int i = 0;i<maxBuffCount;i++){
+                    try {
+                        bufferedInputStream.read(new byte[2147483646]);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
                 try {
-                    bufferedInputStream.read(new byte[buffSize]);
+                    bufferedInputStream.read(new byte[smallBuff]);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -245,7 +245,6 @@ public class VideoPlayerPanel extends JPanel {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                System.out.println("Прыгнули на " + startBytePercent + " процентов. ВЫчитали байт " + buffSize + " всего байт " + fileSize);
                 VideoPlayer.setSetPOSITION(false);
             }
 
@@ -261,8 +260,8 @@ public class VideoPlayerPanel extends JPanel {
                         VideoPlayer.setPLAY(false);
                         VideoPlayer.setPAUSE(false);
                         VideoPlayer.setSliderPosition(position);
-                        VideoPlayer.setCountDoNotShowImage(0);
-                        VideoPlayer.setSpeed(0);
+                        VideoPlayer.setCountDoNotShowImageToZero();
+                        VideoPlayer.setSpeedToZero();
                     }
                     return;
                 }else if(VideoPlayer.isSetPOSITION()) {
@@ -362,8 +361,9 @@ public class VideoPlayerPanel extends JPanel {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+
                         if(VideoPlayer.isSaveIMAGE()){
-                            VideoPlayer.setSaveIMAGE(false);
+                            VideoPlayer.ReSetSaveIMAGE();
                         }
                     }else if (VideoPlayer.isNextIMAGE()) {
                         if (nextImageInt != VideoPlayer.getNextImagesInt()) {
@@ -496,8 +496,8 @@ public class VideoPlayerPanel extends JPanel {
                     VideoPlayer.setPLAY(false);
                     VideoPlayer.setPAUSE(false);
                     VideoPlayer.setSliderPosition(position);
-                    VideoPlayer.setCountDoNotShowImage(0);
-                    VideoPlayer.setSpeed(0);
+                    VideoPlayer.setCountDoNotShowImageToZero();
+                    VideoPlayer.setSpeedToZero();
                 }
             }
         }

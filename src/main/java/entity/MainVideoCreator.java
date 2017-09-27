@@ -234,7 +234,8 @@ public class MainVideoCreator {
         long dateLong = Long.parseLong(split[0]);
         Date date = new Date(dateLong);
         SimpleDateFormat dateFormat = new SimpleDateFormat();
-        dateFormat.applyPattern("dd MM yyyy_HH-mm-ss");
+        dateFormat.applyPattern("dd MMMM yyyy,HH-mm-ss");
+//        dateFormat.applyPattern("dd MM yyyy_HH-mm-ss");
         String dateString = dateFormat.format(date);
         String[] fpsSplit = split[1].split("\\.");
         String numberOfGroupCameraString = fpsSplit[0].substring(0, 1);
@@ -247,7 +248,7 @@ public class MainVideoCreator {
 
         String totalFpsString = fpsSplit[0].substring(2, 4);
         int totalFPS = Integer.parseInt(totalFpsString);
-        String path = "C:\\ipCamera\\" + dateString + "_" + numberOfGroupCameraString + ".mp4";
+        String path = "C:\\ipCamera\\" + dateString + ", Группа камер -" + numberOfGroupCameraString + ".mp4";
 
         float opacity = 0f;
         BufferedImage imageToConnect = null;

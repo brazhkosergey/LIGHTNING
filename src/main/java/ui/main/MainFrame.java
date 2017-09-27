@@ -96,7 +96,7 @@ public class MainFrame extends JFrame {
         changeWhiteLabel = new JLabel("Збільшення світла: "+percentDiffWhite+"%");
 
         usedMemoryLabel = new JLabel();
-        usedMemoryLabel.setPreferredSize(new Dimension(50, 30));
+        usedMemoryLabel.setPreferredSize(new Dimension(100, 30));
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1150, 720));
         addressSaver = AddressSaver.restorePasswords();
@@ -263,8 +263,14 @@ public class MainFrame extends JFrame {
                     }
                 }
 
+
                 long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
 
+
+
+//                long heapSize = Runtime.getRuntime().totalMemory()/1048576;
+
+//                usedMemoryLabel.setText(String.valueOf(heapSize) + " mb");
                 usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
                 usedMemoryLabel.repaint();
 
@@ -310,11 +316,40 @@ public class MainFrame extends JFrame {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() == 2) {
-                        cameraOne.getVideoCatcher().setWidthAndHeight(1100, 540);
-                        cameraOne.revalidate();
-                        centralPanel.removeAll();
-                        centralPanel.add(cameraOne);
-                        centralPanel.repaint();
+
+                        if(cameraOne.getVideoCatcher().isFullSize()){
+                            for (Integer cameraNumber : cameras.keySet()) {
+                                CameraPanel cameraPanel = cameras.get(cameraNumber);
+                                if (cameraPanel.getVideoCatcher().isFullSize()) {
+                                    cameraPanel.getVideoCatcher().setWidthAndHeight(270, 260);
+                                    cameraPanel.revalidate();
+
+                                    int blockNumber = (cameraNumber + 1) / 2;
+                                    JPanel blockPanel = cameraBlock.get(blockNumber);
+                                    if (cameraNumber % 2 == 0) {
+                                        blockPanel.remove(cameraPanel);
+                                        blockPanel.add(cameraPanel);
+                                        blockPanel.repaint();
+                                    } else {
+                                        Component firstCamera = blockPanel.getComponent(0);
+                                        blockPanel.removeAll();
+                                        blockPanel.add(cameraPanel);
+                                        blockPanel.add(firstCamera);
+                                        blockPanel.repaint();
+                                    }
+                                }
+                            }
+                            centralPanel.removeAll();
+                            centralPanel.add(allCameraPanel);
+                            centralPanel.repaint();
+                            mainLabel.setText("Головна");
+                        } else {
+                            cameraOne.getVideoCatcher().setWidthAndHeight(1100, 540);
+                            cameraOne.revalidate();
+                            centralPanel.removeAll();
+                            centralPanel.add(cameraOne);
+                            centralPanel.repaint();
+                        }
                     }
                 }
             });
@@ -326,11 +361,39 @@ public class MainFrame extends JFrame {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() == 2) {
-                        cameraTwo.getVideoCatcher().setWidthAndHeight(1100, 540);
-                        cameraTwo.revalidate();
-                        centralPanel.removeAll();
-                        centralPanel.add(cameraTwo);
-                        centralPanel.repaint();
+
+                        if(cameraTwo.getVideoCatcher().isFullSize()){
+                            for (Integer cameraNumber : cameras.keySet()) {
+                                CameraPanel cameraPanel = cameras.get(cameraNumber);
+                                if (cameraPanel.getVideoCatcher().isFullSize()) {
+                                    cameraPanel.getVideoCatcher().setWidthAndHeight(270, 260);
+                                    cameraPanel.revalidate();
+                                    int blockNumber = (cameraNumber + 1) / 2;
+                                    JPanel blockPanel = cameraBlock.get(blockNumber);
+                                    if (cameraNumber % 2 == 0) {
+                                        blockPanel.remove(cameraPanel);
+                                        blockPanel.add(cameraPanel);
+                                        blockPanel.repaint();
+                                    } else {
+                                        Component firstCamera = blockPanel.getComponent(0);
+                                        blockPanel.removeAll();
+                                        blockPanel.add(cameraPanel);
+                                        blockPanel.add(firstCamera);
+                                        blockPanel.repaint();
+                                    }
+                                }
+                            }
+                            centralPanel.removeAll();
+                            centralPanel.add(allCameraPanel);
+                            centralPanel.repaint();
+                            mainLabel.setText("Головна");
+                        } else {
+                            cameraTwo.getVideoCatcher().setWidthAndHeight(1100, 540);
+                            cameraTwo.revalidate();
+                            centralPanel.removeAll();
+                            centralPanel.add(cameraTwo);
+                            centralPanel.repaint();
+                        }
                     }
                 }
             });
@@ -419,8 +482,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-
-
     public void setCentralPanel(JPanel panel) {
         centralPanel.removeAll();
         centralPanel.add(panel);
@@ -435,10 +496,6 @@ public class MainFrame extends JFrame {
         Float f = (float) opacity / 100;
         System.out.println(" Прозрачность равна - " + f);
         CameraPanel.setOpacity(f);
-
-
-
-
 
         for(Integer integer: imagesForBlock.keySet()){
             CameraPanel cameraPanel = cameras.get(integer);
@@ -474,7 +531,6 @@ public class MainFrame extends JFrame {
     }
 
     public static void setPercentDiffWhite(int percentDiffWhite) {
-
         MainFrame.percentDiffWhite = percentDiffWhite;
         changeWhiteLabel.setText("Збільшення світла: "+percentDiffWhite+"%");
         changeWhiteLabel.repaint();

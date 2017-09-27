@@ -27,7 +27,7 @@ public class VideoPlayer extends JPanel {
     private static int countDoNotShowImage;
     private static int speed = 0;
 
-    public static JLabel informLabel;
+    public static JLabel informLabel = new JLabel("STOP");
     private static JLabel speedLabel;
     static JLabel FPSLabel = new JLabel();
     private static JLabel sliderLabel;
@@ -551,22 +551,20 @@ public class VideoPlayer extends JPanel {
         return prewImagesInt;
     }
 
-    static void setCountDoNotShowImage(int countDoNotShowImage) {
-        VideoPlayer.countDoNotShowImage = countDoNotShowImage;
+    static void setCountDoNotShowImageToZero() {
+        VideoPlayer.countDoNotShowImage = 0;
     }
 
-    static void setSpeed(int speed) {
-        VideoPlayer.speed = speed;
+    static void setSpeedToZero() {
+        VideoPlayer.speed = 0;
     }
 
-    public static boolean isSaveIMAGE() {
+    static boolean isSaveIMAGE() {
         return SaveIMAGE;
     }
 
-    public static void setSaveIMAGE(boolean saveIMAGE) {
-        if (!saveIMAGE) {
-            saveImageButton.setForeground(Color.LIGHT_GRAY);
-        }
-        SaveIMAGE = saveIMAGE;
+    static void ReSetSaveIMAGE() {
+        saveImageButton.setForeground(Color.LIGHT_GRAY);
+        SaveIMAGE = false;
     }
 }

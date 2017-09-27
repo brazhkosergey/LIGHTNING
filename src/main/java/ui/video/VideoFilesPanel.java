@@ -77,7 +77,8 @@ public class VideoFilesPanel extends JPanel {
     public void showVideos() {
         mainPanel.removeAll();
         mapOfFiles.clear();
-        dateFormat.applyPattern("dd.MM.yyyy HH:mm:ss");
+        dateFormat.applyPattern("dd MMMM yyyy HH:mm:ss");
+//        dateFormat.applyPattern("dd.MM.yyyy HH:mm:ss");
         JPanel mainVideoPanel;
         JLabel mainVideoLabel;
         JButton showVideoButton;
@@ -109,7 +110,8 @@ public class VideoFilesPanel extends JPanel {
         for (Long dataLong : mapOfFiles.keySet()) {
             Date date = new Date(dataLong);
             mainVideoLabel = new JLabel(dateFormat.format(date));
-            showVideoButton = new JButton("PLAY");
+//            showVideoButton = new JButton("PLAY");
+            showVideoButton = new JButton(String.valueOf((char) 9658));
             showVideoButton.addActionListener((ActionEvent e) -> {
                 VideoPlayer.setShowVideoPlayer(true);
                 VideoPlayer videoPlayer = new VideoPlayer(mapOfFiles.get(dataLong), dateFormat.format(new Date(dataLong)));

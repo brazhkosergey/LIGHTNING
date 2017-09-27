@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -21,9 +22,8 @@ public class VideoCatcher implements Runnable {
     private int numberGRB;
     private boolean programLightCatchWork;
 
-
-
     private int fps;
+    private int countTimesToHaveNotBytesToRead;
     private int maxWidth;
     private int maxHeight;
     private boolean isFullSize;
@@ -31,9 +31,10 @@ public class VideoCatcher implements Runnable {
     private int countDoNotShowImages;
     private int settingCountDoNotShowImages;
 
+    private boolean fullBuff;
     private Map<Long, byte[]> bufferBytes;
     private Map<Long, byte[]> mapBytes;
-    private Map<Integer,Boolean> eventsFramesNumber;
+    private Map<Integer, Boolean> eventsFramesNumber;
     private Deque<Long> timeDeque;
 
     private VideoCreator videoCreator;
@@ -44,6 +45,7 @@ public class VideoCatcher implements Runnable {
     private URL url;
     private HttpURLConnection connection = null;
 
+    private boolean restart;
     private boolean catchVideo;
     private boolean changeURL;
 
@@ -61,65 +63,79 @@ public class VideoCatcher implements Runnable {
         fpsThread = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                if (catchVideo) {
-                    if(numberGRB!=MainFrame.getColorRGBNumber()){
-                        numberGRB = MainFrame.getColorRGBNumber();
-                    }
-
-                    if(settingCountDoNotShowImages!=MainFrame.getDoNotShowImages()){
-                        settingCountDoNotShowImages=MainFrame.getDoNotShowImages();
-                    }
-
-                    if(MainFrame.isProgramLightCatchWork()){
-                        programLightCatchWork = true;
-                    } else {
-                        programLightCatchWork = false;
-                    }
-
-                    panel.getTitle().setTitle("FPS = " + fps + ". WHITE: " + whitePercent + " %");
-                    if (fps != 0) {
-                        fpsNotZero = fps;
-                    }
-                    fps = 0;
-                    if (!startSaveVideo) {
-                        if (MainVideoCreator.isSaveVideo()) {
-                            int frameCount = timeDeque.size();
-                            eventsFramesNumber.put(frameCount,MainVideoCreator.isProgramingLightCatch());
-                            startSaveVideo = true;
+                    Thread.sleep(2000);
+                    if (catchVideo) {
+                        if (numberGRB != MainFrame.getColorRGBNumber()) {
+                            numberGRB = MainFrame.getColorRGBNumber();
                         }
 
-                        if (sizeVideoSecond != MainFrame.getTimeToSave()) {
-                            sizeVideoSecond = MainFrame.getTimeToSave();
-                            while (true) {
-                                if (timeDeque.size() > sizeVideoSecond * fpsNotZero) {
-                                    bufferBytes.remove(timeDeque.pollLast());
-                                } else {
-                                    break;
+                        if (settingCountDoNotShowImages != MainFrame.getDoNotShowImages()) {
+                            settingCountDoNotShowImages = MainFrame.getDoNotShowImages();
+                        }
+
+                        if (MainFrame.isProgramLightCatchWork()) {
+                            programLightCatchWork = true;
+                        } else {
+                            programLightCatchWork = false;
+                        }
+
+                        if (fps != 0) {
+                            fpsNotZero = fps/2;
+                            countTimesToHaveNotBytesToRead = 0;
+                        }
+                        else {
+                            countTimesToHaveNotBytesToRead++;
+                            if (countTimesToHaveNotBytesToRead>10) {
+                                countTimesToHaveNotBytesToRead = 0;
+                                bufferedInputStream = null;
+                                restart = true;
+                            }
+                        }
+
+                        panel.getTitle().setTitle("FPS = " + fpsNotZero + ". WHITE: " + whitePercent);
+                        panel.repaint();
+
+                        fps = 0;
+                        if (!startSaveVideo) {
+                            if (MainVideoCreator.isSaveVideo()) {
+                                int frameCount = timeDeque.size();
+                                eventsFramesNumber.put(frameCount, MainVideoCreator.isProgramingLightCatch());
+                                startSaveVideo = true;
+                            }
+
+                            if (timeDeque.size() + fpsNotZero > sizeVideoSecond * fpsNotZero) {
+                                panel.getTitle().setTitleColor(new Color(46, 139, 87));
+                            } else {
+                                panel.getTitle().setTitleColor(Color.red);
+                            }
+
+                            if (sizeVideoSecond != MainFrame.getTimeToSave()) {
+                                sizeVideoSecond = MainFrame.getTimeToSave();
+                                while (true) {
+                                    if (timeDeque.size() > sizeVideoSecond * fpsNotZero) {
+                                        bufferBytes.remove(timeDeque.pollLast());
+                                    } else {
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (startSaveVideo) {
-                        stopSaveVideoInt++;
-                        if (stopSaveVideoInt == sizeVideoSecond) {
-                            stopSaveVideo = true;
+                        if (startSaveVideo) {
+                            stopSaveVideoInt++;
+                            if (stopSaveVideoInt == sizeVideoSecond) {
+                                stopSaveVideo = true;
+                            }
                         }
+                    } else {
+                        panel.getTitle().setTitle("Камера вимкнена");
                     }
-                } else {
-                    panel.getTitle().setTitle("Камера вимкнена");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         });
-
         timeDeque = new ConcurrentLinkedDeque<>();
-        bufferBytes = new HashMap<>();
-        mapBytes = new HashMap<>();
         eventsFramesNumber = new HashMap<>();
         this.videoCreator = videoCreator;
         this.panel = panel;
@@ -139,20 +155,39 @@ public class VideoCatcher implements Runnable {
         }
     }
 
-    private void createInputStream() throws IOException {
-
+    private void createInputStream() {
+        System.out.println("Пробуем создать BufferedInputStream");
         if (url != null) {
-            connection = (HttpURLConnection) url.openConnection();
             try {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+
+                if (!restart) {
+                    bufferBytes = new HashMap<>();
+                    mapBytes = new HashMap<>();
+                }
+
+                System.out.println("пробуем открыть соединение");
+                connection = (HttpURLConnection) url.openConnection();
+                System.out.println("Ok");
+                System.out.println("пробуем открыть InputStream");
                 inputStream = connection.getInputStream();
+                System.out.println("ok");
+                System.out.println("пробуем открыть bufferedInputStream");
                 bufferedInputStream = new BufferedInputStream(inputStream);
+                System.out.println("ok");
+                restart = false;
             } catch (Exception e) {
+                e.printStackTrace();
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(2000);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
             }
+        } else {
+            System.out.println("URL = NULL");
         }
     }
 
@@ -165,80 +200,82 @@ public class VideoCatcher implements Runnable {
         BufferedImage image;
         while (true) {
             while (catchVideo) {
-                if (bufferedInputStream == null) {
-                    temporaryStream = new ByteArrayOutputStream(65535);
-                    try {
+                try {
+                    if (bufferedInputStream == null) {
+                        if (temporaryStream != null) {
+                            temporaryStream.close();
+                        }
+                        temporaryStream = new ByteArrayOutputStream(65535);
                         createInputStream();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (bufferedInputStream != null) {
-                    t = x;
-                    try {
-                        x = bufferedInputStream.read();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    temporaryStream.write(x);
-                    if (x == 216 && t == 255) {// начало изображения
-                        temporaryStream.reset();
-
-                        temporaryStream.write(t);
+                    }else{
+                        t = x;
+                        try {
+                            x = bufferedInputStream.read();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                         temporaryStream.write(x);
-                    } else if (x == 217 && t == 255) {//конец изображения
-                        byte[] imageBytes = temporaryStream.toByteArray();
-                        if (countDoNotShowImages >= settingCountDoNotShowImages) {
-                            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
-                            try {
-                                image = ImageIO.read(inputStream);
-                                inputStream.close();
-                                panel.setBufferedImage(processImage(image, maxWidth, maxHeight));
+                        if (x == 216 && t == 255) {// начало изображения
+                            temporaryStream.reset();
+
+                            temporaryStream.write(t);
+                            temporaryStream.write(x);
+                        } else if (x == 217 && t == 255) {//конец изображения
+                            byte[] imageBytes = temporaryStream.toByteArray();
+                            if (countDoNotShowImages >= settingCountDoNotShowImages) {
+                                ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+                                try {
+                                    image = ImageIO.read(inputStream);
+                                    inputStream.close();
+                                    panel.setBufferedImage(processImage(image, maxWidth, maxHeight));
 //                                panel.setBufferedImage(processImageNew(image, maxWidth, maxHeight));
-                                panel.repaint();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            countDoNotShowImages = 0;
-                        } else {
-                            countDoNotShowImages++;
-                        }
-
-                        long l = System.currentTimeMillis();
-                        timeDeque.addFirst(l);
-                        bufferBytes.put(l, imageBytes);
-                        fps++;
-
-                        if (!startSaveVideo) {
-                            if (timeDeque.size() > sizeVideoSecond * fpsNotZero) {
-                                bufferBytes.remove(timeDeque.pollLast());
-                            }
-                        }
-
-                        if (stopSaveVideo) {
-                            System.out.println("Стоп сохранять видео.");
-                            MainVideoCreator.stopCatchVideo();
-                            int size = timeDeque.size();
-                            for (int i = 0; i < size; i++) {
-                                Long timeLong = timeDeque.pollLast();
-                                mapBytes.put(timeLong, bufferBytes.get(timeLong));
-                                bufferBytes.remove(timeLong);
-                            }
-
-                            int num;
-                            if (panel.getCameraNumber() % 2 == 0) {
-                                num = 2;
+                                    panel.repaint();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                countDoNotShowImages = 0;
                             } else {
-                                num = 1;
+                                countDoNotShowImages++;
                             }
-                            videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber);
-                            mapBytes = new HashMap<>();
-                            eventsFramesNumber = new HashMap<>();
-                            stopSaveVideoInt = 0;
-                            stopSaveVideo = false;
-                            startSaveVideo = false;
+
+                            long l = System.currentTimeMillis();
+                            timeDeque.addFirst(l);
+                            bufferBytes.put(l, imageBytes);
+                            fps++;
+
+                            if (!startSaveVideo) {
+                                if (timeDeque.size() > sizeVideoSecond * fpsNotZero) {
+                                    bufferBytes.remove(timeDeque.pollLast());
+                                }
+                            }
+
+                            if (stopSaveVideo) {
+                                MainVideoCreator.stopCatchVideo();
+                                int size = timeDeque.size();
+                                for (int i = 0; i < size; i++) {
+                                    Long timeLong = timeDeque.pollLast();
+                                    mapBytes.put(timeLong, bufferBytes.get(timeLong));
+                                    bufferBytes.remove(timeLong);
+                                }
+
+                                int num;
+                                if (panel.getCameraNumber() % 2 == 0) {
+                                    num = 2;
+                                } else {
+                                    num = 1;
+                                }
+
+                                videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber);
+                                mapBytes = new HashMap<>();
+                                eventsFramesNumber = new HashMap<>();
+                                stopSaveVideoInt = 0;
+                                stopSaveVideo = false;
+                                startSaveVideo = false;
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
 
@@ -264,6 +301,8 @@ public class VideoCatcher implements Runnable {
                         connection.disconnect();
                         connection = null;
                     }
+                    mapBytes = null;
+                    bufferBytes = null;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -283,15 +322,15 @@ public class VideoCatcher implements Runnable {
 
     public void continueSaveVideo() {
         int frameCount = timeDeque.size();
-        eventsFramesNumber.put(frameCount,MainVideoCreator.isProgramingLightCatch());
+        eventsFramesNumber.put(frameCount, MainVideoCreator.isProgramingLightCatch());
         stopSaveVideoInt = 0;
     }
 
     private BufferedImage processImageNew(BufferedImage bi, int maxWidth, int maxHeight) {
-        if(bi.getWidth()<maxWidth||bi.getHeight()<maxHeight){
+        if (bi.getWidth() < maxWidth || bi.getHeight() < maxHeight) {
             return bi;
         } else {
-            BufferedImage smallImage = new BufferedImage(maxWidth,maxHeight,BufferedImage.TYPE_INT_RGB);
+            BufferedImage smallImage = new BufferedImage(maxWidth, maxHeight, BufferedImage.TYPE_INT_RGB);
             Graphics2D g = smallImage.createGraphics();
             Image scaled = bi.getScaledInstance(maxWidth,
                     maxHeight, Image.SCALE_SMOOTH);
@@ -301,7 +340,6 @@ public class VideoCatcher implements Runnable {
             return smallImage;
         }
     }
-
 
     private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
 
@@ -339,19 +377,19 @@ public class VideoCatcher implements Runnable {
             int countWhite = 0;
             int allPixels = rgb1.length;
 
-            int k = 30 - (settingCountDoNotShowImages*2);
+            int k = 30 - (settingCountDoNotShowImages * 2);
 
-            if(k<10){
-                k=10;
+            if (k < 10) {
+                k = 10;
             }
 
-            for (int i = 0; i < allPixels; i=i+k) {
-              if (rgb1[i] > numberGRB && rgb1[i] < -1) {
+            for (int i = 0; i < allPixels; i = i + k) {
+                if (rgb1[i] > numberGRB && rgb1[i] < -1) {
                     countWhite++;
                 }
             }
 
-            if(countWhite!=0){
+            if (countWhite != 0) {
                 countWhite = countWhite * k;
             }
             double percent = (double) countWhite / allPixels;
@@ -371,9 +409,9 @@ public class VideoCatcher implements Runnable {
             }
         }
 
-        if(bi2!=null){
+        if (bi2 != null) {
             return bi2;
-        }else {
+        } else {
             return bi;
         }
     }
@@ -390,7 +428,7 @@ public class VideoCatcher implements Runnable {
         }
 
         panel.setWindowSize(width, height);
-        panel.setPreferredSize(new Dimension(width+5,height+5));
+        panel.setPreferredSize(new Dimension(width + 5, height + 5));
         this.maxWidth = width;
         this.maxHeight = height;
     }
