@@ -255,7 +255,6 @@ public class VideoCatcher implements Runnable {
                         t = x;
                         try {
                             x = bufferedInputStream.read();
-//                        } catch (IOException e) {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
