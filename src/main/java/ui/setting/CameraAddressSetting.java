@@ -206,10 +206,8 @@ public class CameraAddressSetting extends JPanel {
             saveAddressToMap();
             MainFrame.getMainFrame().showAllCameras();
         });
-
         mainCameraSettingPanel.add(Box.createRigidArea(new Dimension(900, 20)));
         mainCameraSettingPanel.add(saveButton);
-
     }
 
     public void setHaveImage(int integer){
@@ -218,6 +216,7 @@ public class CameraAddressSetting extends JPanel {
             labelMap.get(integer).setForeground(new Color(46, 139, 87));
         }
     }
+
 
     public void saveAddressToMap() {
         for (Integer textFieldNumber : textFieldsIpAddressMap.keySet()) {

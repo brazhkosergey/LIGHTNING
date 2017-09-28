@@ -32,8 +32,13 @@ public class Setting extends JPanel {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
         JPanel checkBoxPane = new JPanel(new FlowLayout());
+        JCheckBox testModeCheckBox = new JCheckBox("Тестовий режим ");
+        testModeCheckBox.setSelected(false);
+
         checkBox = new JCheckBox();
         checkBox.setSelected(MainFrame.isProgramLightCatchWork());
+
+
         JLabel checkBoxLabel = new JLabel("Фіксувати програмні спрацювання");
         checkBoxPane.add(checkBox);
         checkBoxPane.add(checkBoxLabel);
@@ -52,17 +57,17 @@ public class Setting extends JPanel {
         });
 
         StringBuilder stringBuilder = new StringBuilder();
-        for(int i=0;i<40;i++){
+        for (int i = 0; i < 40; i++) {
             stringBuilder.append(String.valueOf((char) 8623));
         }
 
         JPanel whitePanel = new JPanel();
         whitePanel.setBackground(Color.darkGray);
         JLabel whiteColorLabel = new JLabel(stringBuilder.toString());
-        whiteColorLabel.setFont(new Font(null,Font.ITALIC,25));
-        whiteColorLabel.setForeground(new Color(MainFrame.getColorLightNumber(),MainFrame.getColorLightNumber(),MainFrame.getColorLightNumber()));
+        whiteColorLabel.setFont(new Font(null, Font.ITALIC, 25));
+        whiteColorLabel.setForeground(new Color(MainFrame.getColorLightNumber(), MainFrame.getColorLightNumber(), MainFrame.getColorLightNumber()));
         whitePanel.add(whiteColorLabel);
-        JLabel lightSensitivityLabel = new JLabel("Світлочутливість камери "+ MainFrame.getColorLightNumber());
+        JLabel lightSensitivityLabel = new JLabel("Світлочутливість камери " + MainFrame.getColorLightNumber());
         JSlider lightSensitivitySlider = new JSlider();
         lightSensitivitySlider.setPreferredSize(new Dimension(200, 25));
         lightSensitivitySlider.setMinorTickSpacing(1);
@@ -72,8 +77,8 @@ public class Setting extends JPanel {
         lightSensitivitySlider.setValue(MainFrame.getColorLightNumber());
         lightSensitivitySlider.addChangeListener(e -> {
             int value = lightSensitivitySlider.getValue();
-            whiteColorLabel.setForeground(new Color(value,value,value));
-            lightSensitivityLabel.setText("Світлочутливість камери "+ value);
+            whiteColorLabel.setForeground(new Color(value, value, value));
+            lightSensitivityLabel.setText("Світлочутливість камери " + value);
         });
 
         JPanel timePane = new JPanel(new FlowLayout());
@@ -102,6 +107,7 @@ public class Setting extends JPanel {
         if (v != 0) {
             s2 = 100 / v;
         }
+
         JLabel framesLabel = new JLabel("Транслюемо відео - " + s2 + "%");
         JSlider sliderFrames = new JSlider();
         sliderFrames.setPreferredSize(new Dimension(200, 25));
@@ -119,9 +125,10 @@ public class Setting extends JPanel {
             framesLabel.setText("Транслюемо відео - " + s + "%");
         });
 
-
         saveButton = new JButton("Зберегти");
         saveButton.addActionListener((e) -> {
+            MainFrame.setTestMode(testModeCheckBox.isSelected());
+
             MainFrame.setProgramLightCatchWork(checkBox.isSelected());
             int changeWhitePercent = sliderChangeWhite.getValue();
             MainFrame.setPercentDiffWhite(changeWhitePercent);
@@ -139,11 +146,13 @@ public class Setting extends JPanel {
             int doNotShowFrames = sliderFrames.getValue();
             MainFrame.setQualityVideoLabel(doNotShowFrames);
 
-            MainFrame.addressSaver.saveSetting(i, checkBox.isSelected(),changeWhitePercent,lightSensitivity,opacity,doNotShowFrames);
+            MainFrame.addressSaver.saveSetting(i, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, doNotShowFrames);
             saveButton.setText("Збережено");
             saveButton.setForeground(new Color(46, 139, 87));
         });
 
+        mainPanel.add(Box.createRigidArea(new Dimension(10, 30)));
+        mainPanel.add(testModeCheckBox);
         mainPanel.add(Box.createRigidArea(new Dimension(10, 30)));
         mainPanel.add(checkBoxPane);
         mainPanel.add(changeWhiteLabel);
@@ -165,7 +174,7 @@ public class Setting extends JPanel {
         mainPanel.add(framesLabel);
         mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
         mainPanel.add(sliderFrames);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 50)));
+        mainPanel.add(Box.createRigidArea(new Dimension(10, 20)));
         mainPanel.add(saveButton);
         this.add(mainPanel);
     }

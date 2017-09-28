@@ -29,9 +29,7 @@ public class MainVideoCreator {
     private static int secondVideoSave;
 
     public static void startCatchVideo(boolean programingLightCatch) {
-
         MainVideoCreator.programingLightCatch = programingLightCatch;
-
         if (!saveVideo) {
             MainVideoCreator.date = new Date(System.currentTimeMillis());
             saveVideo = true;
@@ -70,7 +68,8 @@ public class MainVideoCreator {
         saveVideo = false;
     }
 
-    private static void saveBytes(Integer numberOfGroup, List<byte[]> list, int totalFPS, Map<Integer, Boolean> percentOfFramesEvent) {
+    private static void saveBytes(Integer numberOfGroup, List<byte[]> list, int totalFPS, Map<Integer, Boolean> percentOfFramesEvent, int videoNumber) {
+
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("[");
 
@@ -91,7 +90,7 @@ public class MainVideoCreator {
         stringBuilder.append("]");
         String eventPercent = stringBuilder.toString();
 
-        String path = "C:\\ipCamera\\bytes\\" + date.getTime() + "-" + numberOfGroup + "(" + totalFPS + ")" + eventPercent + ".tmp";
+        String path = "C:\\ipCamera\\bytes\\" + (date.getTime()+videoNumber) + "-" + numberOfGroup + "(" + totalFPS + ")" +eventPercent +"{"+videoNumber+ "}.tmp";
         System.out.println("Создаем файл - " + path);
 
         File file = new File(path);
@@ -235,11 +234,11 @@ public class MainVideoCreator {
         Date date = new Date(dateLong);
         SimpleDateFormat dateFormat = new SimpleDateFormat();
         dateFormat.applyPattern("dd MMMM yyyy,HH-mm-ss");
-//        dateFormat.applyPattern("dd MM yyyy_HH-mm-ss");
         String dateString = dateFormat.format(date);
         String[] fpsSplit = split[1].split("\\.");
         String numberOfGroupCameraString = fpsSplit[0].substring(0, 1);
         int integer = 0;
+
         try {
             integer = Integer.parseInt(numberOfGroupCameraString);
         } catch (Exception e) {
@@ -369,14 +368,14 @@ public class MainVideoCreator {
         return image;
     }
 
-    public static void putVideoFromCameraGroup(Integer numberOfGroup, List<byte[]> list, int totalFps, Map<Integer, Boolean> percentOfFramesEvent) {
+    public static void putVideoFromCameraGroup(Integer numberOfGroup, List<byte[]> list, int totalFps, Map<Integer, Boolean> percentOfFramesEvent, int videoNumber) {
         MainFrame.showInformMassage("Зберігаем файл - " + numberOfGroup, true);
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        Thread thread = new Thread(() -> saveBytes(numberOfGroup, list, totalFps, percentOfFramesEvent));
+        Thread thread = new Thread(() -> saveBytes(numberOfGroup, list, totalFps, percentOfFramesEvent,videoNumber));
         thread.start();
         System.out.println("Номер группы - " + numberOfGroup + ". Размер листа в изображениями - " + list.size());
     }

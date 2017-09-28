@@ -16,16 +16,16 @@ public class VideoFilesPanel extends JPanel {
     private static VideoFilesPanel videoFilesPanel;
 
     private static Map<Long, Map<Integer, File>> mapOfFiles;
+    private static Map<Long, Integer> mapOfPartsVideo;
 
     private JPanel mainPanel;
     private JScrollPane mainScrollPanel;
     private JPanel exportSettingPanel;
     private JSlider slider;
 
-    boolean play = false;
-
     private VideoFilesPanel() {
         mapOfFiles = new HashMap<>();
+        mapOfPartsVideo = new HashMap<>();
         buildVideoPanel();
     }
 
@@ -78,7 +78,6 @@ public class VideoFilesPanel extends JPanel {
         mainPanel.removeAll();
         mapOfFiles.clear();
         dateFormat.applyPattern("dd MMMM yyyy HH:mm:ss");
-//        dateFormat.applyPattern("dd.MM.yyyy HH:mm:ss");
         JPanel mainVideoPanel;
         JLabel mainVideoLabel;
         JButton showVideoButton;
@@ -93,6 +92,22 @@ public class VideoFilesPanel extends JPanel {
                 fileName = fileFromFolder.getName();
                 if (fileName.contains(".tmp")) {
                     String[] split = fileName.split("-");
+
+                    int countPartsFile = 0;
+                    try{
+                        int first = fileName.indexOf("{");
+                        int second = fileName.indexOf("}");
+                        String countString = fileName.substring(first+1,second);
+                        try{
+                            countPartsFile = Integer.parseInt(countString);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                        System.out.println("Номер видео "+countString);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+
                     long dataLong = Long.parseLong(split[0]);
                     String[] splitInteger = split[1].split("\\.");
                     int cameraGroupNumber = Integer.parseInt(splitInteger[0].substring(0,1));
@@ -102,6 +117,7 @@ public class VideoFilesPanel extends JPanel {
                         Map<Integer, File> files1 = new HashMap<>();
                         files1.put(cameraGroupNumber, fileFromFolder);
                         mapOfFiles.put(dataLong, files1);
+                        mapOfPartsVideo.put(dataLong,countPartsFile);
                     }
                 }
             }
@@ -109,29 +125,24 @@ public class VideoFilesPanel extends JPanel {
 
         for (Long dataLong : mapOfFiles.keySet()) {
             Date date = new Date(dataLong);
-            mainVideoLabel = new JLabel(dateFormat.format(date));
-//            showVideoButton = new JButton("PLAY");
-            showVideoButton = new JButton(String.valueOf((char) 9658));
+            mainVideoLabel = new JLabel(dateFormat.format(date)+" частина: "+ mapOfPartsVideo.get(dataLong));
+            showVideoButton = new JButton(String.valueOf((char) 9658));//PLAY
             showVideoButton.addActionListener((ActionEvent e) -> {
                 VideoPlayer.setShowVideoPlayer(true);
                 VideoPlayer videoPlayer = new VideoPlayer(mapOfFiles.get(dataLong), dateFormat.format(new Date(dataLong)));
                 MainFrame.getMainFrame().setCentralPanel(videoPlayer);
             });
-
             exportButton = new JButton("Експорт");
             exportButton.addActionListener((e) -> {
                 Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
-
                 for (Integer integer : integerFileMap.keySet()) {
                     File file1 = integerFileMap.get(integer);
                     Thread thread = new Thread(() -> {
-//                        MainVideoCreator.encodeVideo(file1);
                         MainVideoCreator.encodeVideoXuggle(file1);
                     });
                     thread.start();
                 }
             });
-
             deleteButton = new JButton("Видалити");
             deleteButton.addActionListener((e) -> {
                 Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
@@ -144,7 +155,6 @@ public class VideoFilesPanel extends JPanel {
 
             mainVideoPanel = new JPanel(new FlowLayout());
             mainVideoPanel.setMaximumSize(new Dimension(600, 40));
-
             mainVideoPanel.add(mainVideoLabel);
             mainVideoPanel.add(Box.createRigidArea(new Dimension(50, 30)));
             mainVideoPanel.add(showVideoButton);
@@ -152,7 +162,7 @@ public class VideoFilesPanel extends JPanel {
             mainVideoPanel.add(exportButton);
             mainVideoPanel.add(Box.createRigidArea(new Dimension(30, 30)));
             mainVideoPanel.add(deleteButton);
-            mainVideoPanel.add(Box.createRigidArea(new Dimension(150, 30)));
+            mainVideoPanel.add(Box.createRigidArea(new Dimension(100, 30)));
             mainPanel.add(mainVideoPanel);
         }
 

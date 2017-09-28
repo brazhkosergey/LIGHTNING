@@ -24,6 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 public class MainFrame extends JFrame {
+    private static JButton startButton;
+    private static JButton startButtonProgrammingCatch;
+    private static JLabel testModeLabel = new JLabel();
+
+
     private static MainFrame mainFrame;
     private static JPanel mainPanel;
     private static JPanel northPanel;
@@ -208,12 +213,14 @@ public class MainFrame extends JFrame {
         informPane.add(mainLabel);
         informPane.add(recordLabel);
 
-        JButton startButton = new JButton("REC");
+        startButton = new JButton("REC");
+        startButton.setVisible(false);
         startButton.addActionListener((e -> {
             MainVideoCreator.startCatchVideo(false);
         }));
 
-        JButton startButtonProgrammingCatch = new JButton("REC PR");
+        startButtonProgrammingCatch = new JButton("REC PR");
+        startButtonProgrammingCatch.setVisible(false);
         startButtonProgrammingCatch.addActionListener((e -> {
             MainVideoCreator.startCatchVideo(true);
         }));
@@ -222,6 +229,10 @@ public class MainFrame extends JFrame {
         northPanel.add(cameraButton);
         northPanel.add(videoButton);
         northPanel.add(settingButton);
+
+        testModeLabel.setPreferredSize(new Dimension(165,25));
+        northPanel.add(testModeLabel);
+
         northPanel.add(startButton);
         northPanel.add(startButtonProgrammingCatch);
         northPanel.add(Box.createHorizontalStrut(100));
@@ -473,9 +484,9 @@ public class MainFrame extends JFrame {
                 } catch (MalformedURLException ex) {
                     ex.printStackTrace();
                 }
-                if (url != null) {
+//                if (url != null) {
                     cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url);
-                }
+//                }
             } else {
                 cameras.get(addressNumber).getVideoCatcher().stopCatchVideo();
             }
@@ -580,6 +591,17 @@ public class MainFrame extends JFrame {
     public static void setTimeToSave(int timeToSave) {
         MainFrame.timeToSave = timeToSave;
         countSaveVideo.setText("Зберігаемо "+timeToSave+"сек.");
+    }
+
+
+    public static void setTestMode(boolean testMode){
+
+
+        testModeLabel.setVisible(!testMode);
+        startButtonProgrammingCatch.setPreferredSize(new Dimension(80,25));
+        startButton.setPreferredSize(new Dimension(80,25));
+        startButton.setVisible(testMode);
+        startButtonProgrammingCatch.setVisible(testMode);
     }
 }
 

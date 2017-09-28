@@ -1,24 +1,21 @@
 package ui.camera;
 
 import entity.MainVideoCreator;
-import org.jcodec.common.DictionaryCompressor;
-import ui.main.MainFrame;
-
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 
 public class VideoCreator {
+
     private int cameraGroupNumber;
-    private Map<Integer, Map<Long,byte[]>> mapOfMapByte;//должно быть два видео, с дальше слепить их в один файл.
+    private int videoNumber;
+    private Map<Integer, Map<Long,byte[]>> mapOfMapByte;
     private List<byte[]> list;
     private Map<Integer,Boolean> percentEventOfFrames;
-//    private ArrayList<Integer> percentEventOfFrames;
     private BufferedImage bufferedImageBack;
     private int[] arr = new int[3];
+    private int[] countOfVideoNumber = new int[3];
     private List<Map<Integer,Boolean>> listArr;
-//    private List<List<Integer>> listArr;
 
     private static Thread programCatchThread = null;
 
@@ -29,12 +26,19 @@ public class VideoCreator {
         this.cameraGroupNumber = cameraGroupNumber;
     }
 
-    void addMapByte(Integer integer, Map<Long, byte[]> longMap, int fps, Map<Integer,Boolean> framesNumberEvent) {
-
+    void addMapByte(Integer integer, Map<Long, byte[]> longMap, int fps, Map<Integer,Boolean> framesNumberEvent,int countPartsOfVideo) {
         listArr.add(framesNumberEvent);
         arr[integer] = fps;
+        countOfVideoNumber[integer] = countPartsOfVideo;
         mapOfMapByte.put(integer, longMap);
-        if (mapOfMapByte.size() == 2&&listArr.size()==2) {//Должно быть два.
+
+        System.out.println("Добавляем часть видео файла. Номер камеры "+arr[integer]+". Количество кадров "+mapOfMapByte.get(integer).size()+". Часть номер "+countOfVideoNumber[integer]);
+        if (mapOfMapByte.size() == 2
+                && listArr.size()==2
+                && countOfVideoNumber[1]==countOfVideoNumber[2]) {//Должно быть два.
+
+            System.out.println("Сохраняем видео файл");
+            videoNumber = countOfVideoNumber[1];
             saveBytesFromMapToFile(arr[1]+arr[2]);
         }
     }
@@ -115,7 +119,7 @@ public class VideoCreator {
 
     private void saveBytesFromMapToFile( int totalFPS){
         connectVideoBytesFromMap();
-        MainVideoCreator.putVideoFromCameraGroup(cameraGroupNumber, list,totalFPS,percentEventOfFrames);
+        MainVideoCreator.putVideoFromCameraGroup(cameraGroupNumber, list,totalFPS,percentEventOfFrames,videoNumber);
         list = new ArrayList<>();
         percentEventOfFrames = new HashMap<>();
     }
