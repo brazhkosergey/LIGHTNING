@@ -129,21 +129,25 @@ public class AddressSaver {
     public void setPasswordsToFields() {
         Map<Integer, JTextField> textFieldsIpAddressMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsIpAddressMap();
         for(Integer integer:textFieldsIpAddressMap.keySet()){
-            textFieldsIpAddressMap.get(integer).setText(arr[integer-1]);
+            if(integer!=null){
+                textFieldsIpAddressMap.get(integer).setText(arr[integer-1]);
+            }
         }
 
         Map<Integer, JTextField> textFieldsUsernameMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsUsernameMap();
         for(Integer integer:textFieldsUsernameMap.keySet()){
-            textFieldsUsernameMap.get(integer).setText(arr[integer+7]);
+            if(integer!=null){
+                textFieldsUsernameMap.get(integer).setText(arr[integer+7]);
+            }
         }
 
         Map<Integer, JTextField> textFieldsPasswordMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsPasswordMap();
         for(Integer integer:textFieldsPasswordMap.keySet()){
-            textFieldsPasswordMap.get(integer).setText(arr[integer+15]);
+            if(integer!=null){textFieldsPasswordMap.get(integer).setText(arr[integer+15]);}
         }
 
         for(Integer integer:MainFrame.imagesForBlock.keySet()){
-            CameraAddressSetting.getCameraAddressSetting().setHaveImage(integer);
+            if(integer!=null){CameraAddressSetting.getCameraAddressSetting().setHaveImage(integer);}
         }
     }
 

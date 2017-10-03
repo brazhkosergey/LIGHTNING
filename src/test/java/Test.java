@@ -1,4 +1,5 @@
 import entity.MainVideoCreator;
+import entity.sound.SoundSaver;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioInputStream;
@@ -18,82 +19,53 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-public class Test{
+public class Test {
     static ImagePanel mainPanel = new ImagePanel();
     static List<BufferedImage> list = new ArrayList<>();
     static boolean videoAlreadyBuffered = false;
 
     public static void main(String[] args) {
+//        String address="192.168.3.221";
+//        String fileName = "/axis-media/media.amp";
 //
-//        InputStream inputStream = null;
-//
+//        SoundSaver soundSaver = new SoundSaver(fileName,address);
+//        soundSaver.SETUP();
 //        try {
-//            AudioInputStream ais = AudioSystem.getAudioInputStream(inputStream);
-//
-//            while (true){
-//                if(ais.available()!=0){
-//                }
-//            }
-//
-//
-//        } catch (UnsupportedAudioFileException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
+//            Thread.sleep(2000);
+//        } catch (InterruptedException e) {
 //            e.printStackTrace();
 //        }
-
-
-
-//        кнопки убирать с рабочего стола.
-
-//        rtp - поток ;
-        String urlString = "http://192.168.3.221/axis-media/media.amp";
-        String username = "root";
-        String password = "PASS";
-        URL url = null;
+//        soundSaver.PLAY();
+//
+//        try {
+//            Thread.sleep(2000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        int maxAmpl = 0;
+        byte[] bytes = new byte[1024];
         try {
-            url = new URL(urlString);
-            Authenticator.setDefault(new Authenticator() {
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(username, password.toCharArray());
+//            FileInputStream fileInputStream = new FileInputStream("C:\\ipCamera\\bytes\\censor-beep-6.wav");
+            FileInputStream fileInputStream = new FileInputStream("C:\\ipCamera\\bytes\\boom.wav");//32640
+
+            while (fileInputStream.read(bytes) > 0) {
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+                byte[] buffer = new byte[4];
+                try {
+                    while (byteArrayInputStream.read(buffer) > 0) {
+                        int value = ((buffer[0] & 0xff) | (buffer[1] << 8)) << 16 >> 16;
+                        System.out.println(value);
+//                        if (Math.abs(value) > maxAmpl) {//32768
+//                            maxAmpl = Math.abs(value);
+//                            System.out.println("Max Value: " + maxAmpl);
+//                        }
+                    }
+                } catch (IOException e1) {
+                    e1.printStackTrace();
                 }
-            });
-        } catch (MalformedURLException ex) {
-            ex.printStackTrace();
-        }
-
-        try {
-            URLConnection urlConnection = url.openConnection();
-            InputStream inputStream = urlConnection.getInputStream();
-//            int x = 0;
-//            while (x>-1){
-//                x = inputStream.read();
-//                System.out.println(x);
-//            }
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream,"UTF-8"));
-            StringBuilder b = new StringBuilder();
-            String s;
-            while ((s = bufferedReader.readLine()) != null){
-                b.append(s);
             }
-            System.out.println(b.toString());
-// <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-// <HTML>
-// <HEAD>
-// <meta http-equiv="Expires" content="Tue, 12 May 1962 1:00:00 GMT">
-// <meta http-equiv="Pragma" content="no-cache">
-// <meta http-equiv="Cache-Control" content="no-cache">
-// <meta http-equiv="Content-type" CONTENT="text/html; charset=iso-8859-1">
-// <meta http-equiv="Content-language" CONTENT="en">
-// <META HTTP-EQUIV="Refresh" CONTENT="0; URL=/view/viewer_index.shtml?id=61">
-// <title>Index page</title>
-// <noscript>Your browser has JavaScript turned off.
-// <br>For the user interface to work, you must enable JavaScript in your browser and reload/refresh this page.
-// </noscript></HEAD>
-// <BODY>
-// </BODY>
-// </HTML>
-
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -134,9 +106,6 @@ public class Test{
 //        frame.pack();
 
 
-
-
-
 //        for(int i=0;i<16;i++){
 //            for(int j = 0;j<16;j++){
 //                for(int k = 0;k<16;k++){
@@ -149,8 +118,6 @@ public class Test{
 //        }
 //
 //        Color color = new Color(42,84,24);
-
-
 
 
 //        JFrame frame = new JFrame("TESST");
@@ -243,10 +210,9 @@ public class Test{
     }
 
 
-
-
     static class VideoPlayerToShowOneVideo extends JPanel {
         private BufferedImage bufferedImage;
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -260,8 +226,7 @@ public class Test{
         }
     }
 
-
-    public static int getIntFromColor(int Red, int Green, int Blue){
+    public static int getIntFromColor(int Red, int Green, int Blue) {
         Red = (Red << 16) & 0x00FF0000; //Shift red 16-bits and mask out other stuff
         Green = (Green << 8) & 0x0000FF00; //Shift Green 8-bits and mask out other stuff
         Blue = Blue & 0x000000FF; //Mask out anything not blue.

@@ -3,6 +3,7 @@ package ui.main;
 import entity.AddressSaver;
 import entity.MainVideoCreator;
 import entity.VideoPlayer;
+import entity.sound.SoundSaver;
 import ui.camera.CameraPanel;
 import ui.camera.VideoCreator;
 import ui.setting.CameraAddressSetting;
@@ -27,7 +28,7 @@ public class MainFrame extends JFrame {
     private static JButton startButton;
     private static JButton startButtonProgrammingCatch;
     private static JLabel testModeLabel = new JLabel();
-
+    private static JLabel alarmLabel;
 
     private static MainFrame mainFrame;
     private static JPanel mainPanel;
@@ -69,6 +70,8 @@ public class MainFrame extends JFrame {
     private static int doNotShowImages = 5;
     private static boolean programLightCatchWork;
 
+    private SoundSaver soundSaver;
+
     private MainFrame() {
         super("LIGHTNING");
 
@@ -105,6 +108,74 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1150, 720));
         addressSaver = AddressSaver.restorePasswords();
+
+        Thread thread = new Thread(() -> {
+            int playInt = 0;
+            boolean red = false;
+            boolean startRec = true;
+            while (true) {
+                if (MainVideoCreator.isSaveVideo()) {
+                    if (startRec) {
+                        mainLabel.setText("Йде запис відео");
+                        startRec = false;
+                    }
+                    if (red) {
+                        recordLabel.setForeground(Color.DARK_GRAY);
+                        mainLabel.setForeground(Color.DARK_GRAY);
+                        mainLabel.repaint();
+                        recordLabel.repaint();
+                        red = false;
+                    } else {
+                        recordLabel.setForeground(Color.RED);
+                        mainLabel.setForeground(Color.RED);
+                        mainLabel.repaint();
+                        recordLabel.repaint();
+                        red = true;
+                    }
+                } else {
+                    if (red || !startRec) {
+                        mainLabel.setText("Запис закінчено");
+                        mainLabel.setForeground(Color.DARK_GRAY);
+                        mainLabel.repaint();
+                        recordLabel.setForeground(Color.DARK_GRAY);
+                        recordLabel.repaint();
+                        red = false;
+                        startRec = true;
+                    }
+                }
+
+                long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
+//                long heapSize = Runtime.getRuntime().totalMemory()/1048576;
+
+//                usedMemoryLabel.setText(String.valueOf(heapSize) + " mb");
+                usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
+                usedMemoryLabel.repaint();
+
+                if (VideoPlayer.isShowVideoPlayer()) {
+                    try{
+                        if (playInt == 0) {
+                            VideoPlayer.informLabel.setForeground(Color.RED);
+                            VideoPlayer.informLabel.repaint();
+                            playInt++;
+                        } else {
+                            playInt = 0;
+                            VideoPlayer.informLabel.setForeground(Color.LIGHT_GRAY);
+                            VideoPlayer.informLabel.repaint();
+                        }
+                    } catch (NullPointerException e){
+                        e.printStackTrace();
+                    }
+                }
+
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+
         buildMainWindow();
 
         getContentPane().add(mainPanel, BorderLayout.CENTER);
@@ -139,6 +210,9 @@ public class MainFrame extends JFrame {
     }
 
     private void buildNorthPanel() {
+        alarmLabel = new JLabel(String.valueOf((char) 8226));
+        alarmLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 45));
+
         JButton mainWindowButton = new JButton("Головна");
         mainWindowButton.setPreferredSize(new Dimension(120, 30));
         mainWindowButton.addActionListener((e) -> {
@@ -225,6 +299,7 @@ public class MainFrame extends JFrame {
             MainVideoCreator.startCatchVideo(true);
         }));
 
+        northPanel.add(alarmLabel);
         northPanel.add(mainWindowButton);
         northPanel.add(cameraButton);
         northPanel.add(videoButton);
@@ -238,77 +313,6 @@ public class MainFrame extends JFrame {
         northPanel.add(Box.createHorizontalStrut(100));
         northPanel.add(informPane);
         mainPanel.add(northPanel);
-
-        Thread thread = new Thread(() -> {
-            int playInt = 0;
-            boolean red = false;
-            boolean startRec = true;
-            while (true) {
-                if (MainVideoCreator.isSaveVideo()) {
-                    if (startRec) {
-                        mainLabel.setText("Йде запис відео");
-                        startRec = false;
-                    }
-                    if (red) {
-                        recordLabel.setForeground(Color.DARK_GRAY);
-                        mainLabel.setForeground(Color.DARK_GRAY);
-                        mainLabel.repaint();
-                        recordLabel.repaint();
-                        red = false;
-                    } else {
-                        recordLabel.setForeground(Color.RED);
-                        mainLabel.setForeground(Color.RED);
-                        mainLabel.repaint();
-                        recordLabel.repaint();
-                        red = true;
-                    }
-                } else {
-                    if (red || !startRec) {
-                        mainLabel.setText("Запис закінчено");
-                        mainLabel.setForeground(Color.DARK_GRAY);
-                        mainLabel.repaint();
-                        recordLabel.setForeground(Color.DARK_GRAY);
-                        recordLabel.repaint();
-                        red = false;
-                        startRec = true;
-                    }
-                }
-
-
-                long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
-
-
-
-//                long heapSize = Runtime.getRuntime().totalMemory()/1048576;
-
-//                usedMemoryLabel.setText(String.valueOf(heapSize) + " mb");
-                usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
-                usedMemoryLabel.repaint();
-
-                if (VideoPlayer.isShowVideoPlayer()) {
-                    try{
-                        if (playInt == 0) {
-                            VideoPlayer.informLabel.setForeground(Color.RED);
-                            VideoPlayer.informLabel.repaint();
-                            playInt++;
-                        } else {
-                            playInt = 0;
-                            VideoPlayer.informLabel.setForeground(Color.LIGHT_GRAY);
-                            VideoPlayer.informLabel.repaint();
-                        }
-                    } catch (NullPointerException e){
-                        e.printStackTrace();
-                    }
-                }
-
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        thread.start();
     }
 
     private void buildCentralPanel() {
@@ -471,6 +475,9 @@ public class MainFrame extends JFrame {
 
     public void showAllCameras() {
         for (Integer addressNumber : camerasAddress.keySet()) {
+            if(addressNumber==null){
+                continue;
+            }
             List<String> list = camerasAddress.get(addressNumber);
             if (list != null) {
                 URL url = null;
@@ -490,6 +497,23 @@ public class MainFrame extends JFrame {
             } else {
                 cameras.get(addressNumber).getVideoCatcher().stopCatchVideo();
             }
+        }
+
+        if(soundSaver==null){
+
+            Thread gh=new Thread(() -> {
+                List<String> list = camerasAddress.get(null);
+                if(list.size()!=0){
+                    String string = list.get(0);
+                    soundSaver = new SoundSaver(string);
+                    soundSaver.SETUP();
+                    soundSaver.PLAY();
+                }
+            });
+            gh.start();
+        } else {
+          soundSaver.TEARDOWN();
+          soundSaver = null;
         }
     }
 

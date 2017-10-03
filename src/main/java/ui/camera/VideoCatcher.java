@@ -59,6 +59,8 @@ public class VideoCatcher implements Runnable {
     private boolean stopSaveVideo;
     private boolean startSaveVideo;
     private boolean saveVideoOnePartOfVideo;
+    private boolean showImage;
+    private boolean delBytes;
     private int countPartsOfVideo;
 
     public VideoCatcher(CameraPanel panel, VideoCreator videoCreator) {
@@ -71,6 +73,10 @@ public class VideoCatcher implements Runnable {
                     if (catchVideo) {
                         numberGRB = MainFrame.getColorRGBNumber();
                         settingCountDoNotShowImages = MainFrame.getDoNotShowImages();
+
+                        showImage = countDoNotShowImages >= settingCountDoNotShowImages;
+
+
                         programLightCatchWork = MainFrame.isProgramLightCatchWork();
 
                         if (fps != 0) {
@@ -101,8 +107,8 @@ public class VideoCatcher implements Runnable {
                                 eventsFramesNumber.put(frameCount, MainVideoCreator.isProgramingLightCatch());
                                 startSaveVideo = true;
                             }
-
-                            if (timeDeque.size() + fpsNotZero > sizeVideoSecond * fpsNotZero) {
+                            delBytes = timeDeque.size() > sizeVideoSecond * fpsNotZero;
+                            if (delBytes) {
                                 panel.getTitle().setTitleColor(new Color(46, 139, 87));
                             } else {
                                 panel.getTitle().setTitleColor(Color.red);
@@ -241,7 +247,6 @@ public class VideoCatcher implements Runnable {
         int x = 0;
         int t = 0;
 
-        BufferedImage image;
         while (true) {
             while (catchVideo) {
                 try {
@@ -271,16 +276,16 @@ public class VideoCatcher implements Runnable {
                             bufferBytes.put(l, imageBytes);
                             fps++;
 
-                            if (countDoNotShowImages >= settingCountDoNotShowImages) {
+                            if (showImage) {
                                 ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
                                 try {
-                                    image = ImageIO.read(inputStream);
+                                    BufferedImage image = ImageIO.read(inputStream);
                                     inputStream.close();
                                     panel.setBufferedImage(processImage(image, maxWidth, maxHeight));
 //                                panel.setBufferedImage(processImageNew(image, maxWidth, maxHeight));
                                     panel.repaint();
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+//                                    e.printStackTrace();
                                 }
                                 countDoNotShowImages = 0;
                             } else {
@@ -288,35 +293,35 @@ public class VideoCatcher implements Runnable {
                             }
 
                             if (!startSaveVideo) {
-                                if (timeDeque.size() > sizeVideoSecond * fpsNotZero) {
+                                if (delBytes) {
                                     bufferBytes.remove(timeDeque.pollLast());
                                 }
-                            }
+                            } else {
+                                if (stopSaveVideo) {
+                                    MainVideoCreator.stopCatchVideo();
+                                    int size = timeDeque.size();
+                                    for (int i = 0; i < size; i++) {
+                                        Long timeLong = timeDeque.pollLast();
+                                        mapBytes.put(timeLong, bufferBytes.get(timeLong));
+                                        bufferBytes.remove(timeLong);
+                                    }
 
-                            if (stopSaveVideo) {
-                                MainVideoCreator.stopCatchVideo();
-                                int size = timeDeque.size();
-                                for (int i = 0; i < size; i++) {
-                                    Long timeLong = timeDeque.pollLast();
-                                    mapBytes.put(timeLong, bufferBytes.get(timeLong));
-                                    bufferBytes.remove(timeLong);
+                                    int num;
+                                    if (panel.getCameraNumber() % 2 == 0) {
+                                        num = 2;
+                                    } else {
+                                        num = 1;
+                                    }
+
+                                    videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber,++countPartsOfVideo);
+                                    mapBytes = new HashMap<>();
+                                    eventsFramesNumber = new HashMap<>();
+                                    stopSaveVideoInt = 0;
+                                    totalSecondAlreadySaved = 0;
+                                    countPartsOfVideo = 0;
+                                    stopSaveVideo = false;
+                                    startSaveVideo = false;
                                 }
-
-                                int num;
-                                if (panel.getCameraNumber() % 2 == 0) {
-                                    num = 2;
-                                } else {
-                                    num = 1;
-                                }
-
-                                videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber,++countPartsOfVideo);
-                                mapBytes = new HashMap<>();
-                                eventsFramesNumber = new HashMap<>();
-                                stopSaveVideoInt = 0;
-                                totalSecondAlreadySaved = 0;
-                                countPartsOfVideo = 0;
-                                stopSaveVideo = false;
-                                startSaveVideo = false;
                             }
                         }
                     }

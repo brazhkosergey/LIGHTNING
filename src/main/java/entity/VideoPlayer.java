@@ -357,13 +357,13 @@ public class VideoPlayer extends JPanel {
         speedLabel.setPreferredSize(new Dimension(50, 10));
         FPSLabel.setPreferredSize(new Dimension(80, 10));
         buttonsPane.add(backButton);
-        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+//        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(label1);
-        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+//        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(informLabel);
-        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+//        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(sliderLabel);
-        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+//        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(previousImage);
         buttonsPane.add(slowerButton);
         buttonsPane.add(playButton);
@@ -373,11 +373,11 @@ public class VideoPlayer extends JPanel {
         buttonsPane.add(nextImage);
         buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(speedLabel);
-        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+//        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(FPSLabel);
-        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+//        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         buttonsPane.add(saveImageButton);
-        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
+//        buttonsPane.add(Box.createRigidArea(new Dimension(10, 10)));
         JPanel southPane = new JPanel();
 
         JPanel sliderPanel = new JPanel();

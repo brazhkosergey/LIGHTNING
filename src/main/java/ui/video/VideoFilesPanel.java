@@ -10,6 +10,7 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 
 public class VideoFilesPanel extends JPanel {
     private SimpleDateFormat dateFormat = new SimpleDateFormat();
@@ -132,17 +133,53 @@ public class VideoFilesPanel extends JPanel {
                 VideoPlayer videoPlayer = new VideoPlayer(mapOfFiles.get(dataLong), dateFormat.format(new Date(dataLong)));
                 MainFrame.getMainFrame().setCentralPanel(videoPlayer);
             });
+
             exportButton = new JButton("Експорт");
             exportButton.addActionListener((e) -> {
+                List<Thread> list = new ArrayList<>();
+                boolean finish = false;
                 Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
                 for (Integer integer : integerFileMap.keySet()) {
                     File file1 = integerFileMap.get(integer);
                     Thread thread = new Thread(() -> {
+//                        MainVideoCreator.encodeVideo(file1);
                         MainVideoCreator.encodeVideoXuggle(file1);
                     });
-                    thread.start();
+                    list.add(thread);
+
+//                    thread.start();
                 }
+                Thread saverThread = new Thread(() -> {
+                    int size = list.size();
+                    for(int i=0;i<list.size();i++){
+                        MainFrame.showInformMassage("Группа - " +(i+1), true);
+                        list.get(i).start();
+                        try {
+                            list.get(i).sleep(1000);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                        while (true){
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            }
+                            if(!list.get(i).isAlive()){
+                                break;
+                            }
+                        }
+                        MainFrame.showInformMassage("Сохранили файл - " +(i+1), true);
+                        try {
+                            list.get(i).sleep(1000);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+                saverThread.start();
             });
+
             deleteButton = new JButton("Видалити");
             deleteButton.addActionListener((e) -> {
                 Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
