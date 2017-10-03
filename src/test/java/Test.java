@@ -2,9 +2,7 @@ import entity.MainVideoCreator;
 import entity.sound.SoundSaver;
 
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -47,6 +45,19 @@ public class Test {
         try {
 //            FileInputStream fileInputStream = new FileInputStream("C:\\ipCamera\\bytes\\censor-beep-6.wav");
             FileInputStream fileInputStream = new FileInputStream("C:\\ipCamera\\bytes\\boom.wav");//32640
+
+            try {
+                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(new File("C:\\ipCamera\\bytes\\boom.wav"));
+//                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(fileInputStream);
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioInputStream);
+                clip.loop(0);
+            } catch (UnsupportedAudioFileException e) {
+                e.printStackTrace();
+            } catch (LineUnavailableException e) {
+                e.printStackTrace();
+            }
+
 
             while (fileInputStream.read(bytes) > 0) {
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);

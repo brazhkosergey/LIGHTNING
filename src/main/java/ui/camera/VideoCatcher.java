@@ -38,12 +38,21 @@ public class VideoCatcher implements Runnable {
     private Deque<Long> timeDeque;
 
     private VideoCreator videoCreator;
+
+    private URL url;
+    private HttpURLConnection connection = null;
     private BufferedInputStream bufferedInputStream;
     private InputStream inputStream;
     private ByteArrayOutputStream temporaryStream = null;
+
+    private URL urlToShowVideo;
+    private BufferedInputStream bufferedInputStreamToShowVideo;
+    private InputStream inputStreamToShowVideo;
+    private ByteArrayOutputStream temporaryStreamToShowVideo = null;
+    private HttpURLConnection connectionToShowVideo = null;
     private CameraPanel panel;
-    private URL url;
-    private HttpURLConnection connection = null;
+    private boolean showVideo;
+    private Thread showVideoThread;
 
     private boolean restart;
     private boolean catchVideo;
@@ -65,6 +74,44 @@ public class VideoCatcher implements Runnable {
 
     public VideoCatcher(CameraPanel panel, VideoCreator videoCreator) {
         startSaveVideo = false;
+
+        showVideoThread = new Thread(() -> {
+            int x = 0;
+            int t = 0;
+            while (true) {
+                if (showVideo) {
+                    try {
+                        t = x;
+                        try {
+                            x = bufferedInputStreamToShowVideo.read();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        temporaryStreamToShowVideo.write(x);
+                        if (x == 216 && t == 255) {// начало изображения
+                            temporaryStreamToShowVideo.reset();
+
+                            temporaryStreamToShowVideo.write(t);
+                            temporaryStreamToShowVideo.write(x);
+                        } else if (x == 217 && t == 255) {//конец изображения
+                            byte[] imageBytes = temporaryStreamToShowVideo.toByteArray();
+                            ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+                            try {
+                                BufferedImage image = ImageIO.read(inputStream);
+                                inputStream.close();
+                                panel.setBufferedImage(processImage(image, maxWidth, maxHeight));
+//                                panel.setBufferedImage(processImageNew(image, maxWidth, maxHeight));
+                                panel.repaint();
+                            } catch (Exception e) {
+//                                    e.printStackTrace();
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
 
         fpsThread = new Thread(() -> {
             while (true) {
@@ -89,14 +136,14 @@ public class VideoCatcher implements Runnable {
                         } else {
                             if (!restart) {
                                 countTimesToHaveNotBytesToRead++;
-                                    System.out.println("===============================");
-                                    System.out.println(countTimesToHaveNotBytesToRead);
-                                    if (countTimesToHaveNotBytesToRead > 10) {
-                                        restart = true;
-                                        bufferedInputStream = null;
-                                        countTimesToHaveNotBytesToRead = 0;
-                                        createInputStream();
-                                    }
+                                System.out.println("===============================");
+                                System.out.println(countTimesToHaveNotBytesToRead);
+                                if (countTimesToHaveNotBytesToRead > 10) {
+                                    restart = true;
+                                    bufferedInputStream = null;
+                                    countTimesToHaveNotBytesToRead = 0;
+                                    createInputStream();
+                                }
 
                             }
                         }
@@ -107,6 +154,7 @@ public class VideoCatcher implements Runnable {
                                 eventsFramesNumber.put(frameCount, MainVideoCreator.isProgramingLightCatch());
                                 startSaveVideo = true;
                             }
+
                             delBytes = timeDeque.size() > sizeVideoSecond * fpsNotZero;
                             if (delBytes) {
                                 panel.getTitle().setTitleColor(new Color(46, 139, 87));
@@ -127,11 +175,11 @@ public class VideoCatcher implements Runnable {
                         }
 
                         if (startSaveVideo) {
-                            if(saveVideoOnePartOfVideo){
+                            if (saveVideoOnePartOfVideo) {
                                 Thread.sleep(1000);
                                 stopSaveVideoInt++;
                                 int size = timeDeque.size();
-                                System.out.println("Размер буффера: "+bufferBytes.size());
+                                System.out.println("Размер буффера: " + bufferBytes.size());
                                 for (int i = 0; i < size; i++) {
                                     Long timeLong = timeDeque.pollLast();
                                     mapBytes.put(timeLong, bufferBytes.get(timeLong));
@@ -145,15 +193,15 @@ public class VideoCatcher implements Runnable {
                                     num = 1;
                                 }
 
-                                System.out.println("Сохраняем файла размером кадров - "+mapBytes.size());
-                                System.out.println("Новый размер буффера: "+bufferBytes.size());
+                                System.out.println("Сохраняем файла размером кадров - " + mapBytes.size());
+                                System.out.println("Новый размер буффера: " + bufferBytes.size());
                                 System.out.println("Размер очереди: " + timeDeque.size());
 
-                                videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber,++countPartsOfVideo);
+                                videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber, ++countPartsOfVideo);
                                 mapBytes = new HashMap<>();
                                 eventsFramesNumber = new HashMap<>();
                                 saveVideoOnePartOfVideo = false;
-                                totalSecondAlreadySaved =0;
+                                totalSecondAlreadySaved = 0;
                             }
 
                             totalSecondAlreadySaved++;
@@ -179,13 +227,15 @@ public class VideoCatcher implements Runnable {
         panel.repaint();
     }
 
-    public void startCatchVideo(URL url) {
+    public void startCatchVideo(URL urlMainStream, URL urlStreamToShow) {
         if (this.url != null) {
             changeURL = true;
-            this.url = url;
+            this.url = urlMainStream;
+            this.urlToShowVideo = urlStreamToShow;
             catchVideo = false;
         } else {
-            this.url = url;
+            this.url = urlMainStream;
+            this.urlToShowVideo = urlStreamToShow;
             catchVideo = true;
             panel.startShowVideo();
         }
@@ -195,11 +245,11 @@ public class VideoCatcher implements Runnable {
         System.out.println("Пробуем создать BufferedInputStream");
         if (url != null) {
             try {
-                if(connection!=null){
+                if (connection != null) {
                     connection.disconnect();
                 }
 
-                if(bufferedInputStream!=null){
+                if (bufferedInputStream != null) {
                     bufferedInputStream.close();
                 }
 
@@ -211,16 +261,9 @@ public class VideoCatcher implements Runnable {
                     bufferBytes = new HashMap<>();
                     mapBytes = new HashMap<>();
                 }
-
-                System.out.println("пробуем открыть соединение");
                 connection = (HttpURLConnection) url.openConnection();
-                System.out.println("Ok");
-                System.out.println("пробуем открыть InputStream");
                 inputStream = connection.getInputStream();
-                System.out.println("ok");
-                System.out.println("пробуем открыть bufferedInputStream");
                 bufferedInputStream = new BufferedInputStream(inputStream);
-                System.out.println("ok");
                 restart = false;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -229,7 +272,7 @@ public class VideoCatcher implements Runnable {
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
-                if(!restart){
+                if (!restart) {
                     createInputStream();
                 } else {
                     panel.getTitle().setTitle("Відновлюемо зв'язок");
@@ -238,6 +281,20 @@ public class VideoCatcher implements Runnable {
             }
         } else {
             System.out.println("URL = NULL");
+        }
+
+        if (urlToShowVideo != null) {
+            try {
+                connectionToShowVideo = (HttpURLConnection) urlToShowVideo.openConnection();
+                inputStreamToShowVideo = connectionToShowVideo.getInputStream();
+                bufferedInputStreamToShowVideo = new BufferedInputStream(inputStreamToShowVideo);
+                showVideo = true;
+                showVideoThread.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Видео поток для визуализации не подключен");
         }
     }
 
@@ -313,7 +370,7 @@ public class VideoCatcher implements Runnable {
                                         num = 1;
                                     }
 
-                                    videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber,++countPartsOfVideo);
+                                    videoCreator.addMapByte(num, mapBytes, fpsNotZero, eventsFramesNumber, ++countPartsOfVideo);
                                     mapBytes = new HashMap<>();
                                     eventsFramesNumber = new HashMap<>();
                                     stopSaveVideoInt = 0;
@@ -375,7 +432,7 @@ public class VideoCatcher implements Runnable {
         eventsFramesNumber.put(frameCount, MainVideoCreator.isProgramingLightCatch());
         stopSaveVideoInt = 0;
 // TODO       if(totalSecondAlreadySaved>299){
-        if(totalSecondAlreadySaved > 50){
+        if (totalSecondAlreadySaved > 50) {
             saveVideoOnePartOfVideo = true;
             System.out.println("Сохраняем часть видео " + saveVideoOnePartOfVideo);
         }

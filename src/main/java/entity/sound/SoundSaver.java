@@ -3,10 +3,7 @@ package entity.sound;
 import entity.MainVideoCreator;
 import ui.main.MainFrame;
 
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -44,7 +41,6 @@ public class SoundSaver extends Thread {
     Map<Long, byte[]> map = new HashMap<>();
     final static String CRLF = "\r\n";
 
-    private int soundPacketNumber;
     private int audioFPS = 0;
     private int fpsNotZero;
     private boolean hearSound;
@@ -53,9 +49,12 @@ public class SoundSaver extends Thread {
     private int stopSaveAudioInt;
     private int sizeAudioSecond;
 
+
+    private SourceDataLine clipSDL = null;
     private boolean stopSaveAudio;
     private boolean startSaveAudio;
     private boolean delBytes;
+
 
     private boolean connect = false;
 
@@ -64,17 +63,17 @@ public class SoundSaver extends Thread {
     Map<Long, byte[]> mainMapSaveFile;
 
     public SoundSaver(String addressName) {
-        try{
+        try {
             System.out.println("Исходная строка - " + addressName);
             int i = addressName.indexOf("://");
-            String substring = addressName.substring(i+3, addressName.length());
-            System.out.println("Первая строка -"+substring);
+            String substring = addressName.substring(i + 3, addressName.length());
+            System.out.println("Первая строка -" + substring);
             int i1 = substring.indexOf("/");
             String address = substring.substring(0, i1);
             String fileName = substring.substring(i1, substring.length());
 
-            System.out.println("Адресс - "+address);
-            System.out.println("Имя файла - "+fileName);
+            System.out.println("Адресс - " + address);
+            System.out.println("Имя файла - " + fileName);
 
             VideoFileName = fileName; //"/axis-media/media.amp"     rtsp://184.72.239.149/vod/mp4:BigBuckBunny_175k.mov
             try {
@@ -86,7 +85,7 @@ public class SoundSaver extends Thread {
                 e.printStackTrace();
             }
 
-            if(connect){
+            if (connect) {
                 deque = new ConcurrentLinkedDeque<>();
                 mainMapSaveFile = new HashMap<>();
 
@@ -138,9 +137,15 @@ public class SoundSaver extends Thread {
                             updateRequest++;
                         }
                     }
+                    clipSDL.drain();
+                    clipSDL.stop();
+                    clipSDL.close();
                 });
                 hearSound = true;
                 thread.start();
+
+                playAudio();
+
                 state = INIT;
                 timer = new Timer(20, new timerListener());
                 timer.setInitialDelay(0);
@@ -153,14 +158,13 @@ public class SoundSaver extends Thread {
                 }
                 buf = new byte[15000];
             }
-
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void SETUP() {
-        if(connect){
+        if (connect) {
             RTSPSeqNb = 1;
             send_RTSP_request("SETUP");
             if (parse_server_response() != 200)
@@ -173,7 +177,7 @@ public class SoundSaver extends Thread {
     }
 
     public void PLAY() {
-        if (connect&&state == READY) {
+        if (connect && state == READY) {
             RTSPSeqNb++;
             send_RTSP_request("PLAY");
             if (parse_server_response() != 200) {
@@ -186,7 +190,7 @@ public class SoundSaver extends Thread {
     }
 
     public void TEARDOWN() {
-        if(connect){
+        if (connect) {
             hearSound = false;
             RTSPSeqNb++;
             //Send TEARDOWN message to the server
@@ -200,6 +204,32 @@ public class SoundSaver extends Thread {
         }
     }
 
+
+    public void playAudio() {
+//        byte[] b = new byte[2048];
+        try {
+//            AudioFormat af = ais.getFormat();
+            AudioFormat af = new AudioFormat(AudioFormat.Encoding.PCM_FLOAT, 41000f,
+                    8, 1, 2, 41000f, true);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, af);
+            if (AudioSystem.isLineSupported(info)) {
+                clipSDL = (SourceDataLine) AudioSystem.getLine(info);
+                clipSDL.open(af);
+                clipSDL.start();
+//                int num = 0;
+//                while ((num = ais.read(b)) != -1) {
+//                    clipSDL.write(b, 0, num);
+//                }
+//                clipSDL.drain();
+//                clipSDL.stop();
+//                clipSDL.close();
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+
     class timerListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             DatagramPacket rcvdp = new DatagramPacket(buf, buf.length);
@@ -208,6 +238,9 @@ public class SoundSaver extends Thread {
                 RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
                 byte[] bytes = new byte[rtp_packet.getpayload_length()];
                 rtp_packet.getpayload(bytes);
+
+                clipSDL.write(bytes, 0, bytes.length);
+
                 audioFPS++;
                 long l = System.currentTimeMillis();
                 deque.addFirst(l);

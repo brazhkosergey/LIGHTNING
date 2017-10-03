@@ -216,7 +216,7 @@ public class CameraAddressSetting extends JPanel {
                 titleAudio.setBorder(new LineBorder(new Color(46, 139, 87), 2, true));
                 audioPane.setBorder(titleAudio);
                 JLabel addressAudioLabel = new JLabel("Адреса");
-                JTextField addressAudioTextField = new JTextField("rtsp://192.168.3.221/axis-media/media.amp");
+                JTextField addressAudioTextField = new JTextField();//"rtsp://192.168.3.221/axis-media/media.amp"
                 textFieldsIpAddressMap.put(null, addressAudioTextField);
                 addressAudioTextField.setPreferredSize(new Dimension(250, 25));
 //                JLabel fileNameAudioLabel = new JLabel("Ім'я файлу");
@@ -244,7 +244,7 @@ public class CameraAddressSetting extends JPanel {
 
     public void saveAddressToMap() {
         for (Integer textFieldNumber : textFieldsIpAddressMap.keySet()) {
-            if(textFieldNumber!=null){
+            if (textFieldNumber != null) {
                 String ipAddress = textFieldsIpAddressMap.get(textFieldNumber).getText();
                 if (ipAddress.length() > 3) {
                     String userName = textFieldsUsernameMap.get(textFieldNumber).getText();
@@ -258,15 +258,19 @@ public class CameraAddressSetting extends JPanel {
                 } else {
                     MainFrame.camerasAddress.put(textFieldNumber, null);
                 }
+            } else {
+                String ipAddress = textFieldsIpAddressMap.get(textFieldNumber).getText();
+                if (ipAddress.length() > 3) {
+                    if (ipAddress.length() > 1) {
+                        List<String> list = new ArrayList<>();
+                        list.add(ipAddress);
+                        MainFrame.camerasAddress.put(null, list);
+                        MainFrame.addressSaver.savePasswords(0, ipAddress, null, null);
+                    } else {
+                        MainFrame.camerasAddress.put(null, new ArrayList<>());
+                    }
+                }
             }
-        }
-        String ipAddress = textFieldsIpAddressMap.get(null).getText();
-        if (ipAddress.length()>1) {
-            List<String> list = new ArrayList<>();
-            list.add(ipAddress);
-            MainFrame.camerasAddress.put(null, list);
-        } else {
-            MainFrame.camerasAddress.put(null, new ArrayList<>());
         }
     }
 

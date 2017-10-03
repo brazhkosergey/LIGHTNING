@@ -12,6 +12,10 @@ import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.TargetDataLine;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -68,15 +72,15 @@ public class MainVideoCreator {
         saveVideo = false;
     }
 
-    public static void saveAudioBytes(Map<Long,byte[]> map){
-        String path = "C:\\ipCamera\\bytes\\" + date.getTime() +"audio.tmp";
+    public static void saveAudioBytes(Map<Long, byte[]> map) {
+        String path = "C:\\ipCamera\\bytes\\" + date.getTime() + ".sound";
         System.out.println("Создаем аудио файл - " + path);
 
         File file = new File(path);
         try {
             if (file.createNewFile()) {
                 FileOutputStream fileOutputStream = new FileOutputStream(file);
-                for (long l:map.keySet()) {
+                for (long l : map.keySet()) {
                     byte[] bytes = map.get(l);
                     try {
                         if (bytes != null) {
@@ -149,9 +153,6 @@ public class MainVideoCreator {
 
         MainFrame.showInformMassage("Блок - " + numberOfGroup + " збережено.", true);
     }
-
-
-
 
 //    public static void encodeVideo(File file) {
 //        try {
@@ -260,7 +261,7 @@ public class MainVideoCreator {
 //        }
 //    }
 
-        public static void encodeVideoXuggle(File file) {
+    public static void encodeVideoXuggle(File file) {
         String name = file.getName();
         String[] split = name.split("-");
         long dateLong = Long.parseLong(split[0]);
@@ -316,7 +317,6 @@ public class MainVideoCreator {
             e.printStackTrace();
         }
 
-
         BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
 
         if (bufferedInputStream != null) {
@@ -353,6 +353,31 @@ public class MainVideoCreator {
                             writer.addVideoStream(0, 0,
                                     ICodec.ID.CODEC_ID_MPEG4,
                                     image.getWidth(), image.getHeight());
+//                            ========================================================
+//                            ========================================================
+//                            ========================================================
+//                            ========================================================
+//                            writer.addAudioStream()
+//                            byte[] audioBytes = new byte[line.getBufferSize() / 2]; // best size?
+//                            int numBytesRead = 0;
+//                            numBytesRead = line.read(audioBytes, 0, audioBytes.length);
+//                            // convert to signed shorts representing samples
+//                            int numSamplesRead = numBytesRead / 2;
+//                            short[] audioSamples = new short[numSamplesRead];
+//                            if (format.isBigEndian()) {
+//                                for (int i = 0; i < numSamplesRead; i++) {
+//                                    audioSamples[i] = (short) ((audioBytes[2 * i] << 8) | audioBytes[2 * i + 1]);
+//                                }
+//                            } else {
+//                                for (int i = 0; i < numSamplesRead; i++) {
+//                                    audioSamples[i] = (short) ((audioBytes[2 * i + 1] << 8) | audioBytes[2 * i]);
+//                                }
+//                            }
+//                            writer.encodeAudio(0,audioSamples);?????????/
+                            // use audioSamples in Xuggler etc
+//                            ========================================================
+//                            ========================================================
+//                            ========================================================
                             addVideoStream = true;
                         }
 
@@ -365,14 +390,12 @@ public class MainVideoCreator {
                             System.out.println("Пишем изображение - " + count++);
 //                            MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
                         } else {
-                            if (image != null) {
-                                writer.encodeVideo(0, image, nextFrameTime,
-                                        TimeUnit.MILLISECONDS);
-                                nextFrameTime += frameRate;
-                                System.out.println("Пишем изображение - " + count++);
-                                MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
-                                image = null;
-                            }
+                            writer.encodeVideo(0, image, nextFrameTime,
+                                    TimeUnit.MILLISECONDS);
+                            nextFrameTime += frameRate;
+                            System.out.println("Пишем изображение - " + count++);
+                            MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
+                            image = null;
                         }
                     }
                 }

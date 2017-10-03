@@ -22,6 +22,7 @@ import java.util.Map;
 public class AddressSaver {
 
     private String [] arr = new String[24];
+    private String audioAddress;
     private int timeToSave;
     private boolean programWork;
     private int changeWhitePercent;
@@ -30,13 +31,18 @@ public class AddressSaver {
     private int doNotShowFrames;
 
     public void savePasswords(int numberOfCamera, String ipAddress,String username, String password){
-        int ipAddressInt = numberOfCamera - 1;
-        int userNameInt = numberOfCamera+7;
-        int passwordInt = numberOfCamera+15;
+        if(numberOfCamera==0){
+            audioAddress = ipAddress;
+        } else {
+            int ipAddressInt = numberOfCamera - 1;
+            int userNameInt = numberOfCamera+7;
+            int passwordInt = numberOfCamera+15;
 
-        arr[ipAddressInt] = ipAddress;
-        arr[userNameInt] = username;
-        arr[passwordInt] = password;
+            arr[ipAddressInt] = ipAddress;
+            arr[userNameInt] = username;
+            arr[passwordInt] = password;
+        }
+
         savePasswordSaverToFile();
     }
 
@@ -53,6 +59,7 @@ public class AddressSaver {
     public void cleanSaver(){
         for(int i = 0;i<arr.length;i++){
             arr[i] = "";
+            audioAddress = null;
         }
     }
 
@@ -131,6 +138,8 @@ public class AddressSaver {
         for(Integer integer:textFieldsIpAddressMap.keySet()){
             if(integer!=null){
                 textFieldsIpAddressMap.get(integer).setText(arr[integer-1]);
+            } else {
+                textFieldsIpAddressMap.get(integer).setText(audioAddress);
             }
         }
 
