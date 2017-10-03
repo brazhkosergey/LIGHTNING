@@ -71,13 +71,11 @@ public class MainFrame extends JFrame {
 
     private MainFrame() {
         super("LIGHTNING");
-
         mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         northPanel = new JPanel();
         centralPanel = new JPanel();
         southPanel = new JPanel();
-
         imagesForBlock = new HashMap<>();
         cameras = new HashMap<>();
         cameraBlock = new HashMap<>();
@@ -96,78 +94,81 @@ public class MainFrame extends JFrame {
         qualityVideoLabel.setPreferredSize(new Dimension(120, 30));
         countSaveVideo = new JLabel("Зберігаемо " + timeToSave + "сек.");
         countSaveVideo.setPreferredSize(new Dimension(120, 30));
-
         lightSensitivityLabel = new JLabel("Чутливість: " + colorLightNumber);
         changeWhiteLabel = new JLabel("Збільшення світла: " + percentDiffWhite + "%");
-
         usedMemoryLabel = new JLabel();
         usedMemoryLabel.setPreferredSize(new Dimension(100, 30));
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1150, 720));
         addressSaver = AddressSaver.restorePasswords();
 
+        Thread alarmThread = new Thread(() -> {
+            ServerSocket ss = null;
+            try {
+                ss = new ServerSocket(9999);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            while (true){
+                try {
+                    System.out.println("Создали сервер сокет");
+                    Socket socket = ss.accept();
+                    System.out.println("дождались прихода запроса");
+                    MainVideoCreator.startCatchVideo(false);
+                    socket.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        alarmThread.start();
+
         Thread thread = new Thread(() -> {
             int playInt = 0;
             boolean red = false;
-            boolean green = false;
+//            boolean green = false;
             boolean startRec = true;
+
 
 //            DatagramSocket socket = null;
 //            try {
-//                socket = new DatagramSocket(20000); //socket to be used to send and receive UDP packets
+//                socket = new DatagramSocket(25100); //socket to be used to send and receive UDP packets
 //                socket.setSoTimeout(5);
 //            } catch (SocketException e) {
+//                e.printStackTrace();
+//            }
+//            ServerSocket socket = null;
+//            try {
+//                socket = new ServerSocket(25100);
+//                socket.setSoTimeout(5);
+//            } catch (IOException e) {
 //                e.printStackTrace();
 //            }
 //            byte[] buf = new byte[15000];
             String s = null;
             while (true) {
-//                try {
-//                    DatagramPacket packet = new DatagramPacket(buf, buf.length);
-//                    socket.receive(packet);
-//                    System.out.println("что то получили.");
-//                } catch (Exception e) {
-//                    System.out.println("нечего читать");
-//                    //e.printStackTrace();
+//                if (s != null) {
+//                    if (green) {
+//                        alarmLabel.setForeground(Color.green);
+//                        green = false;
+//                    } else {
+//                        alarmLabel.setForeground(Color.LIGHT_GRAY);
+//                        green = true;
+//                    }
+//                    if (s.contains("YES")) {
+//                        MainVideoCreator.startCatchVideo(false);
+//                    }
+//                } else {
+//                    if (green) {
+//                        alarmLabel.setForeground(Color.RED);
+//                        green = false;
+//                    } else {
+//                        alarmLabel.setForeground(Color.LIGHT_GRAY);
+//                        green = true;
+//                    }
 //                }
-                try {
-                    URL url = new URL("http://127.0.0.1:8080/Alarm/save");
-                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                    urlConnection.setReadTimeout(100);
-                    InputStream inputStream = urlConnection.getInputStream();
-                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                    BufferedReader reader = new BufferedReader(inputStreamReader);
-                    s = reader.readLine();
-                    urlConnection.disconnect();
-                    inputStream.close();
-                    reader.close();
-                } catch (Exception ignored) {
-                    ;
-                }
-
-                if (s != null) {
-                    if (green) {
-                        alarmLabel.setForeground(Color.green);
-                        green = false;
-                    } else {
-                        alarmLabel.setForeground(Color.LIGHT_GRAY);
-                        green = true;
-                    }
-                    if (s.contains("YES")) {
-                        MainVideoCreator.startCatchVideo(false);
-                    }
-                } else {
-                    if (green) {
-                        alarmLabel.setForeground(Color.RED);
-                        green = false;
-                    } else {
-                        alarmLabel.setForeground(Color.LIGHT_GRAY);
-                        green = true;
-                    }
-                }
-                System.out.println("ответ от сервера - " + s);
-                s = null;
-
+////                System.out.println("ответ от сервера - " + s);
+//                s = null;
                 if (MainVideoCreator.isSaveVideo()) {
                     if (startRec) {
                         mainLabel.setText("Йде запис відео");
@@ -555,7 +556,7 @@ public class MainFrame extends JFrame {
 
             Thread gh = new Thread(() -> {
                 List<String> list = camerasAddress.get(null);
-                if (list.size() != 0) {
+                if (list != null && list.size() != 0) {
                     String string = list.get(0);
                     soundSaver = new SoundSaver(string);
                     soundSaver.SETUP();
