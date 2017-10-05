@@ -295,7 +295,7 @@ public class VideoPlayerPanel extends JPanel {
                                     image = ImageIO.read(bufferedInputImageStream);
                                     inputImageStream.close();
                                     bufferedInputImageStream.close();
-                                } catch (IOException e) {
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
 
@@ -330,7 +330,7 @@ public class VideoPlayerPanel extends JPanel {
                                 image = ImageIO.read(bufferedInputImageStream);
                                 inputImageStream.close();
                                 bufferedInputImageStream.close();
-                            } catch (IOException e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
                             }
                             if (image != null) {
@@ -352,7 +352,7 @@ public class VideoPlayerPanel extends JPanel {
                                 fileOutputStream.flush();
                                 fileOutputStream.close();
                             }
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
 
@@ -395,7 +395,7 @@ public class VideoPlayerPanel extends JPanel {
                                             image = ImageIO.read(bufferedInputImageStream);
                                             inputImageStream.close();
                                             bufferedInputImageStream.close();
-                                        } catch (IOException e) {
+                                        } catch (Exception e) {
                                             e.printStackTrace();
                                         }
 
@@ -416,7 +416,7 @@ public class VideoPlayerPanel extends JPanel {
                                         image = ImageIO.read(bufferedInputImageStream);
                                         inputImageStream.close();
                                         bufferedInputImageStream.close();
-                                    } catch (IOException e) {
+                                    } catch (Exception e) {
                                         e.printStackTrace();
                                     }
                                     if (image != null) {
@@ -445,7 +445,7 @@ public class VideoPlayerPanel extends JPanel {
                                         image = ImageIO.read(bufferedInputImageStream);
                                         inputImageStream.close();
                                         bufferedInputImageStream.close();
-                                    } catch (IOException e) {
+                                    } catch (Exception e) {
                                         e.printStackTrace();
                                     }
 
@@ -538,6 +538,44 @@ public class VideoPlayerPanel extends JPanel {
     }
 
     private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
+////        ====================================================
+//        int[] rgb1 = bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), null, 0, 2048);
+//        int countWhite = 0;
+//        int allPixels = rgb1.length;
+//
+//        int k = 10;
+//
+//        for (int i = 0; i < allPixels; i=i+k) {
+//            if (rgb1[i] > numberGRB && rgb1[i] < -1) {
+//                countWhite++;
+//            }
+//        }
+//
+//        if(countWhite!=0){
+//            countWhite = countWhite * k;
+//        }
+//
+//        double percent = (double) countWhite / allPixels;
+//        int percentInt = (int) (percent * 100);
+//
+//        if (whitePercent != -1) {
+//            int differentWhitePercent = Math.abs(percentInt - whitePercent);
+//            if (differentWhitePercent > MainFrame.getPercentDiffWhite()) {
+//                System.out.println(numberVideoPanel+ " Процент белого - "+ percentInt +". Разница "+differentWhitePercent);
+////                MainVideoCreator.startCatchVideo(true);
+//                whitePercent = -1;
+//            } else {
+//                if (percentInt != whitePercent) {
+//                    whitePercent = percentInt;
+//                }
+//                System.out.println(numberVideoPanel+" Процент белого сейчас - "+whitePercent);
+//            }
+//        } else {
+//            whitePercent = percentInt;
+//        }
+//
+//        System.out.println("======================");
+////        ========================================
         BufferedImage bi2 = null;
         double max;
         int size;
@@ -566,39 +604,6 @@ public class VideoPlayerPanel extends JPanel {
         } else {
             return bi;
         }
-            int[] rgb1 = bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), null, 0, 2048);
-            int countWhite = 0;
-            int allPixels = rgb1.length;
-
-            int k = 10;
-
-            for (int i = 0; i < allPixels; i=i+k) {
-                if (rgb1[i] > numberGRB && rgb1[i] < -1) {
-                    countWhite++;
-                }
-            }
-
-            if(countWhite!=0){
-                countWhite = countWhite * k;
-            }
-
-            double percent = (double) countWhite / allPixels;
-            int percentInt = (int) (percent * 100);
-
-            if (whitePercent != -1) {
-                int differentWhitePercent = Math.abs(percentInt - whitePercent);
-                if (differentWhitePercent > MainFrame.getPercentDiffWhite()) {
-                    MainVideoCreator.startCatchVideo(true);
-                    whitePercent = -1;
-                } else {
-                    if (percentInt != whitePercent) {
-                        whitePercent = percentInt;
-                    }
-                }
-            } else {
-                whitePercent = percentInt;
-            }
-
             return bi2;
     }
 

@@ -44,8 +44,11 @@ public class CameraPanel extends JPanel {
         this.setBorder(title);
 
         videoCatcher = new VideoCatcher(this,videoCreator);
-        Thread thread = new Thread(videoCatcher);
-        thread.start();
+        videoCatcher.start();
+
+//        Thread thread = new Thread(videoCatcher);
+//        thread.setPriority(Thread.MAX_PRIORITY);
+//        thread.start();
     }
 
     public void repaintCameraWindow(){
@@ -139,6 +142,7 @@ public class CameraPanel extends JPanel {
     void startShowVideo(){
         this.removeAll();
         this.add(cameraWindowLayer);
+        System.out.println("Начинаем показывать видeo "+ getCameraNumber());
     }
 
     void stopShowVideo(){

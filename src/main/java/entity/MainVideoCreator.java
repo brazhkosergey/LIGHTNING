@@ -12,17 +12,13 @@ import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.TargetDataLine;
+import javax.sound.sampled.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class MainVideoCreator {
@@ -73,6 +69,53 @@ public class MainVideoCreator {
     }
 
     public static void saveAudioBytes(Map<Long, byte[]> map) {
+
+        int size = 0;
+        List<Long> longList = new ArrayList<>();
+
+        for(Long l:map.keySet()){
+            longList.add(l);
+        }
+
+        Collections.sort(longList);
+
+        for (Long integer : map.keySet()) {
+            byte[] bytes = map.get(integer);
+            size = size + bytes.length;
+        }
+        ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(35535);
+        for (Long l:longList) {
+            byte[] bytes = map.get(l);
+            try {
+                temporaryStream.write(bytes);
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        }
+
+        ByteArrayInputStream interleavedStream = new ByteArrayInputStream(temporaryStream.toByteArray());
+        final AudioFormat audioFormat = new AudioFormat(
+                AudioFormat.Encoding.ULAW,
+                8000f, // sample rate - you didn't specify, 44.1k is typical
+                8,      // how many bits per sample, i.e. per value in your byte array
+                1,      // you want two channels (stereo)
+                1,      // number of bytes per frame (frame == a sample for each channel)
+                8000f, // frame rate
+                true);  // byte order
+
+        final int numberOfFrames = size;
+        File audioFile = new File("C:\\ipCamera\\bytes\\"+date.getTime()+".wave");
+        final AudioInputStream audioStream = new AudioInputStream(interleavedStream, audioFormat, numberOfFrames);
+
+        try {
+            if (audioFile.createNewFile()) {
+                AudioSystem.write(audioStream, AudioFileFormat.Type.WAVE, audioFile);
+            }
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+
+
         String path = "C:\\ipCamera\\bytes\\" + date.getTime() + ".sound";
         System.out.println("Создаем аудио файл - " + path);
 
@@ -374,10 +417,13 @@ public class MainVideoCreator {
 //                                }
 //                            }
 //                            writer.encodeAudio(0,audioSamples);?????????/
-                            // use audioSamples in Xuggler etc
-//                            ========================================================
-//                            ========================================================
-//                            ========================================================
+//                             use audioSamples in Xuggler etc
+////                            ========================================================
+////                            ========================================================
+////                            ========================================================
+
+
+
                             addVideoStream = true;
                         }
 

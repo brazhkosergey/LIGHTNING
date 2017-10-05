@@ -25,7 +25,7 @@ public class MainFrame extends JFrame {
     private static JButton startButton;
     private static JButton startButtonProgrammingCatch;
     private static JLabel testModeLabel = new JLabel();
-    private static JLabel alarmLabel;
+    public static JLabel audioPacketCount;
 
     private static MainFrame mainFrame;
     private static JPanel mainPanel;
@@ -126,49 +126,9 @@ public class MainFrame extends JFrame {
         Thread thread = new Thread(() -> {
             int playInt = 0;
             boolean red = false;
-//            boolean green = false;
             boolean startRec = true;
-
-
-//            DatagramSocket socket = null;
-//            try {
-//                socket = new DatagramSocket(25100); //socket to be used to send and receive UDP packets
-//                socket.setSoTimeout(5);
-//            } catch (SocketException e) {
-//                e.printStackTrace();
-//            }
-//            ServerSocket socket = null;
-//            try {
-//                socket = new ServerSocket(25100);
-//                socket.setSoTimeout(5);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            byte[] buf = new byte[15000];
             String s = null;
             while (true) {
-//                if (s != null) {
-//                    if (green) {
-//                        alarmLabel.setForeground(Color.green);
-//                        green = false;
-//                    } else {
-//                        alarmLabel.setForeground(Color.LIGHT_GRAY);
-//                        green = true;
-//                    }
-//                    if (s.contains("YES")) {
-//                        MainVideoCreator.startCatchVideo(false);
-//                    }
-//                } else {
-//                    if (green) {
-//                        alarmLabel.setForeground(Color.RED);
-//                        green = false;
-//                    } else {
-//                        alarmLabel.setForeground(Color.LIGHT_GRAY);
-//                        green = true;
-//                    }
-//                }
-////                System.out.println("ответ от сервера - " + s);
-//                s = null;
                 if (MainVideoCreator.isSaveVideo()) {
                     if (startRec) {
                         mainLabel.setText("Йде запис відео");
@@ -227,9 +187,7 @@ public class MainFrame extends JFrame {
             }
         });
         thread.start();
-
         buildMainWindow();
-
         getContentPane().add(mainPanel, BorderLayout.CENTER);
         setVisible(true);
         pack();
@@ -262,8 +220,8 @@ public class MainFrame extends JFrame {
     }
 
     private void buildNorthPanel() {
-        alarmLabel = new JLabel(String.valueOf((char) 8226));
-        alarmLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 45));
+        audioPacketCount = new JLabel("AUDIO");
+//        audioPacketCount.setFont(new Font("Comic Sans MS", Font.BOLD, 45));
 
         JButton mainWindowButton = new JButton("Головна");
         mainWindowButton.setPreferredSize(new Dimension(120, 30));
@@ -351,7 +309,7 @@ public class MainFrame extends JFrame {
             MainVideoCreator.startCatchVideo(true);
         }));
 
-        northPanel.add(alarmLabel);
+        northPanel.add(audioPacketCount);
         northPanel.add(Box.createRigidArea(new Dimension(15, 10)));
         northPanel.add(mainWindowButton);
         northPanel.add(cameraButton);
@@ -533,9 +491,17 @@ public class MainFrame extends JFrame {
             }
             List<String> list = camerasAddress.get(addressNumber);
             if (list != null) {
+                System.out.println("Работает камера - " +addressNumber);
                 URL url = null;
+//                URL urlForShowVideo = null;
+
+                String s = list.get(3);
+//                Boolean show640= Boolean.valueOf(s);
+
                 try {
-                    url = new URL(list.get(0));
+//                    url = new URL(list.get(0));
+                    url = new URL(list.get(0)+"&streamprofile=1280960");
+//                    url = new URL(list.get(0));
                     Authenticator.setDefault(new Authenticator() {
                         protected PasswordAuthentication getPasswordAuthentication() {
                             return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
@@ -544,16 +510,29 @@ public class MainFrame extends JFrame {
                 } catch (MalformedURLException ex) {
                     ex.printStackTrace();
                 }
-//                if (url != null) {
-                cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url, null);
+
+//                if(show640){
+//                    try {
+////                        urlForShowVideo = new URL(list.get(0)+"&resolution=640x480");//&resolution=640x480  &streamprofile=640480
+//                        urlForShowVideo = new URL(list.get(0)+"&streamprofile=640480");//&resolution=640x480  &streamprofile=640480
+//                        Authenticator.setDefault(new Authenticator() {
+//                            protected PasswordAuthentication getPasswordAuthentication() {
+//                                return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
+//                            }
+//                        });
+//                    } catch (MalformedURLException ex) {
+//                        ex.printStackTrace();
+//                    }
 //                }
+
+                cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url);
             } else {
+                System.out.println("Вимкнена камера - " +addressNumber);
                 cameras.get(addressNumber).getVideoCatcher().stopCatchVideo();
             }
         }
 
         if (soundSaver == null) {
-
             Thread gh = new Thread(() -> {
                 List<String> list = camerasAddress.get(null);
                 if (list != null && list.size() != 0) {
@@ -582,7 +561,6 @@ public class MainFrame extends JFrame {
         opacityLabel.setText("Прозорість: " + opacity + "%");
         opacityLabel.repaint();
         Float f = (float) opacity / 100;
-        System.out.println(" Прозрачность равна - " + f);
         CameraPanel.setOpacity(f);
 
         for (Integer integer : imagesForBlock.keySet()) {
@@ -670,10 +648,7 @@ public class MainFrame extends JFrame {
         countSaveVideo.setText("Зберігаемо " + timeToSave + "сек.");
     }
 
-
     public static void setTestMode(boolean testMode) {
-
-
         testModeLabel.setVisible(!testMode);
         startButtonProgrammingCatch.setPreferredSize(new Dimension(80, 25));
         startButton.setPreferredSize(new Dimension(80, 25));

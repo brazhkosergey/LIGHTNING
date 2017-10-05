@@ -21,7 +21,8 @@ import java.util.Map;
 @XmlRootElement(name = "address")
 public class AddressSaver {
 
-    private String [] arr = new String[24];
+//    private String [] arr = new String[24];
+    private String [] arr = new String[32];
     private String audioAddress;
     private int timeToSave;
     private boolean programWork;
@@ -30,17 +31,18 @@ public class AddressSaver {
     private int opacity;
     private int doNotShowFrames;
 
-    public void savePasswords(int numberOfCamera, String ipAddress,String username, String password){
+    public void savePasswords(int numberOfCamera, String ipAddress,String username, String password, String booleanString){
         if(numberOfCamera==0){
             audioAddress = ipAddress;
         } else {
             int ipAddressInt = numberOfCamera - 1;
             int userNameInt = numberOfCamera+7;
             int passwordInt = numberOfCamera+15;
-
+            int booleanInt = numberOfCamera+23;
             arr[ipAddressInt] = ipAddress;
             arr[userNameInt] = username;
             arr[passwordInt] = password;
+            arr[booleanInt] = booleanString;
         }
 
         savePasswordSaverToFile();
@@ -153,6 +155,14 @@ public class AddressSaver {
         Map<Integer, JTextField> textFieldsPasswordMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsPasswordMap();
         for(Integer integer:textFieldsPasswordMap.keySet()){
             if(integer!=null){textFieldsPasswordMap.get(integer).setText(arr[integer+15]);}
+        }
+
+        Map<Integer, JCheckBox> checkBoxMap = CameraAddressSetting.getCameraAddressSetting().getCheckBoxMap();
+        for(Integer integer:checkBoxMap.keySet()){
+            if(integer!=null){
+                JCheckBox checkBox = checkBoxMap.get(integer);
+                checkBox.setSelected(Boolean.valueOf(arr[integer+23]));
+            }
         }
 
         for(Integer integer:MainFrame.imagesForBlock.keySet()){
