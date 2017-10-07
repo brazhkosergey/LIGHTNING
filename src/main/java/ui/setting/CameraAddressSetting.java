@@ -1,5 +1,6 @@
 package ui.setting;
 
+import sun.applet.Main;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
@@ -20,7 +21,6 @@ public class CameraAddressSetting extends JPanel {
     private Map<Integer, JTextField> textFieldsIpAddressMap;
     private Map<Integer, JTextField> textFieldsUsernameMap;
     private Map<Integer, JTextField> textFieldsPasswordMap;
-    private Map<Integer, JCheckBox> checkBoxMap;
     private Map<Integer, JLabel> labelMap;
 
     private CameraAddressSetting() {
@@ -28,7 +28,6 @@ public class CameraAddressSetting extends JPanel {
         textFieldsIpAddressMap = new HashMap<>();
         textFieldsUsernameMap = new HashMap<>();
         textFieldsPasswordMap = new HashMap<>();
-        checkBoxMap = new HashMap<>();
         labelMap = new HashMap<>();
         buildCameraSetting();
         this.setLayout(new BorderLayout());
@@ -74,12 +73,9 @@ public class CameraAddressSetting extends JPanel {
             JLabel firstCameraPasswordLabel = new JLabel("Пароль");
             JTextField firstCameraPasswordTextField = new JTextField();
             firstCameraPasswordTextField.setPreferredSize(new Dimension(100, 20));
-            JCheckBox firstCameraCheckBox = new JCheckBox("640*480");
-
             textFieldsIpAddressMap.put(i * 2 - 1, firstCameraTextField);
             textFieldsUsernameMap.put(i * 2 - 1, firstCameraUserNameTextField);
             textFieldsPasswordMap.put(i * 2 - 1, firstCameraPasswordTextField);
-            checkBoxMap.put(i * 2 - 1,firstCameraCheckBox);
             cameraOneSetting.add(firstCameraLabel);
             cameraOneSetting.add(firstCameraTextField);
             cameraOneSetting.add(firstCameraUserNameLabel);
@@ -101,11 +97,10 @@ public class CameraAddressSetting extends JPanel {
             JLabel secondCameraPasswordLabel = new JLabel("Пароль");
             JTextField secondCameraPasswordTextField = new JTextField();
             secondCameraPasswordTextField.setPreferredSize(new Dimension(100, 20));
-            JCheckBox secondCameraCheckBox = new JCheckBox("640*480");
             textFieldsIpAddressMap.put(i * 2, secondCameraTextField);
             textFieldsUsernameMap.put(i * 2, secondCameraUserNameTextField);
             textFieldsPasswordMap.put(i * 2, secondCameraPasswordTextField);
-            checkBoxMap.put(i * 2,secondCameraCheckBox);
+
 
             cameraTwoSetting.add(secondCameraLabel);
             cameraTwoSetting.add(secondCameraTextField);
@@ -141,7 +136,7 @@ public class CameraAddressSetting extends JPanel {
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
-                    File imageFile = new File("C:\\ipCamera\\bytes\\" + number + ".jpg");
+                    File imageFile = new File(MainFrame.getPath()+"\\buff\\bytes\\" + number + ".jpg");
                     if (imageFile.exists()) {
                         imageFile.delete();
                     }
@@ -180,7 +175,7 @@ public class CameraAddressSetting extends JPanel {
 
             JButton removeButton = new JButton("Видалити файл");
             removeButton.addActionListener((e) -> {
-                File imageFile = new File("C:\\ipCamera\\bytes\\" + number + ".jpg");
+                File imageFile = new File(MainFrame.getPath()+"\\buff\\bytes\\" + number + ".jpg");
                 if (imageFile.exists()) {
                     imageFile.delete();
                 }
@@ -245,13 +240,11 @@ public class CameraAddressSetting extends JPanel {
                 if (ipAddress.length() > 3) {
                     String userName = textFieldsUsernameMap.get(textFieldNumber).getText();
                     String password = textFieldsPasswordMap.get(textFieldNumber).getText();
-                    boolean selected = checkBoxMap.get(textFieldNumber).isSelected();
                     List<String> list = new ArrayList<>();
                     list.add(ipAddress);
                     list.add(userName);
                     list.add(password);
-                    list.add(String.valueOf(selected));
-                    MainFrame.addressSaver.savePasswords(textFieldNumber, ipAddress, userName, password,String.valueOf(selected));
+                    MainFrame.addressSaver.savePasswords(textFieldNumber, ipAddress, userName, password);
                     MainFrame.camerasAddress.put(textFieldNumber, list);
                 } else {
                     MainFrame.camerasAddress.put(textFieldNumber, null);
@@ -263,7 +256,7 @@ public class CameraAddressSetting extends JPanel {
                         List<String> list = new ArrayList<>();
                         list.add(ipAddress);
                         MainFrame.camerasAddress.put(null, list);
-                        MainFrame.addressSaver.savePasswords(0, ipAddress, null, null,null);
+                        MainFrame.addressSaver.savePasswords(0, ipAddress, null, null);
                     } else {
                         MainFrame.camerasAddress.put(null, new ArrayList<>());
                     }
@@ -284,7 +277,4 @@ public class CameraAddressSetting extends JPanel {
         return textFieldsPasswordMap;
     }
 
-    public Map<Integer, JCheckBox> getCheckBoxMap() {
-        return checkBoxMap;
-    }
 }

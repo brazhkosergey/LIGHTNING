@@ -84,7 +84,8 @@ public class VideoFilesPanel extends JPanel {
         JButton showVideoButton;
         JButton exportButton;
         JButton deleteButton;
-        File file = new File("C:\\ipCamera\\bytes\\");
+
+        File file = new File(MainFrame.getPath()+"\\buff\\bytes\\");
         File[] files = file.listFiles();
         String fileName;
 
@@ -93,22 +94,6 @@ public class VideoFilesPanel extends JPanel {
                 fileName = fileFromFolder.getName();
                 if (fileName.contains(".tmp")) {
                     String[] split = fileName.split("-");
-
-                    int countPartsFile = 0;
-                    try{
-                        int first = fileName.indexOf("{");
-                        int second = fileName.indexOf("}");
-                        String countString = fileName.substring(first+1,second);
-                        try{
-                            countPartsFile = Integer.parseInt(countString);
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-                        System.out.println("Номер видео "+countString);
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
-
                     long dataLong = Long.parseLong(split[0]);
                     String[] splitInteger = split[1].split("\\.");
                     int cameraGroupNumber = Integer.parseInt(splitInteger[0].substring(0,1));
@@ -118,7 +103,6 @@ public class VideoFilesPanel extends JPanel {
                         Map<Integer, File> files1 = new HashMap<>();
                         files1.put(cameraGroupNumber, fileFromFolder);
                         mapOfFiles.put(dataLong, files1);
-                        mapOfPartsVideo.put(dataLong,countPartsFile);
                     }
                 }
             }
@@ -137,28 +121,20 @@ public class VideoFilesPanel extends JPanel {
             exportButton = new JButton("Експорт");
             exportButton.addActionListener((e) -> {
                 List<Thread> list = new ArrayList<>();
-                boolean finish = false;
                 Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
+                int number=1;
                 for (Integer integer : integerFileMap.keySet()) {
                     File file1 = integerFileMap.get(integer);
                     Thread thread = new Thread(() -> {
-//                        MainVideoCreator.encodeVideo(file1);
                         MainVideoCreator.encodeVideoXuggle(file1);
                     });
+                    thread.setName("EncodeVideoThread. Number "+number++);
                     list.add(thread);
-
-//                    thread.start();
                 }
+
                 Thread saverThread = new Thread(() -> {
-                    int size = list.size();
                     for(int i=0;i<list.size();i++){
-                        MainFrame.showInformMassage("Группа - " +(i+1), true);
                         list.get(i).start();
-                        try {
-                            list.get(i).sleep(1000);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        }
                         while (true){
                             try {
                                 Thread.sleep(1000);
@@ -169,14 +145,10 @@ public class VideoFilesPanel extends JPanel {
                                 break;
                             }
                         }
-                        MainFrame.showInformMassage("Сохранили файл - " +(i+1), true);
-                        try {
-                            list.get(i).sleep(1000);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        }
+                        MainFrame.showInformMassage("Збережено файл - " +(i+1), true);
                     }
                 });
+                saverThread.setName("Main Saver Thread");
                 saverThread.start();
             });
 

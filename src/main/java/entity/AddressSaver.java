@@ -21,40 +21,41 @@ import java.util.Map;
 @XmlRootElement(name = "address")
 public class AddressSaver {
 
-//    private String [] arr = new String[24];
-    private String [] arr = new String[32];
+    private String [] arr = new String[24];
     private String audioAddress;
     private int timeToSave;
     private boolean programWork;
     private int changeWhitePercent;
     private int lightSensitivity;
     private int opacity;
-    private int doNotShowFrames;
+    private int port;
+    private String path;
+    private String profileName;
 
-    public void savePasswords(int numberOfCamera, String ipAddress,String username, String password, String booleanString){
+
+    public void savePasswords(int numberOfCamera, String ipAddress,String username, String password){
         if(numberOfCamera==0){
             audioAddress = ipAddress;
         } else {
             int ipAddressInt = numberOfCamera - 1;
             int userNameInt = numberOfCamera+7;
             int passwordInt = numberOfCamera+15;
-            int booleanInt = numberOfCamera+23;
             arr[ipAddressInt] = ipAddress;
             arr[userNameInt] = username;
             arr[passwordInt] = password;
-            arr[booleanInt] = booleanString;
         }
-
         savePasswordSaverToFile();
     }
 
-    public void saveSetting(int i,boolean programWork, int sliderChangeWhite, int lightSensitivity, int opacity,int doNotShowFrames){
+    public void saveSetting(int i,boolean programWork, int sliderChangeWhite, int lightSensitivity, int opacity,int port, String path,String profileName){
         this.changeWhitePercent = sliderChangeWhite;
         this.lightSensitivity = lightSensitivity;
         this.opacity = opacity;
-        this.doNotShowFrames = doNotShowFrames;
         timeToSave = i;
         this.programWork = programWork;
+        this.port = port;
+        this.path = path;
+        this.profileName = profileName;
         savePasswordSaverToFile();
     }
 
@@ -66,7 +67,7 @@ public class AddressSaver {
     }
 
     private void savePasswordSaverToFile() {
-        String pathFile = "C:\\ipCamera\\bytes\\address.txt";
+        String pathFile = "C:\\ipCamera\\data\\address.txt";
         File file = new File(pathFile);
         try {
             boolean ok = file.exists();
@@ -85,9 +86,8 @@ public class AddressSaver {
     }
 
     public static AddressSaver restorePasswords() {
-        String pathFile = "C:\\ipCamera\\bytes\\address.txt";
+        String pathFile = "C:\\ipCamera\\data\\address.txt";
         File file = new File(pathFile);
-
         Object passwordsSaverObject = null;
         if (file.canRead()) {
             try {
@@ -111,7 +111,7 @@ public class AddressSaver {
         }
 
         for(int i=1;i<5;i++){
-            File imageFile = new File("C:\\ipCamera\\bytes\\"+i+".jpg");
+            File imageFile = new File("C:\\ipCamera\\data\\"+i+".jpg");
             if(imageFile.exists()){
                 BufferedImage bufferedImage=null;
                 try {
@@ -157,13 +157,7 @@ public class AddressSaver {
             if(integer!=null){textFieldsPasswordMap.get(integer).setText(arr[integer+15]);}
         }
 
-        Map<Integer, JCheckBox> checkBoxMap = CameraAddressSetting.getCameraAddressSetting().getCheckBoxMap();
-        for(Integer integer:checkBoxMap.keySet()){
-            if(integer!=null){
-                JCheckBox checkBox = checkBoxMap.get(integer);
-                checkBox.setSelected(Boolean.valueOf(arr[integer+23]));
-            }
-        }
+
 
         for(Integer integer:MainFrame.imagesForBlock.keySet()){
             if(integer!=null){CameraAddressSetting.getCameraAddressSetting().setHaveImage(integer);}
@@ -175,7 +169,9 @@ public class AddressSaver {
         MainFrame.setPercentDiffWhite(changeWhitePercent);
         MainFrame.setColorLightNumber(lightSensitivity);
         MainFrame.setOpacitySetting(opacity);
-        MainFrame.setQualityVideoLabel(doNotShowFrames);
         MainFrame.setTimeToSave(timeToSave);
+        MainFrame.setPath(path);
+        MainFrame.setPort(port);
+        MainFrame.setProfileName(profileName);
     }
 }

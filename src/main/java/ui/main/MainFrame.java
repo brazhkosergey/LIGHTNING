@@ -17,6 +17,7 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,6 @@ public class MainFrame extends JFrame {
     private JPanel allCameraPanel;
 
     private static JLabel opacityLabel;
-    private static JLabel qualityVideoLabel;
     private static JLabel countSaveVideo;
     private static JLabel lightSensitivityLabel;
     private static JLabel changeWhiteLabel;
@@ -64,13 +64,15 @@ public class MainFrame extends JFrame {
     private static int percentDiffWhite = 10;
     private static int colorLightNumber = 200;
     private static int colorRGBNumber = new Color(200, 200, 200).getRGB();
-    private static int doNotShowImages = 5;
     private static boolean programLightCatchWork;
+    private static int port;
+    private static String path = "C:\\ipCamera\\";
+    private static String profileName;
 
     private SoundSaver soundSaver;
 
     private MainFrame() {
-        super("LIGHTNING");
+        super("LIGHTNING_STABLE");
         mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         northPanel = new JPanel();
@@ -87,11 +89,8 @@ public class MainFrame extends JFrame {
 
         informLabel = new JLabel();
         informLabel.setPreferredSize(new Dimension(200, 30));
-
         opacityLabel = new JLabel("Прозорість: 30%");
         opacityLabel.setPreferredSize(new Dimension(110, 30));
-        qualityVideoLabel = new JLabel("Траслюемо: 20%");
-        qualityVideoLabel.setPreferredSize(new Dimension(120, 30));
         countSaveVideo = new JLabel("Зберігаемо " + timeToSave + "сек.");
         countSaveVideo.setPreferredSize(new Dimension(120, 30));
         lightSensitivityLabel = new JLabel("Чутливість: " + colorLightNumber);
@@ -100,34 +99,41 @@ public class MainFrame extends JFrame {
         usedMemoryLabel.setPreferredSize(new Dimension(100, 30));
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1150, 720));
-        addressSaver = AddressSaver.restorePasswords();
+
+        addressSaver = AddressSaver.restorePasswords();// "C:\\ipCamera\\"
 
         Thread alarmThread = new Thread(() -> {
             ServerSocket ss = null;
+
             try {
-                ss = new ServerSocket(9999);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            while (true){
+                ss = new ServerSocket(port);
+            } catch (IOException ignored) {}
+
+            while (true) {
                 try {
-                    System.out.println("Создали сервер сокет");
+                    audioPacketCount.setForeground(new Color(29, 142, 27));
                     Socket socket = ss.accept();
-                    System.out.println("дождались прихода запроса");
                     MainVideoCreator.startCatchVideo(false);
                     socket.close();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                    audioPacketCount.setForeground(Color.red);
                 }
             }
         });
+
+        alarmThread.setName("Alarm Thread");
         alarmThread.start();
 
-        Thread thread = new Thread(() -> {
+        Thread memoryUpdateThread = new Thread(() -> {
             int playInt = 0;
             boolean red = false;
             boolean startRec = true;
-            String s = null;
+
             while (true) {
                 if (MainVideoCreator.isSaveVideo()) {
                     if (startRec) {
@@ -178,15 +184,27 @@ public class MainFrame extends JFrame {
                         e.printStackTrace();
                     }
                 }
-
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
+//                if(showThread==10){
+//                    System.out.println("==================START=============");
+//                    int i = 0;
+//                    for (String thr : getRunningThreads()) {
+//                        System.out.println(thr + "/ NUMBER "+ (i++));
+//                    }
+//                    System.out.println("==================END=============");
+//                    showThread = 0;
+//                } else {
+//                  showThread++;
+//                }
             }
         });
-        thread.start();
+        memoryUpdateThread.setName("Memory Update Main Thread");
+        memoryUpdateThread.start();
         buildMainWindow();
         getContentPane().add(mainPanel, BorderLayout.CENTER);
         setVisible(true);
@@ -198,11 +216,40 @@ public class MainFrame extends JFrame {
         setting = Setting.getSetting();
         showAllCameras();
 
-        File fileTmp = new File("C:\\ipCamera\\bytes\\");
-        fileTmp.mkdirs();
-        File file = new File("C:\\ipCamera\\");
-        file.mkdirs();
+        File fileAddressSaver = new File("C:\\ipCamera\\data\\");
+        fileAddressSaver.mkdirs();
+
+        File fileBuffBytes = new File(path+"\\buff\\bytes\\");
+        fileBuffBytes.mkdirs();
+
+        for (int i = 1; i < 5; i++) {
+            File folder = new File(path+"\\buff\\" + i + "\\");
+            folder.mkdirs();
+            File[] files = folder.listFiles();
+            for (int j = 0; j < files.length; j++) {
+                files[j].delete();
+            }
+        }
     }
+
+    static List<String> getRunningThreads() {
+        List<String> threads = new ArrayList<>();
+        ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
+        ThreadGroup parent;
+        while ((parent = threadGroup.getParent()) != null) {
+            if (threadGroup != null) {
+                threadGroup = parent;
+                Thread[] threadList = new Thread[threadGroup.activeCount()];
+                threadGroup.enumerate(threadList);
+                for (Thread thread : threadList)
+                    threads.add(new StringBuilder().append(thread.getThreadGroup().getName())
+                            .append("::").append(thread.getName()).append("::PRIORITY:-")
+                            .append(thread.getPriority()).toString());
+            }
+        }
+        return threads;
+    }
+
 
     public static MainFrame getMainFrame() {
         if (mainFrame != null) {
@@ -221,7 +268,6 @@ public class MainFrame extends JFrame {
 
     private void buildNorthPanel() {
         audioPacketCount = new JLabel("AUDIO");
-//        audioPacketCount.setFont(new Font("Comic Sans MS", Font.BOLD, 45));
 
         JButton mainWindowButton = new JButton("Головна");
         mainWindowButton.setPreferredSize(new Dimension(120, 30));
@@ -337,7 +383,7 @@ public class MainFrame extends JFrame {
             VideoCreator videoCreator = new VideoCreator(i);
             videoCreator.setBufferedImageBack(imagesForBlock.get(i));
             creatorMap.put(i, videoCreator);
-            CameraPanel cameraOne = new CameraPanel(videoCreator);
+            CameraPanel cameraOne = new CameraPanel(videoCreator, (i * 2 - 1));
             cameraOne.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -379,10 +425,9 @@ public class MainFrame extends JFrame {
                     }
                 }
             });
-
-            cameraOne.setCameraNumber(i * 2 - 1);
             cameras.put(i * 2 - 1, cameraOne);
-            CameraPanel cameraTwo = new CameraPanel(videoCreator);
+
+            CameraPanel cameraTwo = new CameraPanel(videoCreator, (i * 2));
             cameraTwo.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -423,9 +468,8 @@ public class MainFrame extends JFrame {
                     }
                 }
             });
-
-            cameraTwo.setCameraNumber(i * 2);
             cameras.put(i * 2, cameraTwo);
+
             blockPanel = new JPanel();
             GridLayout gridLayout1 = new GridLayout(1, 2);
             blockPanel.setLayout(gridLayout1);
@@ -442,8 +486,6 @@ public class MainFrame extends JFrame {
     private void buildSouthPanel() {
         southPanel.setLayout(new FlowLayout());
         southPanel.add(countSaveVideo);
-        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        southPanel.add(qualityVideoLabel);
         southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
         southPanel.add(opacityLabel);
         southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
@@ -491,17 +533,11 @@ public class MainFrame extends JFrame {
             }
             List<String> list = camerasAddress.get(addressNumber);
             if (list != null) {
-                System.out.println("Работает камера - " +addressNumber);
+                System.out.println("Работает камера - " + addressNumber);
                 URL url = null;
-//                URL urlForShowVideo = null;
-
-                String s = list.get(3);
-//                Boolean show640= Boolean.valueOf(s);
-
                 try {
-//                    url = new URL(list.get(0));
-                    url = new URL(list.get(0)+"&streamprofile=1280960");
-//                    url = new URL(list.get(0));
+//                    url = new URL(list.get(0) + "&streamprofile=1280960");//TODO fgfvdafxvarfd
+                    url = new URL(list.get(0) + "&streamprofile="+profileName);//TODO fgfvdafxvarfd
                     Authenticator.setDefault(new Authenticator() {
                         protected PasswordAuthentication getPasswordAuthentication() {
                             return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
@@ -510,24 +546,9 @@ public class MainFrame extends JFrame {
                 } catch (MalformedURLException ex) {
                     ex.printStackTrace();
                 }
-
-//                if(show640){
-//                    try {
-////                        urlForShowVideo = new URL(list.get(0)+"&resolution=640x480");//&resolution=640x480  &streamprofile=640480
-//                        urlForShowVideo = new URL(list.get(0)+"&streamprofile=640480");//&resolution=640x480  &streamprofile=640480
-//                        Authenticator.setDefault(new Authenticator() {
-//                            protected PasswordAuthentication getPasswordAuthentication() {
-//                                return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
-//                            }
-//                        });
-//                    } catch (MalformedURLException ex) {
-//                        ex.printStackTrace();
-//                    }
-//                }
-
                 cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url);
             } else {
-                System.out.println("Вимкнена камера - " +addressNumber);
+                System.out.println("Вимкнена камера - " + addressNumber);
                 cameras.get(addressNumber).getVideoCatcher().stopCatchVideo();
             }
         }
@@ -573,17 +594,6 @@ public class MainFrame extends JFrame {
 
     public static int getOpacitySetting() {
         return opacitySetting;
-    }
-
-    public static void setQualityVideoLabel(int qualityVideo) {
-        doNotShowImages = qualityVideo;
-
-        int s = 100;
-        if (qualityVideo != 0) {
-            s = 100 / qualityVideo;
-        }
-        qualityVideoLabel.setText("Траслюемо: " + s + "%");
-        qualityVideoLabel.repaint();
     }
 
     public void setCountSaveVideo(int countSave) {
@@ -635,10 +645,6 @@ public class MainFrame extends JFrame {
         changeWhiteLabel.repaint();
     }
 
-    public static int getDoNotShowImages() {
-        return doNotShowImages;
-    }
-
     public static int getTimeToSave() {
         return timeToSave;
     }
@@ -646,6 +652,31 @@ public class MainFrame extends JFrame {
     public static void setTimeToSave(int timeToSave) {
         MainFrame.timeToSave = timeToSave;
         countSaveVideo.setText("Зберігаемо " + timeToSave + "сек.");
+    }
+
+    public static void setPort(int port) {
+        MainFrame.port = port;
+    }
+
+    public static void setPath(String path) {
+        MainFrame.path = path;
+    }
+
+    public static void setProfileName(String profileName) {
+        MainFrame.profileName = profileName;
+    }
+
+
+    public static int getPort() {
+        return port;
+    }
+
+    public static String getPath() {
+        return path;
+    }
+
+    public static String getProfileName() {
+        return profileName;
     }
 
     public static void setTestMode(boolean testMode) {

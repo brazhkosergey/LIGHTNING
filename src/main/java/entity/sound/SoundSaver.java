@@ -1,13 +1,10 @@
 package entity.sound;
 
+import com.xuggle.xuggler.IAudioSamples;
 import entity.MainVideoCreator;
-import org.apache.log4j.lf5.util.LogFileParser;
 import ui.main.MainFrame;
 
 import javax.sound.sampled.*;
-import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -20,8 +17,6 @@ public class SoundSaver extends Thread {
     private DatagramSocket RTPsocket; //socket to be used to send and receive UDP packets
     private static int RTP_RCV_PORT = 25002; //port where the client will receive the RTP packets 25000
 
-
-    private int buffSize = 1024;
 
     private byte[] buf; //buffer used to store data received from the server
 
@@ -118,13 +113,9 @@ public class SoundSaver extends Thread {
                                     if(mainMapSaveFile.containsKey(aLong)){
                                         mainMapSaveFile.remove(aLong);
                                     }
-                                    if(list.contains(aLong)){
-                                        list.remove(aLong);
-                                    }
                                 }
                             } else {
                                 if (stopSaveAudio) {
-                                    MainVideoCreator.stopCatchVideo();
                                     int size = deque.size();
                                     for (int j = 0; j < size; j++) {
                                         Long timeLong = deque.pollLast();
@@ -153,6 +144,7 @@ public class SoundSaver extends Thread {
                         }
                     }
                 });
+                mainThread.setName("Save Audio Thread");
                 mainThread.setPriority(MIN_PRIORITY);
 
                 updateDataThread = new Thread(() -> {
@@ -212,6 +204,7 @@ public class SoundSaver extends Thread {
                         clipSDL.close();
                     }
                 });
+                updateDataThread.setName("Update Audio Thread");
                 updateDataThread.setPriority(MIN_PRIORITY);
 
                 playThread = new Thread(() -> {
@@ -219,29 +212,31 @@ public class SoundSaver extends Thread {
                         if (playSound) {
                             ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(35535);
 
-//                            for(Long l :map.keySet()){
-//                               list.add(l);
-//                            }
-
-                            Collections.sort(list);
-                            for(Long time:list){
-                                byte[] bytes = map.get(time);
-                                if(bytes!=null){
-                                    try {
-                                        temporaryStream.write(bytes );
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
+//                            Collections.sort(list);
+                            for(int j=0;j<list.size();j++){
+                                Long time = list.get(j);
+                                if(map.containsKey(time)){
+                                    byte[] bytes = map.get(time);
+                                    if(bytes!=null){
+                                        try {
+                                            temporaryStream.write(bytes );
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
+                                        }
                                     }
-                                    mainMapSaveFile.put(time,bytes);
                                 }
-                                map.remove(time);
                             }
 
-                            list.removeIf((e)->mainMapSaveFile.containsKey(e));
+                            list.clear();
 
                             if (clipSDL != null) {
                                 byte[] bytes = temporaryStream.toByteArray();
                                 clipSDL.write(bytes, 0, bytes.length);
+                                try {
+                                    temporaryStream.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
 //                           List<Long> longList = new ArrayList<>();
 //                           int count=0;
@@ -372,21 +367,33 @@ public class SoundSaver extends Thread {
     private void playAudio() {
 
         try {
-//            final AudioFormat audioFormat = new AudioFormat(
-//                    AudioFormat.Encoding.ULAW,
-//                    8000f,// sample rate - you didn't specify, 44.1k is typical
-//                    8,// how many bits per sample, i.e. per value in your byte array
-//                    1,     // you want two channels (stereo)
-//                    1,     // number of bytes per frame (frame == a sample for each channel)
-//                    8000f,// frame rate
-//                    true);// byte order
+////            final AudioFormat audioFormat = new AudioFormat(
+////                    AudioFormat.Encoding.ULAW,
+////                    8000f,// sample rate - you didn't specify, 44.1k is typical
+////                    8,// how many bits per sample, i.e. per value in your byte array
+////                    2,     // you want two channels (stereo)
+////                    1,     // number of bytes per frame (frame == a sample for each channel)
+////                    8000f,// frame rate
+////                    true);// byte ordzer
+//
+////            AudioFormat audioFormat = new AudioFormat(32000.0f,
+//////                (int) IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
+////                    (int) IAudioSamples.findSampleBitDepth(IAudioSamples.Format.FMT_DBLP),
+////                    1,
+////                    true, /* xuggler defaults to signed 16 bit samples */
+////                    false);
+//
+//            AudioFormat audioFormat = new AudioFormat(8000.0f, 8, 1, false, true);
+//            DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+//            clipSDL = (SourceDataLine) AudioSystem.getLine(info);
+//
+//
+////            clipSDL = AudioSystem.getSourceDataLine(audioFormat);
+//            clipSDL.open(audioFormat);
+//            clipSDL.start();
+//            playSound = true;
+//            playThread.start();
 
-            AudioFormat audioFormat = new AudioFormat(8000.0f, 8, 1, false, false);
-            clipSDL = AudioSystem.getSourceDataLine(audioFormat);
-            clipSDL.open(audioFormat, buffSize);
-            clipSDL.start();
-            playSound = true;
-            playThread.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -443,24 +450,17 @@ public class SoundSaver extends Thread {
     }
 
     private void send_RTSP_request(String request_type) {
-        System.out.println("===========================================");
         try {
             RTSPBufferedWriter.write(request_type + " " + FileName + " " + "RTSP/1.0" + CRLF);
-            System.out.print(request_type + " " + FileName + " " + "RTSP/1.0" + CRLF);
             RTSPBufferedWriter.write("CSeq: " + RTSPSeqNb + CRLF);
-            System.out.print("CSeq: " + RTSPSeqNb + CRLF);
             if (request_type.equals("SETUP")) {
                 RTSPBufferedWriter.write("Transport: RTP/AVP;unicast;client_port=" + RTP_RCV_PORT + CRLF + CRLF);//Transport: RTP/AVP;unicast;client_port=49501-49502
-                System.out.print("Transport: RTP/AVP; unicast; client_port=" + RTP_RCV_PORT + CRLF);
             } else {
                 RTSPBufferedWriter.write("Session: " + RTSPid + CRLF + CRLF);
-                System.out.print(RTSPid + CRLF + CRLF);
             }
             RTSPBufferedWriter.flush();
         } catch (Exception ex) {
             ex.printStackTrace();
-            System.out.println("Exception caught: " + ex);
         }
-        System.out.println("===========================================");
     }
 }

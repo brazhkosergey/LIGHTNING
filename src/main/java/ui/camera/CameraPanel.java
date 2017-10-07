@@ -24,8 +24,8 @@ public class CameraPanel extends JPanel {
     private JLayer<JPanel> cameraWindowLayer;
     private JLabel label;
 
-    public CameraPanel(VideoCreator videoCreator) {
-
+    public CameraPanel(VideoCreator videoCreator, int cameraNumber) {
+        this.cameraNumber  = cameraNumber;
         label = new JLabel("Камера не працюе");
         label.setHorizontalAlignment(SwingConstants.CENTER);
         cameraWindow = new CameraWindow();
@@ -42,13 +42,8 @@ public class CameraPanel extends JPanel {
         title.setTitleColor(new Color(46, 139, 87));
         title.setBorder(new LineBorder(new Color(46, 139, 87), 1, true));
         this.setBorder(title);
-
         videoCatcher = new VideoCatcher(this,videoCreator);
         videoCatcher.start();
-
-//        Thread thread = new Thread(videoCatcher);
-//        thread.setPriority(Thread.MAX_PRIORITY);
-//        thread.start();
     }
 
     public void repaintCameraWindow(){

@@ -1,6 +1,5 @@
 package ui.setting;
 
-import ui.camera.CameraPanel;
 import ui.main.MainFrame;
 
 import javax.swing.*;
@@ -8,6 +7,12 @@ import java.awt.*;
 
 public class Setting extends JPanel {
     private static Setting setting;
+    private JLabel portLabel;
+    private JTextField defaultPort;
+    private JTextField defaultFolder;
+    private JTextField defaultProfileName;
+    private JLabel currentFolder;
+    private JLabel currentProfileName;
     public JButton saveButton;
     private JTextField timeTextField;
     private JCheckBox checkBox;
@@ -28,48 +33,66 @@ public class Setting extends JPanel {
     }
 
     private void buildSetting() {
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        JPanel mainSettingPanel = new JPanel(new FlowLayout());
+        mainSettingPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY ));
+        mainSettingPanel.setPreferredSize(new Dimension(700,530));
 
-        JPanel checkBoxPane = new JPanel(new FlowLayout());
         JCheckBox testModeCheckBox = new JCheckBox("Тестовий режим ");
+        testModeCheckBox.setPreferredSize(new Dimension(370,30));
+        testModeCheckBox.setHorizontalAlignment(SwingConstants.CENTER);
         testModeCheckBox.setSelected(false);
 
+        JPanel lightWorkPane = new JPanel(new GridLayout(2,1));
+        lightWorkPane.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+        lightWorkPane.setPreferredSize(new Dimension(690,70));
+
+        JPanel checkBoxPane = new JPanel(new FlowLayout());
         checkBox = new JCheckBox();
         checkBox.setSelected(MainFrame.isProgramLightCatchWork());
-
-
         JLabel checkBoxLabel = new JLabel("Фіксувати програмні спрацювання");
         checkBoxPane.add(checkBox);
         checkBoxPane.add(checkBoxLabel);
 
-        JLabel changeWhiteLabel = new JLabel("Різниця кількості білого на кадрі - " + MainFrame.getPercentDiffWhite() + " %");
+        JPanel timePane = new JPanel(new FlowLayout());
+        timeTextField = new JTextField();
+        timeTextField.setText(String.valueOf(MainFrame.getTimeToSave()));
+        timeTextField.setPreferredSize(new Dimension(40, 25));
+        JLabel textLabel = new JLabel("Час відео ДО та ПІСЛЯ блискавки (в секундах)");
+        timePane.add(timeTextField);
+        timePane.add(textLabel);
+        lightWorkPane.add(checkBoxPane);
+        lightWorkPane.add(timePane);
 
-        JSlider sliderChangeWhite = new JSlider();
-        sliderChangeWhite.setPreferredSize(new Dimension(200, 25));
-        sliderChangeWhite.setMinorTickSpacing(1);
-        sliderChangeWhite.setPaintTicks(true);
-        sliderChangeWhite.setMinimum(5);
-        sliderChangeWhite.setMaximum(20);
-        sliderChangeWhite.setValue(MainFrame.getPercentDiffWhite());
-        sliderChangeWhite.addChangeListener(e -> {
-            changeWhiteLabel.setText("Різниця кількості білого на кадрі - " + sliderChangeWhite.getValue() + " %");
-        });
+        JPanel programLightCatchSettingPanel = new JPanel(new FlowLayout());
+        programLightCatchSettingPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+        programLightCatchSettingPanel.setPreferredSize(new Dimension(690,230));
 
+        JLabel headLabel = new JLabel("Налаштування програмного спрацьовування");
+        headLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        headLabel.setFont(new Font(null, Font.BOLD, 17));
+        headLabel.setPreferredSize(new Dimension(680,30));
+
+        JLabel lightSensitivityLabel = new JLabel("Світлочутливість камери " + MainFrame.getColorLightNumber());
+        lightSensitivityLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        lightSensitivityLabel.setPreferredSize(new Dimension(680,30));
+
+        JPanel whitePanel = new JPanel(new FlowLayout());
+        whitePanel.setPreferredSize(new Dimension(680,40));
+        whitePanel.setBackground(Color.darkGray);
+        whitePanel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < 40; i++) {
+        for (int i = 0; i <37; i++) {
             stringBuilder.append(String.valueOf((char) 8623));
         }
-
-        JPanel whitePanel = new JPanel();
-        whitePanel.setBackground(Color.darkGray);
         JLabel whiteColorLabel = new JLabel(stringBuilder.toString());
+        whiteColorLabel.setPreferredSize(new Dimension(670,30));
+        whiteColorLabel.setHorizontalAlignment(SwingConstants.CENTER);
         whiteColorLabel.setFont(new Font(null, Font.ITALIC, 25));
         whiteColorLabel.setForeground(new Color(MainFrame.getColorLightNumber(), MainFrame.getColorLightNumber(), MainFrame.getColorLightNumber()));
         whitePanel.add(whiteColorLabel);
-        JLabel lightSensitivityLabel = new JLabel("Світлочутливість камери " + MainFrame.getColorLightNumber());
+
         JSlider lightSensitivitySlider = new JSlider();
-        lightSensitivitySlider.setPreferredSize(new Dimension(200, 25));
+        lightSensitivitySlider.setPreferredSize(new Dimension(680,30));
         lightSensitivitySlider.setMinorTickSpacing(1);
         lightSensitivitySlider.setPaintTicks(true);
         lightSensitivitySlider.setMinimum(140);
@@ -81,19 +104,38 @@ public class Setting extends JPanel {
             lightSensitivityLabel.setText("Світлочутливість камери " + value);
         });
 
-        JPanel timePane = new JPanel(new FlowLayout());
-        timeTextField = new JTextField();
-        timeTextField.setText(String.valueOf(MainFrame.getTimeToSave()));
-        timeTextField.setPreferredSize(new Dimension(40, 25));
-        JLabel textLabel = new JLabel("Час відео до та після в секундах");
 
-        timePane.add(timeTextField);
-        timePane.add(textLabel);
+        JLabel changeWhiteLabel = new JLabel("Різниця кількості білого на кадрі - " + MainFrame.getPercentDiffWhite() + " %");
+        changeWhiteLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        changeWhiteLabel.setPreferredSize(new Dimension(680,30));
 
-        JLabel opacityLabel = new JLabel("Прозорість зображення що накладаемо відео - " + MainFrame.getOpacitySetting() + " відсотків");
+        JSlider sliderChangeWhite = new JSlider();
+        sliderChangeWhite.setPreferredSize(new Dimension(680,30));
+        sliderChangeWhite.setMinorTickSpacing(1);
+        sliderChangeWhite.setPaintTicks(true);
+        sliderChangeWhite.setMinimum(5);
+        sliderChangeWhite.setMaximum(20);
+        sliderChangeWhite.setValue(MainFrame.getPercentDiffWhite());
+        sliderChangeWhite.addChangeListener(e -> {
+            changeWhiteLabel.setText("Різниця кількості білого в кадрі - " + sliderChangeWhite.getValue() + " %");
+        });
 
+        programLightCatchSettingPanel.add(headLabel);
+        programLightCatchSettingPanel.add(lightSensitivityLabel);
+        programLightCatchSettingPanel.add(whitePanel);
+        programLightCatchSettingPanel.add(lightSensitivitySlider);
+        programLightCatchSettingPanel.add(changeWhiteLabel);
+        programLightCatchSettingPanel.add(sliderChangeWhite);
+
+        JPanel otherSetting = new JPanel(new FlowLayout());
+        otherSetting.setPreferredSize(new Dimension(690,100));
+        otherSetting.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+
+        JLabel opacityLabel = new JLabel("Прозорість зображення що накладаемо на відео - " + MainFrame.getOpacitySetting() + " відсотків");
+        opacityLabel.setPreferredSize(new Dimension(350,30));
+        opacityLabel.setHorizontalAlignment(SwingConstants.CENTER);
         JSlider slider = new JSlider();
-        slider.setPreferredSize(new Dimension(200, 25));
+        slider.setPreferredSize(new Dimension(680,30));
         slider.setMinorTickSpacing(2);
         slider.setPaintTicks(true);
         slider.setValue(MainFrame.getOpacitySetting());
@@ -102,30 +144,12 @@ public class Setting extends JPanel {
             opacityLabel.setText("Прозорість зображення що накладаемо відео - " + value + " відсотків");
         });
 
-        int v = MainFrame.getDoNotShowImages();
-        int s2 = 100;
-        if (v != 0) {
-            s2 = 100 / v;
-        }
-
-        JLabel framesLabel = new JLabel("Транслюемо відео - " + s2 + "%");
-        JSlider sliderFrames = new JSlider();
-        sliderFrames.setPreferredSize(new Dimension(200, 25));
-        sliderFrames.setMinorTickSpacing(1);
-        sliderFrames.setPaintTicks(true);
-        sliderFrames.setMinimum(0);
-        sliderFrames.setMaximum(20);
-        sliderFrames.setValue(MainFrame.getDoNotShowImages());
-        sliderFrames.addChangeListener(e -> {
-            int value = sliderFrames.getValue();
-            int s = 100;
-            if (value != 0) {
-                s = 100 / value;
-            }
-            framesLabel.setText("Транслюемо відео - " + s + "%");
-        });
+        otherSetting.add(opacityLabel);
+        otherSetting.add(slider);
 
         saveButton = new JButton("Зберегти");
+        saveButton.setPreferredSize(new Dimension(150,50));
+        saveButton.setFont(new Font(null, Font.BOLD ,20));
         saveButton.addActionListener((e) -> {
             MainFrame.setTestMode(testModeCheckBox.isSelected());
 
@@ -143,39 +167,97 @@ public class Setting extends JPanel {
             int opacity = slider.getValue();
             MainFrame.setOpacitySetting(opacity);
 
-            int doNotShowFrames = sliderFrames.getValue();
-            MainFrame.setQualityVideoLabel(doNotShowFrames);
+            int port = 9999;
+            try{
+                port= Integer.valueOf(defaultPort.getText());
+            }catch (Exception ignoge){}
 
-            MainFrame.addressSaver.saveSetting(i, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, doNotShowFrames);
+            MainFrame.setPort(port);
+            portLabel.setText("port сервера - " + port);
+
+            String path = defaultFolder.getText();
+            currentFolder.setText(path);
+            MainFrame.setPath(path);
+            String profileName = defaultProfileName.getText();
+            currentProfileName.setText(profileName);
+            MainFrame.setProfileName(profileName);
+
+            MainFrame.addressSaver.saveSetting(i, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity,port,path,profileName);
             saveButton.setText("Збережено");
             saveButton.setForeground(new Color(46, 139, 87));
         });
 
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 30)));
-        mainPanel.add(testModeCheckBox);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 30)));
-        mainPanel.add(checkBoxPane);
-        mainPanel.add(changeWhiteLabel);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        mainPanel.add(sliderChangeWhite);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        mainPanel.add(lightSensitivityLabel);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        mainPanel.add(whitePanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        mainPanel.add(lightSensitivitySlider);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        mainPanel.add(timePane);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 30)));
-        mainPanel.add(opacityLabel);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        mainPanel.add(slider);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 30)));
-        mainPanel.add(framesLabel);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 10)));
-        mainPanel.add(sliderFrames);
-        mainPanel.add(Box.createRigidArea(new Dimension(10, 20)));
-        mainPanel.add(saveButton);
-        this.add(mainPanel);
+        mainSettingPanel.add(lightWorkPane);
+        mainSettingPanel.add(programLightCatchSettingPanel);
+        mainSettingPanel.add(otherSetting);
+        mainSettingPanel.add(Box.createRigidArea(new Dimension(690, 20)));
+        mainSettingPanel.add(saveButton);
+
+        JPanel folderSettingPanel = new JPanel(new FlowLayout());
+        folderSettingPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+
+
+        folderSettingPanel.setPreferredSize(new Dimension(380,530));
+
+        portLabel = new JLabel("port сервера - " + MainFrame.getPort());
+        portLabel.setPreferredSize(new Dimension(200,25));
+        defaultPort = new JTextField();//"9999"
+        defaultPort.setText(String.valueOf(MainFrame.getPort()));
+        defaultPort.setPreferredSize(new Dimension(100,25));
+
+        JPanel pathPanel = new JPanel(new FlowLayout());
+        pathPanel.setPreferredSize(new Dimension(375,110));
+        pathPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+
+        JLabel addressSaverLabel = new JLabel("Папка для файлів");
+        addressSaverLabel.setFont(new Font(null, Font.BOLD, 15));
+        addressSaverLabel.setPreferredSize(new Dimension(370,25));
+        addressSaverLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        currentFolder = new JLabel(MainFrame.getPath());
+        currentFolder.setHorizontalAlignment(SwingConstants.CENTER);
+        currentFolder.setPreferredSize(new Dimension(370,25));
+        defaultFolder = new JTextField(MainFrame.getPath());//"C:\\ipCamera\\"
+        defaultFolder.setPreferredSize(new Dimension(370,25));
+
+        pathPanel.add(addressSaverLabel);
+        pathPanel.add(currentFolder);
+        pathPanel.add(defaultFolder);
+
+        JPanel profileNamePane = new JPanel(new FlowLayout());
+        profileNamePane.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+        profileNamePane.setPreferredSize(new Dimension(375,110));
+
+        JLabel headProfileNameLabel = new JLabel("Ім'я профілю відео потоку");
+        headProfileNameLabel.setFont(new Font(null, Font.BOLD, 15));
+        headProfileNameLabel.setPreferredSize(new Dimension(370,25));
+        headProfileNameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        currentProfileName = new JLabel(MainFrame.getProfileName());
+        currentProfileName.setHorizontalAlignment(SwingConstants.CENTER);
+        currentProfileName.setPreferredSize(new Dimension(370,25));
+
+        defaultProfileName = new JTextField(MainFrame.getProfileName());
+        defaultProfileName.setPreferredSize(new Dimension(370,25));
+
+        profileNamePane.add(headProfileNameLabel);
+        profileNamePane.add(currentProfileName);
+        profileNamePane.add(defaultProfileName);
+
+
+
+        folderSettingPanel.add(testModeCheckBox);
+        folderSettingPanel.add(portLabel);
+        folderSettingPanel.add(defaultPort);
+        folderSettingPanel.add( pathPanel);
+        folderSettingPanel.add(profileNamePane);
+
+
+
+
+        JPanel allSettingPane = new JPanel(new FlowLayout());
+        allSettingPane.add(mainSettingPanel);
+        allSettingPane.add(folderSettingPanel);
+        this.add(allSettingPane);
     }
 }
