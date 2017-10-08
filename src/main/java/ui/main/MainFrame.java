@@ -4,6 +4,7 @@ import entity.AddressSaver;
 import entity.MainVideoCreator;
 import entity.VideoPlayer;
 import entity.sound.SoundSaver;
+import org.apache.log4j.Logger;
 import ui.camera.CameraPanel;
 import ui.camera.VideoCreator;
 import ui.setting.CameraAddressSetting;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MainFrame extends JFrame {
+    Logger log = Logger.getLogger(MainFrame.class);
+
     private static JButton startButton;
     private static JButton startButtonProgrammingCatch;
     private static JLabel testModeLabel = new JLabel();
@@ -47,6 +50,8 @@ public class MainFrame extends JFrame {
 
     private static JLabel informLabel;
     private JLabel usedMemoryLabel;
+    private JLabel maxMemoryLabel;
+    private static int maxMemory;
 
     private static Map<Integer, CameraPanel> cameras;
     public static Map<Integer, List<String>> camerasAddress;
@@ -70,6 +75,8 @@ public class MainFrame extends JFrame {
     private static String profileName;
 
     private SoundSaver soundSaver;
+
+    int showThread = 0;
 
     private MainFrame() {
         super("LIGHTNING_STABLE");
@@ -97,37 +104,13 @@ public class MainFrame extends JFrame {
         changeWhiteLabel = new JLabel("Збільшення світла: " + percentDiffWhite + "%");
         usedMemoryLabel = new JLabel();
         usedMemoryLabel.setPreferredSize(new Dimension(100, 30));
+        maxMemoryLabel = new JLabel();
+        maxMemoryLabel.setText("Всього - " + maxMemory +" mb");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1150, 720));
 
         addressSaver = AddressSaver.restorePasswords();// "C:\\ipCamera\\"
 
-        Thread alarmThread = new Thread(() -> {
-            ServerSocket ss = null;
-
-            try {
-                ss = new ServerSocket(port);
-            } catch (IOException ignored) {}
-
-            while (true) {
-                try {
-                    audioPacketCount.setForeground(new Color(29, 142, 27));
-                    Socket socket = ss.accept();
-                    MainVideoCreator.startCatchVideo(false);
-                    socket.close();
-                } catch (Exception e) {
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-                    audioPacketCount.setForeground(Color.red);
-                }
-            }
-        });
-
-        alarmThread.setName("Alarm Thread");
-        alarmThread.start();
 
         Thread memoryUpdateThread = new Thread(() -> {
             int playInt = 0;
@@ -167,6 +150,7 @@ public class MainFrame extends JFrame {
 
                 long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
                 usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
+                log.info("Используем памяти "+usedMemory+ " mb");
                 usedMemoryLabel.repaint();
 
                 if (VideoPlayer.isShowVideoPlayer()) {
@@ -189,7 +173,6 @@ public class MainFrame extends JFrame {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
 //                if(showThread==10){
 //                    System.out.println("==================START=============");
 //                    int i = 0;
@@ -215,6 +198,39 @@ public class MainFrame extends JFrame {
         cameraAddressSetting.saveAddressToMap();
         setting = Setting.getSetting();
         showAllCameras();
+
+
+        Thread alarmThread = new Thread(() -> {
+            ServerSocket ss = null;
+
+            try {
+                ss = new ServerSocket(port);
+                System.out.println(" ждем запрос на порт -  "  + port);
+            } catch (IOException ignored) {}
+
+            while (true) {
+                try {
+                    audioPacketCount.setForeground(new Color(29, 142, 27));
+
+                    System.out.println("Ждем запрос на сервер");
+                    Socket socket = ss.accept();
+                    System.out.println("Получили запрос ");
+                    MainVideoCreator.startCatchVideo(false);
+                    socket.close();
+                } catch (Exception e) {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                    audioPacketCount.setForeground(Color.red);
+                }
+            }
+        });
+
+        alarmThread.setName("Alarm Thread");
+        alarmThread.start();
+
 
         File fileAddressSaver = new File("C:\\ipCamera\\data\\");
         fileAddressSaver.mkdirs();
@@ -497,6 +513,7 @@ public class MainFrame extends JFrame {
         southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
         southPanel.add(new JLabel("Використано: "));
         southPanel.add(usedMemoryLabel);
+        southPanel.add(maxMemoryLabel);
         mainPanel.add(southPanel);
     }
 
@@ -536,7 +553,6 @@ public class MainFrame extends JFrame {
                 System.out.println("Работает камера - " + addressNumber);
                 URL url = null;
                 try {
-//                    url = new URL(list.get(0) + "&streamprofile=1280960");//TODO fgfvdafxvarfd
                     url = new URL(list.get(0) + "&streamprofile="+profileName);//TODO fgfvdafxvarfd
                     Authenticator.setDefault(new Authenticator() {
                         protected PasswordAuthentication getPasswordAuthentication() {
@@ -666,6 +682,9 @@ public class MainFrame extends JFrame {
         MainFrame.profileName = profileName;
     }
 
+    public static void setMaxMemory(int maxMemory) {
+        MainFrame.maxMemory = maxMemory;
+    }
 
     public static int getPort() {
         return port;

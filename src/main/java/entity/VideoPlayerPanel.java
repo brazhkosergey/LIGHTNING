@@ -227,7 +227,7 @@ public class VideoPlayerPanel extends JPanel {
 
                 for (int i = 0; i < maxBuffCount; i++) {
                     try {
-                        bufferedInputStream.read(new byte[2147483646]);
+                        bufferedInputStream.read(new byte[2147483646]);//TODO ShowVideoThread. Player 1" java.lang.OutOfMemoryError: Requested array size exceeds VM limit
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -267,7 +267,6 @@ public class VideoPlayerPanel extends JPanel {
 //                    }
 //                    return;
 //                } else
-
 
                 if (VideoPlayer.isSetPOSITION()) {
                     return;

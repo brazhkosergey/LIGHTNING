@@ -17,7 +17,7 @@ public class VideoFilesPanel extends JPanel {
     private static VideoFilesPanel videoFilesPanel;
 
     private static Map<Long, Map<Integer, File>> mapOfFiles;
-    private static Map<Long, Integer> mapOfPartsVideo;
+    private static List<Long> listOfFilesNames;
 
     private JPanel mainPanel;
     private JScrollPane mainScrollPanel;
@@ -26,7 +26,7 @@ public class VideoFilesPanel extends JPanel {
 
     private VideoFilesPanel() {
         mapOfFiles = new HashMap<>();
-        mapOfPartsVideo = new HashMap<>();
+        listOfFilesNames = new ArrayList<>();
         buildVideoPanel();
     }
 
@@ -44,9 +44,10 @@ public class VideoFilesPanel extends JPanel {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainScrollPanel = new JScrollPane(mainPanel);
         mainScrollPanel.setPreferredSize(new Dimension(700, 530));//650+400 = 1100
+
         exportSettingPanel = new JPanel();
-        exportSettingPanel.setLayout(new BoxLayout(exportSettingPanel,BoxLayout.Y_AXIS));
-        exportSettingPanel.setPreferredSize(new Dimension(400,530));
+        exportSettingPanel.setLayout(new BoxLayout(exportSettingPanel, BoxLayout.Y_AXIS));
+        exportSettingPanel.setPreferredSize(new Dimension(400, 530));
         exportSettingPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
 
         JLabel exportSettingLabel = new JLabel("Параметри відео файлів");
@@ -56,7 +57,7 @@ public class VideoFilesPanel extends JPanel {
         JLabel sliderLabel = new JLabel();
         sliderLabel.setAlignmentX(CENTER_ALIGNMENT);
         slider = new JSlider();
-        slider.setPreferredSize(new Dimension(300,30));
+        slider.setPreferredSize(new Dimension(300, 30));
         slider.setValue(50);
         slider.setMaximum(120);
         slider.setMinimum(5);
@@ -64,12 +65,12 @@ public class VideoFilesPanel extends JPanel {
         slider.setMinorTickSpacing(1);
         slider.setPaintTicks(true);
         slider.setPaintLabels(true);
-        slider.addChangeListener((e)->{
-            sliderLabel.setText("FPS = "+slider.getValue());
+        slider.addChangeListener((e) -> {
+            sliderLabel.setText("FPS = " + slider.getValue());
         });
 
-        sliderLabel.setText("FPS = "+slider.getValue());
-        JPanel centralPanel= new JPanel(new FlowLayout());
+        sliderLabel.setText("FPS = " + slider.getValue());
+        JPanel centralPanel = new JPanel(new FlowLayout());
         centralPanel.add(mainScrollPanel);
         centralPanel.add(exportSettingPanel);
         this.add(centralPanel);
@@ -78,14 +79,22 @@ public class VideoFilesPanel extends JPanel {
     public void showVideos() {
         mainPanel.removeAll();
         mapOfFiles.clear();
-        dateFormat.applyPattern("dd MMMM yyyy HH:mm:ss");
+        listOfFilesNames.clear();
+//        dateFormat.applyPattern("dd MMMM yyyy HH:mm:ss");
+
+
         JPanel mainVideoPanel;
-        JLabel mainVideoLabel;
+        JLabel numberLabel;
+        JLabel countFilesLabel;
+
+
+        JLabel dateVideoLabel;
+        JLabel timeVideoLabel;
         JButton showVideoButton;
         JButton exportButton;
         JButton deleteButton;
 
-        File file = new File(MainFrame.getPath()+"\\buff\\bytes\\");
+        File file = new File(MainFrame.getPath() + "\\buff\\bytes\\");
         File[] files = file.listFiles();
         String fileName;
 
@@ -96,7 +105,12 @@ public class VideoFilesPanel extends JPanel {
                     String[] split = fileName.split("-");
                     long dataLong = Long.parseLong(split[0]);
                     String[] splitInteger = split[1].split("\\.");
-                    int cameraGroupNumber = Integer.parseInt(splitInteger[0].substring(0,1));
+                    int cameraGroupNumber = Integer.parseInt(splitInteger[0].substring(0, 1));
+
+                    if (!listOfFilesNames.contains(dataLong)) {
+                        listOfFilesNames.add(dataLong);
+                    }
+
                     if (mapOfFiles.containsKey(dataLong)) {
                         mapOfFiles.get(dataLong).put(cameraGroupNumber, fileFromFolder);
                     } else {
@@ -108,70 +122,98 @@ public class VideoFilesPanel extends JPanel {
             }
         }
 
-        for (Long dataLong : mapOfFiles.keySet()) {
+        Collections.sort(listOfFilesNames);
+
+        for (int i = listOfFilesNames.size() - 1; i >= 0; i--) {
+            Long dataLong = listOfFilesNames.get(i);
             Date date = new Date(dataLong);
-            mainVideoLabel = new JLabel(dateFormat.format(date)+" частина: "+ mapOfPartsVideo.get(dataLong));
+            Map<Integer, File> filesVideoBytes = mapOfFiles.get(dataLong);
+
+            int countFiles = filesVideoBytes.size();
+
+            numberLabel = new JLabel(String.valueOf(i + 1));
+            numberLabel.setPreferredSize(new Dimension(20, 30));
+            numberLabel.setFont(new Font(null, Font.BOLD, 15));
+            numberLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            dateFormat.applyPattern("yyyy.MM.dd");
+            dateVideoLabel = new JLabel(dateFormat.format(date));
+            dateFormat.applyPattern("HH:mm:ss");
+            timeVideoLabel = new JLabel(dateFormat.format(date));
+            timeVideoLabel.setFont(new Font(null, Font.BOLD, 15));
+            timeVideoLabel.setForeground(new Color(46, 139, 87));
+
+            countFilesLabel = new JLabel("Файлів - "+countFiles);
+            countFilesLabel.setPreferredSize(new Dimension(60, 30));
+
             showVideoButton = new JButton(String.valueOf((char) 9658));//PLAY
             showVideoButton.addActionListener((ActionEvent e) -> {
                 VideoPlayer.setShowVideoPlayer(true);
-                VideoPlayer videoPlayer = new VideoPlayer(mapOfFiles.get(dataLong), dateFormat.format(new Date(dataLong)));
+                VideoPlayer videoPlayer = new VideoPlayer(filesVideoBytes, dateFormat.format(new Date(dataLong)));
                 MainFrame.getMainFrame().setCentralPanel(videoPlayer);
             });
 
             exportButton = new JButton("Експорт");
             exportButton.addActionListener((e) -> {
                 List<Thread> list = new ArrayList<>();
-                Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
-                int number=1;
-                for (Integer integer : integerFileMap.keySet()) {
-                    File file1 = integerFileMap.get(integer);
+//                Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
+                int number = 1;
+                for (Integer integer : filesVideoBytes.keySet()) {
+                    File file1 = filesVideoBytes.get(integer);
                     Thread thread = new Thread(() -> {
                         MainVideoCreator.encodeVideoXuggle(file1);
                     });
-                    thread.setName("EncodeVideoThread. Number "+number++);
+                    thread.setName("EncodeVideoThread. Number " + number++);
                     list.add(thread);
                 }
 
                 Thread saverThread = new Thread(() -> {
-                    for(int i=0;i<list.size();i++){
-                        list.get(i).start();
-                        while (true){
+                    for (int j = 0; j < list.size(); j++) {
+                        list.get(j).start();
+                        while (true) {
                             try {
                                 Thread.sleep(1000);
                             } catch (InterruptedException e1) {
                                 e1.printStackTrace();
                             }
-                            if(!list.get(i).isAlive()){
+                            if (!list.get(j).isAlive()) {
                                 break;
                             }
                         }
-                        MainFrame.showInformMassage("Збережено файл - " +(i+1), true);
+                        MainFrame.showInformMassage("Збережено файл - " + (j + 1), true);
                     }
                 });
                 saverThread.setName("Main Saver Thread");
                 saverThread.start();
             });
 
-            deleteButton = new JButton("Видалити");
+            deleteButton = new JButton("DEL");
             deleteButton.addActionListener((e) -> {
-                Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
-                for (Integer integer : integerFileMap.keySet()) {
-                    File file1 = integerFileMap.get(integer);
+//                Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
+                for (Integer integer : filesVideoBytes.keySet()) {
+                    File file1 = filesVideoBytes.get(integer);
                     file1.delete();
                     showVideos();
                 }
             });
 
             mainVideoPanel = new JPanel(new FlowLayout());
-            mainVideoPanel.setMaximumSize(new Dimension(600, 40));
-            mainVideoPanel.add(mainVideoLabel);
-            mainVideoPanel.add(Box.createRigidArea(new Dimension(50, 30)));
+            mainVideoPanel.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+            mainVideoPanel.setMaximumSize(new Dimension(700,45));
+            mainVideoPanel.add(numberLabel);
+            mainVideoPanel.add(Box.createRigidArea(new Dimension(10, 30)));
+            mainVideoPanel.add(dateVideoLabel);
+            mainVideoPanel.add(timeVideoLabel);
+            mainVideoPanel.add(Box.createRigidArea(new Dimension(10, 30)));
+            mainVideoPanel.add(countFilesLabel);
+            mainVideoPanel.add(Box.createRigidArea(new Dimension(190, 30)));
             mainVideoPanel.add(showVideoButton);
-            mainVideoPanel.add(Box.createRigidArea(new Dimension(30, 30)));
+            mainVideoPanel.add(Box.createRigidArea(new Dimension(10, 30)));
             mainVideoPanel.add(exportButton);
-            mainVideoPanel.add(Box.createRigidArea(new Dimension(30, 30)));
+            mainVideoPanel.add(Box.createRigidArea(new Dimension(2, 30)));
             mainVideoPanel.add(deleteButton);
-            mainVideoPanel.add(Box.createRigidArea(new Dimension(100, 30)));
+            mainVideoPanel.add(Box.createRigidArea(new Dimension(2, 30)));
+
+            mainPanel.add(Box.createRigidArea(new Dimension(600, 2)));
             mainPanel.add(mainVideoPanel);
         }
 

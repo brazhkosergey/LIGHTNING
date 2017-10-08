@@ -11,3 +11,6 @@ http://94.244.33.211:80/mjpg/video.mjpg?COUNTER - 3
 http://31.42.168.71:80/mjpg/video.mjpg?COUNTER - 4  камянец подольский
 
 http://138.16.170.10/mjpg/video.mjpg - США
+
+
+LIGHTNING_STABLE
