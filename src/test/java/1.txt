@@ -12,5 +12,4 @@ http://31.42.168.71:80/mjpg/video.mjpg?COUNTER - 4  камянец подоль�
 
 http://138.16.170.10/mjpg/video.mjpg - США
 
-
 LIGHTNING_STABLE

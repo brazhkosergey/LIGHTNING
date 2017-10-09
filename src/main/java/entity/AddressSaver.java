@@ -170,7 +170,9 @@ public class AddressSaver {
         MainFrame.setColorLightNumber(lightSensitivity);
         MainFrame.setOpacitySetting(opacity);
         MainFrame.setTimeToSave(timeToSave);
-        MainFrame.setPath(path);
+        if(path!=null){
+            MainFrame.setPath(path);
+        }
         MainFrame.setPort(port);
         MainFrame.setProfileName(profileName);
     }

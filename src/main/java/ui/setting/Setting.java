@@ -4,6 +4,7 @@ import ui.main.MainFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 public class Setting extends JPanel {
     private static Setting setting;
@@ -176,8 +177,21 @@ public class Setting extends JPanel {
             portLabel.setText("port сервера - " + port);
 
             String path = defaultFolder.getText();
-            currentFolder.setText(path);
-            MainFrame.setPath(path);
+            boolean mkdirs=false;
+            if(path!=null&&path.length()>2){
+                File file = new File(path+"\\bytes\\");
+                try{
+                    mkdirs = file.mkdirs();
+                }catch (Exception ignored){ }
+            }
+
+            if(mkdirs){
+                currentFolder.setText(path);
+                MainFrame.setPath(path);
+            }
+
+
+
             String profileName = defaultProfileName.getText();
             currentProfileName.setText(profileName);
             MainFrame.setProfileName(profileName);
@@ -244,16 +258,11 @@ public class Setting extends JPanel {
         profileNamePane.add(currentProfileName);
         profileNamePane.add(defaultProfileName);
 
-
-
         folderSettingPanel.add(testModeCheckBox);
         folderSettingPanel.add(portLabel);
         folderSettingPanel.add(defaultPort);
         folderSettingPanel.add( pathPanel);
         folderSettingPanel.add(profileNamePane);
-
-
-
 
         JPanel allSettingPane = new JPanel(new FlowLayout());
         allSettingPane.add(mainSettingPanel);

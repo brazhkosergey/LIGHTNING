@@ -94,7 +94,7 @@ public class VideoFilesPanel extends JPanel {
         JButton exportButton;
         JButton deleteButton;
 
-        File file = new File(MainFrame.getPath() + "\\buff\\bytes\\");
+        File file = new File(MainFrame.getPath() + "\\bytes\\");
         File[] files = file.listFiles();
         String fileName;
 
@@ -125,6 +125,7 @@ public class VideoFilesPanel extends JPanel {
         Collections.sort(listOfFilesNames);
 
         for (int i = listOfFilesNames.size() - 1; i >= 0; i--) {
+
             Long dataLong = listOfFilesNames.get(i);
             Date date = new Date(dataLong);
             Map<Integer, File> filesVideoBytes = mapOfFiles.get(dataLong);
@@ -135,6 +136,7 @@ public class VideoFilesPanel extends JPanel {
             numberLabel.setPreferredSize(new Dimension(20, 30));
             numberLabel.setFont(new Font(null, Font.BOLD, 15));
             numberLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
             dateFormat.applyPattern("yyyy.MM.dd");
             dateVideoLabel = new JLabel(dateFormat.format(date));
             dateFormat.applyPattern("HH:mm:ss");
@@ -155,7 +157,6 @@ public class VideoFilesPanel extends JPanel {
             exportButton = new JButton("Експорт");
             exportButton.addActionListener((e) -> {
                 List<Thread> list = new ArrayList<>();
-//                Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
                 int number = 1;
                 for (Integer integer : filesVideoBytes.keySet()) {
                     File file1 = filesVideoBytes.get(integer);
@@ -179,7 +180,6 @@ public class VideoFilesPanel extends JPanel {
                                 break;
                             }
                         }
-                        MainFrame.showInformMassage("Збережено файл - " + (j + 1), true);
                     }
                 });
                 saverThread.setName("Main Saver Thread");
@@ -188,10 +188,16 @@ public class VideoFilesPanel extends JPanel {
 
             deleteButton = new JButton("DEL");
             deleteButton.addActionListener((e) -> {
-//                Map<Integer, File> integerFileMap = mapOfFiles.get(dataLong);
                 for (Integer integer : filesVideoBytes.keySet()) {
-                    File file1 = filesVideoBytes.get(integer);
-                    file1.delete();
+                    File folderToDel = filesVideoBytes.get(integer);
+
+                    File[] filesToDel = folderToDel.listFiles();
+                    if(filesToDel!=null){
+                        for(File f:filesToDel){
+                            f.delete();
+                        }
+                    }
+                    folderToDel.delete();
                     showVideos();
                 }
             });
@@ -212,7 +218,6 @@ public class VideoFilesPanel extends JPanel {
             mainVideoPanel.add(Box.createRigidArea(new Dimension(2, 30)));
             mainVideoPanel.add(deleteButton);
             mainVideoPanel.add(Box.createRigidArea(new Dimension(2, 30)));
-
             mainPanel.add(Box.createRigidArea(new Dimension(600, 2)));
             mainPanel.add(mainVideoPanel);
         }

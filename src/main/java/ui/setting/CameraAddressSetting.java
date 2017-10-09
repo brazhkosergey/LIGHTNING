@@ -136,7 +136,7 @@ public class CameraAddressSetting extends JPanel {
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
-                    File imageFile = new File(MainFrame.getPath()+"\\buff\\bytes\\" + number + ".jpg");
+                    File imageFile = new File("C:\\ipCamera\\buff\\" + number + ".jpg");
                     if (imageFile.exists()) {
                         imageFile.delete();
                     }
@@ -175,7 +175,7 @@ public class CameraAddressSetting extends JPanel {
 
             JButton removeButton = new JButton("Видалити файл");
             removeButton.addActionListener((e) -> {
-                File imageFile = new File(MainFrame.getPath()+"\\buff\\bytes\\" + number + ".jpg");
+                File imageFile = new File("C:\\ipCamera\\buff\\" + number + ".jpg");
                 if (imageFile.exists()) {
                     imageFile.delete();
                 }

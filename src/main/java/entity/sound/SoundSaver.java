@@ -24,26 +24,25 @@ public class SoundSaver extends Thread {
     private final static int READY = 1;
     private final static int PLAYING = 2;
 
-    static int state; //RTSP state == INIT or READY or PLAYING
-    static BufferedReader RTSPBufferedReader;
-    static BufferedWriter RTSPBufferedWriter;
+    private static int state; //RTSP state == INIT or READY or PLAYING
+    private static BufferedReader RTSPBufferedReader;
+    private static BufferedWriter RTSPBufferedWriter;
 
-    static String FileName; //video file to request to the server
+    private static String FileName;
     private int RTSPSeqNb = 0; //Sequence number of RTSP messages within the session
     private String RTSPid; //ID of the RTSP session (given by the RTSP Server)
 
-    Map<Long, byte[]> map = new HashMap<>();
-    final static String CRLF = "\r\n";
+    private Map<Long, byte[]> map = new HashMap<>();
+    private final static String CRLF = "\r\n";
 
     private int audioFPS = 0;
-    private int fpsNotZero;
+//    private int fpsNotZero;
 
     private boolean hearSound;
     private boolean playSound;
 
-    private int stopSaveAudioInt;
     private int sizeAudioSecond;
-    private int countHaveNotDataToRead;
+//    private int countHaveNotDataToRead;
     private SourceDataLine clipSDL = null;
     private boolean stopSaveAudio;
     private boolean startSaveAudio;
@@ -52,12 +51,15 @@ public class SoundSaver extends Thread {
     private boolean connect = false;
 
     private Deque<Long> deque;
+    private Deque<Integer> FPSDeque;
     private Map<Long, byte[]> mainMapSaveFile;
-    List<Long> list;
+    private List<Long> list;
 
     private Thread mainThread;
     private Thread updateDataThread;
     private Thread playThread;
+
+
 
     public SoundSaver(String addressName) {
         try {
@@ -82,6 +84,8 @@ public class SoundSaver extends Thread {
             if (connect) {
                 deque = new ConcurrentLinkedDeque<>();
                 mainMapSaveFile = new HashMap<>();
+                FPSDeque = new ConcurrentLinkedDeque<>();
+
 
                 list = new ArrayList<>();
 
@@ -94,7 +98,6 @@ public class SoundSaver extends Thread {
                             RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
                             byte[] bytes = new byte[rtp_packet.getpayload_length()];
                             rtp_packet.getpayload(bytes);
-
 //                            clipSDL.write(bytes,0,bytes.length);
 
                             audioFPS++;
@@ -102,48 +105,15 @@ public class SoundSaver extends Thread {
                             deque.addFirst(l);
                             map.put(l, bytes);
                             list.add(l);
-
-                            if (!startSaveAudio) {
-                                if (delBytes) {
-                                    Long aLong = deque.pollLast();
-                                    if(map.containsKey(aLong)){
-                                        map.remove(aLong);
-                                    }
-
-                                    if(mainMapSaveFile.containsKey(aLong)){
-                                        mainMapSaveFile.remove(aLong);
-                                    }
-                                }
-                            } else {
-                                if (stopSaveAudio) {
-                                    int size = deque.size();
-                                    for (int j = 0; j < size; j++) {
-                                        Long timeLong = deque.pollLast();
-                                        if(map.containsKey(timeLong)){
-                                            byte[] bytes1 = map.get(timeLong);
-                                            if (bytes1 != null) {
-                                                mainMapSaveFile.put(timeLong, bytes1);
-                                            }
-                                            map.remove(timeLong);
-                                        }
-                                    }
-
-                                    saveSoundToFile(mainMapSaveFile);
-                                    map = new HashMap<>();
-                                    mainMapSaveFile = new HashMap<>();
-                                    stopSaveAudioInt = 0;
-                                    stopSaveAudio = false;
-                                    startSaveAudio = false;
-                                }
-                            }
                         } catch (InterruptedIOException iioe) {
-                            countHaveNotDataToRead++;
+//                            countHaveNotDataToRead++;
                         } catch (IOException ioe) {
                             ioe.printStackTrace();
                             System.out.println("Exception caught: " + ioe);
                         }
                     }
                 });
+
                 mainThread.setName("Save Audio Thread");
                 mainThread.setPriority(MIN_PRIORITY);
 
@@ -156,40 +126,57 @@ public class SoundSaver extends Thread {
                             e.printStackTrace();
                         }
 
-                        MainFrame.audioPacketCount.setText(audioFPS + " : " + countHaveNotDataToRead);
-
-                        if (audioFPS != 0) {
-                            fpsNotZero = audioFPS;
-                        }
-
+                        MainFrame.audioPacketCount.setText(audioFPS + " : " + FPSDeque.size());
+                        FPSDeque.addFirst(audioFPS);
+//                        if (audioFPS != 0) {
+//                            fpsNotZero = audioFPS;
+//                        }
                         if (!startSaveAudio) {
-                            if (MainVideoCreator.isSaveVideo()) {
-                                startSaveAudio = true;
-                            }
-
-                            delBytes = deque.size() > sizeAudioSecond * fpsNotZero;
-
-                            if (sizeAudioSecond != MainFrame.getTimeToSave()) {
-                                sizeAudioSecond = MainFrame.getTimeToSave();
-                                while (true) {
-                                    if (deque.size() > sizeAudioSecond * fpsNotZero) {
-                                        map.remove(deque.pollLast());
-                                    } else {
-                                        break;
-                                    }
+                            sizeAudioSecond = MainFrame.getTimeToSave();
+                            while (FPSDeque.size()>sizeAudioSecond){
+                                Integer integer = FPSDeque.pollLast();
+                                for(int j = 0;j<integer;j++){
+                                    Long aLong = deque.pollLast();
+                                    map.remove(aLong);
                                 }
                             }
-                        }
+//                            delBytes = deque.size() > sizeAudioSecond * fpsNotZero;
+//                            if (sizeAudioSecond != MainFrame.getTimeToSave()) {
+//
+//                                while (true) {
+//                                    if (deque.size() > sizeAudioSecond * fpsNotZero) {
+//                                        map.remove(deque.pollLast());
+//                                    } else {
+//                                        break;
+//                                    }
+//                                }
+//                            }
+                        } else {
+                            if (stopSaveAudio) {
+                                int size = FPSDeque.size();
+                                for (int j = 0; j < size; j++) {
+                                    Integer integer = FPSDeque.pollLast();
+                                    for(int k=0;k<integer;k++){
+                                        Long timeLong = deque.pollLast();
+                                        if (map.containsKey(timeLong)) {
+                                            byte[] bytes1 = map.get(timeLong);
+                                            if (bytes1 != null) {
+                                                mainMapSaveFile.put(timeLong, bytes1);
+                                            }
+                                            map.remove(timeLong);
+                                        }
+                                    }
+                                }
 
-                        if (startSaveAudio) {
-                            stopSaveAudioInt++;
-                            if (stopSaveAudioInt == sizeAudioSecond) {
-                                stopSaveAudio = true;
+                                saveSoundToFile(mainMapSaveFile);
+                                map = new HashMap<>();
+                                mainMapSaveFile = new HashMap<>();
+                                stopSaveAudio = false;
+                                startSaveAudio = false;
                             }
                         }
 
                         audioFPS = 0;
-                        countHaveNotDataToRead = 0;
                         if (updateRequest > 40) {
                             send_RTSP_request("PLAY");
                             updateRequest = 0;
@@ -204,6 +191,7 @@ public class SoundSaver extends Thread {
                         clipSDL.close();
                     }
                 });
+
                 updateDataThread.setName("Update Audio Thread");
                 updateDataThread.setPriority(MIN_PRIORITY);
 
@@ -213,13 +201,13 @@ public class SoundSaver extends Thread {
                             ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(35535);
 
 //                            Collections.sort(list);
-                            for(int j=0;j<list.size();j++){
+                            for (int j = 0; j < list.size(); j++) {
                                 Long time = list.get(j);
-                                if(map.containsKey(time)){
+                                if (map.containsKey(time)) {
                                     byte[] bytes = map.get(time);
-                                    if(bytes!=null){
+                                    if (bytes != null) {
                                         try {
-                                            temporaryStream.write(bytes );
+                                            temporaryStream.write(bytes);
                                         } catch (IOException e) {
                                             e.printStackTrace();
                                         }
@@ -326,6 +314,14 @@ public class SoundSaver extends Thread {
         }
     }
 
+    public void startSaveAudio(){
+        startSaveAudio = true;
+    }
+
+    public void stopSaveAudio(){
+        stopSaveAudio = true;
+    }
+
     public void SETUP() {
         if (connect) {
             RTSPSeqNb = 1;
@@ -362,7 +358,6 @@ public class SoundSaver extends Thread {
             send_RTSP_request("TEARDOWN");
         }
     }
-
 
     private void playAudio() {
 
@@ -406,39 +401,39 @@ public class SoundSaver extends Thread {
     private int parse_server_response() {
         int reply_code = 0;
         try {
-            System.out.println("===============================================");
+//            System.out.println("===============================================");
             String StatusLine = RTSPBufferedReader.readLine();
             while (!StatusLine.contains("RTSP/1.0")) {
-                System.out.println("Status Line - " + StatusLine);
+//                System.out.println("Status Line - " + StatusLine);
                 StatusLine = RTSPBufferedReader.readLine();
             }
 
-            System.out.println("Status Line - " + StatusLine);
+//            System.out.println("Status Line - " + StatusLine);
             StringTokenizer tokens = new StringTokenizer(StatusLine);
             tokens.nextToken(); //skip over the RTSP version
             try {
                 reply_code = Integer.parseInt(tokens.nextToken());
-                System.out.println("Reply CODE:" + reply_code);
+//                System.out.println("Reply CODE:" + reply_code);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             if (reply_code == 200) {
                 String SeqNumLine = RTSPBufferedReader.readLine();
-                System.out.println(SeqNumLine);
+//                System.out.println(SeqNumLine);
 
                 String SessionLine = RTSPBufferedReader.readLine();
-                System.out.println("Session line-" + SessionLine);
+//                System.out.println("Session line-" + SessionLine);
 
                 String transportLine = RTSPBufferedReader.readLine();
-                System.out.println(transportLine);
+//                System.out.println(transportLine);
                 String stringDate = RTSPBufferedReader.readLine();
-                System.out.println(stringDate);
-                System.out.println("Session line is: " + SessionLine);
+//                System.out.println(stringDate);
+//                System.out.println("Session line is: " + SessionLine);
 
                 tokens = new StringTokenizer(SessionLine);
                 tokens.nextToken();//skip over the RTSP version
                 RTSPid = tokens.nextToken();
-                System.out.println("Session is: " + RTSPid);
+//                System.out.println("Session is: " + RTSPid);
             }
 
         } catch (Exception ex) {

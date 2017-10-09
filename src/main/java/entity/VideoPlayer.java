@@ -30,17 +30,19 @@ public class VideoPlayer extends JPanel {
     public static JLabel informLabel = new JLabel("STOP");
     private static JLabel speedLabel;
     static JLabel FPSLabel = new JLabel();
+
     private static JLabel sliderLabel;
+    private static JLabel currentFrameLabel;
 
     private static List<JLabel> list;
-    private static Map<Integer,Boolean> eventPercent;
+    private static Map<Integer, Boolean> eventPercent;
     private static List<VideoPlayerPanel> videoPlayerPanels;
 
     private static JButton saveImageButton;
     private JPanel centralPane;
     private JPanel mainVideoPane;
 
-    public VideoPlayer(Map<Integer, File> map, String date) {
+    public VideoPlayer(Map<Integer, File> foldersWithTemporaryVideoFiles, String date) {
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         this.setPreferredSize(new Dimension(1100, 550));
         centralPane = new JPanel();
@@ -61,18 +63,24 @@ public class VideoPlayer extends JPanel {
             mainVideoPane.removeAll();
             long fileSize = 0;
             int fileNumber = 0;
-            for (int i=0;i<4;i++) {
+            for (int i = 0; i < 4; i++) {
                 VideoPlayerPanel playerPanel = videoPlayerPanels.get(i);
                 playerPanel.setMainPanel(false);
+                playerPanel.setShowVideoNow(true);
                 playerPanel.setWidthAndHeight(535, 222);
                 mainVideoPane.add(playerPanel);
-
-                File file = map.get(i+1);
-                if (file != null) {
-                    long l = file.length();
-                    if (l > fileSize) {
-                        fileSize = l;
-                        fileNumber = i;
+                File folder = foldersWithTemporaryVideoFiles.get(i + 1);
+                if (folder != null) {
+                    File[] files = folder.listFiles();
+                    if (files != null) {
+                        long l = 0L;
+                        for (File file : files) {
+                            l += file.length();
+                        }
+                        if (l > fileSize) {
+                            fileSize = l;
+                            fileNumber = i;
+                        }
                     }
                 }
             }
@@ -88,18 +96,18 @@ public class VideoPlayer extends JPanel {
                 for (String aSplit : split) {
                     System.out.println(aSplit);
                     boolean contains = aSplit.contains("(");
-                    if(contains){
-                        String s = aSplit.substring(1,aSplit.length()-1);
+                    if (contains) {
+                        String s = aSplit.substring(1, aSplit.length() - 1);
                         try {
                             int i1 = Integer.parseInt(s);
-                            eventPercent.put(i1,contains);
+                            eventPercent.put(i1, contains);
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
                     } else {
                         try {
                             int i1 = Integer.parseInt(aSplit);
-                            eventPercent.put(i1,contains);
+                            eventPercent.put(i1, contains);
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
@@ -119,16 +127,23 @@ public class VideoPlayer extends JPanel {
         int mainPanelNumber = 0;
         long mainFileSize = 0L;
         for (int j = 1; j < 5; j++) {
-            File file = map.get(j);
-            if (file != null) {
-                long l = file.length();
-                if (l > mainFileSize) {
-                    mainFileSize = l;
-                    mainPanelNumber = j;
+            File folder = foldersWithTemporaryVideoFiles.get(j);
+            if (folder != null) {
+                File[] files = folder.listFiles();
+                if (files != null) {
+                    long l = 0L;
+                    for (File file : files) {
+                        l += file.length();
+                    }
+                    if (l > mainFileSize) {
+                        mainFileSize = l;
+                        mainPanelNumber = j;
+                    }
                 }
             }
 
-            VideoPlayerPanel videoPlayer = new VideoPlayerPanel(file, j);
+            VideoPlayerPanel videoPlayer = new VideoPlayerPanel(folder, j);
+            videoPlayer.setShowVideoNow(true);
             videoPlayer.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -140,8 +155,9 @@ public class VideoPlayer extends JPanel {
                         setPrewIMAGE(false);
                         informLabel.setText("STOP");
                         saveImageButton.setForeground(Color.LIGHT_GRAY);
-                        for(VideoPlayerPanel videoPlayerPanel:videoPlayerPanels){
+                        for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanels) {
                             videoPlayerPanel.setMainPanel(false);
+                            videoPlayerPanel.setShowVideoNow(false);
                         }
 
                         videoPlayer.setWidthAndHeight(1050, 450);
@@ -154,24 +170,25 @@ public class VideoPlayer extends JPanel {
                         for (String aSplit : split) {
                             System.out.println(aSplit);
                             boolean contains = aSplit.contains("(");
-                            if(contains){
-                                String s = aSplit.substring(1,aSplit.length()-1);
+                            if (contains) {
+                                String s = aSplit.substring(1, aSplit.length() - 1);
                                 try {
                                     int i1 = Integer.parseInt(s);
-                                    eventPercent.put(i1,contains);
+                                    eventPercent.put(i1, contains);
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                 }
                             } else {
                                 try {
                                     int i1 = Integer.parseInt(aSplit);
-                                    eventPercent.put(i1,contains);
+                                    eventPercent.put(i1, contains);
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                 }
                             }
                         }
                         videoPlayer.setMainPanel(true);
+                        videoPlayer.setShowVideoNow(true);
                         centralPane.removeAll();
                         centralPane.add(videoPlayer);
                         centralPane.repaint();
@@ -195,18 +212,18 @@ public class VideoPlayer extends JPanel {
             for (String aSplit : split) {
 
                 boolean contains = aSplit.contains("(");
-                if(contains){
-                    String s = aSplit.substring(1,aSplit.length()-1);
+                if (contains) {
+                    String s = aSplit.substring(1, aSplit.length() - 1);
                     try {
                         int i1 = Integer.parseInt(s);
-                        eventPercent.put(i1,contains);
+                        eventPercent.put(i1, contains);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
                 } else {
                     try {
                         int i1 = Integer.parseInt(aSplit);
-                        eventPercent.put(i1,contains);
+                        eventPercent.put(i1, contains);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -264,7 +281,7 @@ public class VideoPlayer extends JPanel {
         JButton slowerButton = new JButton("<<");
         slowerButton.addActionListener((e) -> {
             if (countDoNotShowImage == 0) {
-                VideoPlayer.speed = VideoPlayer.speed + 100;
+                VideoPlayer.speed = VideoPlayer.speed + 50;
                 if (speed > 900) {
                     speed = 900;
                 }
@@ -285,14 +302,14 @@ public class VideoPlayer extends JPanel {
 
         JButton fasterButton = new JButton(">>");
         fasterButton.addActionListener((e) -> {
-            if (speed == 0) {
+            if (VideoPlayer.speed == 0) {
                 countDoNotShowImage++;
                 if (countDoNotShowImage > 9) {
                     countDoNotShowImage = 10;
                 }
                 speedLabel.setText((countDoNotShowImage * 2) + "X");
             } else {
-                speed = speed - 100;
+                VideoPlayer.speed = VideoPlayer.speed - 50;
                 if (speed < 1) {
                     speed = 0;
                 }
@@ -350,13 +367,23 @@ public class VideoPlayer extends JPanel {
 
         JLabel label1 = new JLabel(date);
         sliderLabel = new JLabel("0 %");
-        sliderLabel.setPreferredSize(new Dimension(50, 10));
+        sliderLabel.setPreferredSize(new Dimension(50, 15));
+        sliderLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        currentFrameLabel = new JLabel();
+        currentFrameLabel.setPreferredSize(new Dimension(120,15));
+        currentFrameLabel.setHorizontalAlignment(SwingConstants.CENTER);
         informLabel = new JLabel("STOP");
-        informLabel.setPreferredSize(new Dimension(50, 10));
+        informLabel.setPreferredSize(new Dimension(50, 15));
+        informLabel.setHorizontalAlignment(SwingConstants.CENTER);
         speedLabel = new JLabel("SPEED");
-        speedLabel.setPreferredSize(new Dimension(50, 10));
-        FPSLabel.setPreferredSize(new Dimension(80, 10));
+        speedLabel.setPreferredSize(new Dimension(50, 15));
+        speedLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        FPSLabel.setPreferredSize(new Dimension(80, 15));
+        FPSLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
         buttonsPane.add(backButton);
+        buttonsPane.add(Box.createRigidArea(new Dimension(2,10)));
+        buttonsPane.add(currentFrameLabel);
         buttonsPane.add(label1);
         buttonsPane.add(informLabel);
         buttonsPane.add(sliderLabel);
@@ -384,7 +411,7 @@ public class VideoPlayer extends JPanel {
         for (int i = 1; i < 100; i++) {
             JLabel label = new JLabel(String.valueOf((char) 8623));
             label.setForeground(Color.LIGHT_GRAY);
-            label.setFont(new Font(null, Font.BOLD,13));
+            label.setFont(new Font(null, Font.BOLD, 13));
             int finalI = i;
             label.addMouseListener(new MouseAdapter() {
                 @Override
@@ -435,6 +462,8 @@ public class VideoPlayer extends JPanel {
                 }
             }
         });
+
+        setSliderPosition(0);
     }
 
     static void setSetPOSITION(boolean setPOSITION) {
@@ -471,10 +500,13 @@ public class VideoPlayer extends JPanel {
 
     static void setSliderPosition(int position) {
 
-        for (int i = 0; i < position - 1; i++) {
-            if(eventPercent.containsKey(i)){
+        if(position>99){
+            position=99;
+        }
 
-                if(eventPercent.get(i)){
+        for (int i = 0; i < position - 1; i++) {
+            if (eventPercent.containsKey(i)) {
+                if (eventPercent.get(i)) {
                     list.get(i).setForeground(new Color(23, 182, 42));
                 } else {
                     list.get(i).setForeground(new Color(197, 99, 39));
@@ -485,8 +517,8 @@ public class VideoPlayer extends JPanel {
         }
 
         for (int i = position; i < list.size(); i++) {
-            if(eventPercent.containsKey(i)){
-                if(eventPercent.get(i)){
+            if (eventPercent.containsKey(i)) {
+                if (eventPercent.get(i)) {
                     list.get(i).setForeground(new Color(24, 227, 42));
                 } else {
                     list.get(i).setForeground(new Color(255, 113, 44));
@@ -554,6 +586,10 @@ public class VideoPlayer extends JPanel {
 
     static boolean isSaveIMAGE() {
         return SaveIMAGE;
+    }
+
+    static void setCurrentFrameLabelText(int currentFrameLabelText, int buffSize){
+        currentFrameLabel.setText("Кадр "+currentFrameLabelText+" : "+buffSize);
     }
 
     static void ReSetSaveIMAGE() {

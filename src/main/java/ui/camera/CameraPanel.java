@@ -29,6 +29,7 @@ public class CameraPanel extends JPanel {
         label = new JLabel("Камера не працюе");
         label.setHorizontalAlignment(SwingConstants.CENTER);
         cameraWindow = new CameraWindow();
+        cameraWindow.setBackground(Color.lightGray);
         LayerUI<JPanel> layerUI = new MyLayer();
         cameraWindowLayer = new JLayer<>(cameraWindow, layerUI);
 
@@ -38,7 +39,8 @@ public class CameraPanel extends JPanel {
         this.add(label);
         title = BorderFactory.createTitledBorder("FPS = 0");
         title.setTitleJustification(TitledBorder.CENTER);
-        title.setTitleFont((new Font("Comic Sans MS", Font.BOLD, 10)));
+        title.setTitleFont((new Font(null, Font.BOLD, 10)));
+//        title.setTitleFont((new Font("Comic Sans MS", Font.BOLD, 10)));
         title.setTitleColor(new Color(46, 139, 87));
         title.setBorder(new LineBorder(new Color(46, 139, 87), 1, true));
         this.setBorder(title);

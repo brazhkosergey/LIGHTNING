@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoCatcher {
@@ -28,6 +29,14 @@ public class VideoCatcher {
     private int maxWidth;
     private int maxHeight;
     private boolean isFullSize;
+
+//    private int countDoNotShowImages;
+//    private int settingCountDoNotShowImages;
+    //    private Map<Long, byte[]> bufferBytes;
+//    private Map<Long, byte[]> mapBytes;
+//    private Map<Integer, Boolean> eventsFramesNumber;
+//    private Deque<Long> timeDeque;
+
 
     private Deque<byte[]> imageDeque;
     private VideoCreator videoCreator;
@@ -117,6 +126,7 @@ public class VideoCatcher {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+
                         checkData++;
                     }
                 } else {

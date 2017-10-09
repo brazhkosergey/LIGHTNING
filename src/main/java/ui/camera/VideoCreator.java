@@ -1,6 +1,7 @@
 package ui.camera;
 
 import entity.MainVideoCreator;
+import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 
 import java.awt.*;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoCreator {
+    Logger log = Logger.getLogger(VideoCreator.class);
 
     private int cameraGroupNumber;
     private int videoNumber;
@@ -77,7 +79,7 @@ public class VideoCreator {
 
                     boolean creatorWork = false;
                     for (VideoCatcher catcher : catcherList) {
-                        if(!creatorWork){
+                        if (!creatorWork) {
                             creatorWork = catcher.isCatchVideo();
                         }
 
@@ -89,7 +91,7 @@ public class VideoCreator {
                         }
                     }
 
-                    if(!creatorWork){
+                    if (!creatorWork) {
                         while (fileDeque.size() > 0) {
                             File fileToDel = fileDeque.pollLast();
                             fileToDel.delete();
@@ -120,19 +122,21 @@ public class VideoCreator {
                 }
             }
         });
-        timerThread.setName("VideoCreatorTimer Thread "+cameraGroupNumber);
+        timerThread.setName("VideoCreatorTimer Thread " + cameraGroupNumber);
 
         Thread saveBytesThread = new Thread(() -> {
             while (true) {
                 try {
                     if (time >= 5) {
-                        if(dequeImagesTime.size()>0){
-                            File file = new File(MainFrame.getPath() + "\\buff\\" + cameraGroupNumber + "\\" + System.currentTimeMillis() + ".tmp");
+                        if (dequeImagesTime.size() > 0) {
+
+                            File temporaryFile = new File("C:\\ipCamera\\buff\\" + cameraGroupNumber + "\\" + System.currentTimeMillis() + ".tmp");
                             int countImagesInFile = 0;
+
                             try {
-                                if (file.createNewFile()) {
-                                    file.deleteOnExit();
-                                    FileOutputStream fileOutputStream = new FileOutputStream(file);
+                                if (temporaryFile.createNewFile()) {
+                                    temporaryFile.deleteOnExit();
+                                    FileOutputStream fileOutputStream = new FileOutputStream(temporaryFile);
                                     int size = fpsDeque.size();
                                     for (int i = 0; i < size; i++) {
                                         Integer integer = fpsDeque.pollLast();
@@ -152,24 +156,22 @@ public class VideoCreator {
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
-
-                                    System.out.println(+cameraGroupNumber + "Файл добавлен. Изображений "
-                                            + countImagesInFile + ". Всего файлов - " + fileDeque.size()
-                                            + ". Всего изображений в буфере " + totalCountImages);
                                 }
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-
-                            fileDeque.addFirst(file);
-                            buffFilesSize.put(file, countImagesInFile);
+                            File file = new File("C:\\ipCamera\\buff\\" + cameraGroupNumber + "\\"
+                                    + System.currentTimeMillis() +"-"+countImagesInFile+ ".tmp");
+                            if(temporaryFile.renameTo(file)){
+                                fileDeque.addFirst(file);
+                                buffFilesSize.put(file, countImagesInFile);
+                            }
                         }
 
                         if (startSaveVideo) {
                             if (stopSaveVideoInt >= timeToSave && totalCountImages > 0) {
                                 startSaveVideo = false;
                                 stopSaveVideoInt = 0;
-
                                 MainVideoCreator.stopCatchVideo();
                                 StringBuilder stringBuilder = new StringBuilder();
                                 stringBuilder.append("[");
@@ -190,49 +192,23 @@ public class VideoCreator {
                                         stringBuilder.append(",");
                                     }
                                 }
-
                                 eventsFramesNumber.clear();
                                 stringBuilder.append("]");
                                 String eventPercent = stringBuilder.toString();
-
-                                String path = MainFrame.getPath() + "\\buff\\bytes\\" + date.getTime() +
+                                String path = MainFrame.getPath() + "\\bytes\\" + date.getTime() +
                                         "-" + cameraGroupNumber + "(" + totalFPSForFile + ")"
-                                        + eventPercent + ".tmp";
-
-                                File videoFile = new File(path);
-                                try {
-                                    if (videoFile.createNewFile()) {
-                                        FileOutputStream fileOutputStream = new FileOutputStream(videoFile, true);
-                                        int size = fileDeque.size();
-                                        for (int i = 0; i < size; i++) {
-
-                                            if (i % 2 == 0) {
-                                                MainFrame.showInformMassage("Зберігаемо файли", true);
-                                            } else {
-                                                MainFrame.showInformMassage("Зберігаемо файли", false);
-                                            }
-
-                                            File fileToSave = fileDeque.pollLast();
-                                            System.out.println("Пишем файл " + fileToSave.getAbsolutePath());
-                                            byte[] buff = new byte[1024];
-                                            FileInputStream fileInputStream = new FileInputStream(fileToSave);
-                                            while (fileInputStream.read(buff) > 0) {
-                                                fileOutputStream.write(buff);
-                                            }
-                                            fileInputStream.close();
-                                            fileToSave.delete();
-
-                                            Integer remove = buffFilesSize.remove(fileToSave);
-                                            totalCountImages -= remove;
-                                        }
-
-                                        fileOutputStream.flush();
-                                        fileOutputStream.close();
+                                        + eventPercent + ".tmp";//"\\";
+                                File destFolder = new File(path);
+                                if (destFolder.mkdirs()) {
+                                    int size = fileDeque.size();
+                                    for (int i = 0; i < size; i++) {
+                                        File fileToSave = fileDeque.pollLast();
+                                        System.out.println("Пишем файл " + fileToSave.getAbsolutePath());
+                                        fileToSave.renameTo(new File(destFolder, fileToSave.getName()));
+                                        Integer remove = buffFilesSize.remove(fileToSave);
+                                        totalCountImages -= remove;
                                     }
-                                } catch (IOException e) {
-                                    e.printStackTrace();
                                 }
-                                MainFrame.showInformMassage("Збережено файл -" + cameraGroupNumber, true);
                             }
                         } else {
                             int i = (timeToSave / 5) + 1;
@@ -251,7 +227,7 @@ public class VideoCreator {
                 }
             }
         });
-        saveBytesThread.setName("Video Creator SaveBytesThread "+cameraGroupNumber);
+        saveBytesThread.setName("Video Creator SaveBytesThread " + cameraGroupNumber);
         saveBytesThread.start();
     }
 
@@ -271,10 +247,13 @@ public class VideoCreator {
     }
 
     public void startSaveVideo(boolean programSave, Date date) {
+
         if (!startSaveVideo) {
+            log.info("Начинаем запись. Группа " + cameraGroupNumber);
             startSaveVideo = true;
             this.date = date;
         } else {
+            log.info("Продлжаем запись. Группа " + cameraGroupNumber);
             stopSaveVideoInt = 0;
         }
 

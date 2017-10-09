@@ -49,7 +49,9 @@ public class MainFrame extends JFrame {
     private static JLabel changeWhiteLabel;
 
     private static JLabel informLabel;
+
     private JLabel usedMemoryLabel;
+    private JLabel alarmServerLabel;
     private JLabel maxMemoryLabel;
     private static int maxMemory;
 
@@ -95,25 +97,29 @@ public class MainFrame extends JFrame {
         videoFilesPanel = VideoFilesPanel.getVideoFilesPanel();
 
         informLabel = new JLabel();
-        informLabel.setPreferredSize(new Dimension(200, 30));
+        informLabel.setPreferredSize(new Dimension(170, 30));
+        informLabel.setHorizontalAlignment(SwingConstants.CENTER);
         opacityLabel = new JLabel("Прозорість: 30%");
         opacityLabel.setPreferredSize(new Dimension(110, 30));
+
         countSaveVideo = new JLabel("Зберігаемо " + timeToSave + "сек.");
         countSaveVideo.setPreferredSize(new Dimension(120, 30));
         lightSensitivityLabel = new JLabel("Чутливість: " + colorLightNumber);
         changeWhiteLabel = new JLabel("Збільшення світла: " + percentDiffWhite + "%");
         usedMemoryLabel = new JLabel();
-        usedMemoryLabel.setPreferredSize(new Dimension(100, 30));
+        usedMemoryLabel.setPreferredSize(new Dimension(80, 30));
         maxMemoryLabel = new JLabel();
         maxMemoryLabel.setText("Всього - " + maxMemory +" mb");
+        alarmServerLabel = new JLabel();
+        alarmServerLabel.setPreferredSize(new Dimension(80,30));
+
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new Dimension(1150, 720));
-
         addressSaver = AddressSaver.restorePasswords();// "C:\\ipCamera\\"
-
 
         Thread memoryUpdateThread = new Thread(() -> {
             int playInt = 0;
+            int writeLogs = 0;
             boolean red = false;
             boolean startRec = true;
 
@@ -150,8 +156,14 @@ public class MainFrame extends JFrame {
 
                 long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
                 usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
-                log.info("Используем памяти "+usedMemory+ " mb");
                 usedMemoryLabel.repaint();
+
+                if(writeLogs>60){
+                    log.info("Используем памяти "+usedMemory+ " mb");
+                    writeLogs=0;
+                } else {
+                  writeLogs++;
+                }
 
                 if (VideoPlayer.isShowVideoPlayer()) {
                     try {
@@ -205,15 +217,15 @@ public class MainFrame extends JFrame {
 
             try {
                 ss = new ServerSocket(port);
-                System.out.println(" ждем запрос на порт -  "  + port);
             } catch (IOException ignored) {}
 
             while (true) {
                 try {
                     audioPacketCount.setForeground(new Color(29, 142, 27));
-
-                    System.out.println("Ждем запрос на сервер");
+                    setAlarmServerLabelColor(port,new Color(29, 142, 27));
+                    log.info("Ждем сигнал сработки на порт "+port);
                     Socket socket = ss.accept();
+                    log.info("Получили сиграл сработки на порт "+port);
                     System.out.println("Получили запрос ");
                     MainVideoCreator.startCatchVideo(false);
                     socket.close();
@@ -223,6 +235,7 @@ public class MainFrame extends JFrame {
                     } catch (InterruptedException e1) {
                         e1.printStackTrace();
                     }
+                    setAlarmServerLabelColor(port,Color.red);
                     audioPacketCount.setForeground(Color.red);
                 }
             }
@@ -232,20 +245,37 @@ public class MainFrame extends JFrame {
         alarmThread.start();
 
 
+
         File fileAddressSaver = new File("C:\\ipCamera\\data\\");
         fileAddressSaver.mkdirs();
 
-        File fileBuffBytes = new File(path+"\\buff\\bytes\\");
+        File fileBuffBytes = new File(path+"\\bytes\\");
         fileBuffBytes.mkdirs();
 
         for (int i = 1; i < 5; i++) {
-            File folder = new File(path+"\\buff\\" + i + "\\");
+            File folder = new File("C:\\ipCamera\\buff\\" + i + "\\");
             folder.mkdirs();
             File[] files = folder.listFiles();
             for (int j = 0; j < files.length; j++) {
                 files[j].delete();
             }
         }
+
+        System.out.println("Путь - " +path);
+        File pathFolder = new File(path);
+        pathFolder.mkdirs();
+
+//        File fileBuffBytes = new File(path+"\\buff\\bytes\\");
+//        fileBuffBytes.mkdirs();
+//
+//        for (int i = 1; i < 5; i++) {
+//            File folder = new File(path+"\\buff\\" + i + "\\");
+//            folder.mkdirs();
+//            File[] files = folder.listFiles();
+//            for (int j = 0; j < files.length; j++) {
+//                files[j].delete();
+//            }
+//        }
     }
 
     static List<String> getRunningThreads() {
@@ -265,7 +295,6 @@ public class MainFrame extends JFrame {
         }
         return threads;
     }
-
 
     public static MainFrame getMainFrame() {
         if (mainFrame != null) {
@@ -501,16 +530,17 @@ public class MainFrame extends JFrame {
 
     private void buildSouthPanel() {
         southPanel.setLayout(new FlowLayout());
+        southPanel.add(alarmServerLabel);
         southPanel.add(countSaveVideo);
-        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
+        southPanel.add(Box.createRigidArea(new Dimension(5, 10)));
         southPanel.add(opacityLabel);
-        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
+        southPanel.add(Box.createRigidArea(new Dimension(5, 10)));
         southPanel.add(lightSensitivityLabel);
-        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
+        southPanel.add(Box.createRigidArea(new Dimension(5, 10)));
         southPanel.add(changeWhiteLabel);
-        southPanel.add(Box.createRigidArea(new Dimension(20, 10)));
+        southPanel.add(Box.createRigidArea(new Dimension(5, 10)));
         southPanel.add(informLabel);
-        southPanel.add(Box.createRigidArea(new Dimension(10, 10)));
+        southPanel.add(Box.createRigidArea(new Dimension(5, 10)));
         southPanel.add(new JLabel("Використано: "));
         southPanel.add(usedMemoryLabel);
         southPanel.add(maxMemoryLabel);
@@ -529,13 +559,9 @@ public class MainFrame extends JFrame {
         cameraPanel1.repaintCameraWindow();
     }
 
-    public static void showInformMassage(String massage, boolean green) {
+    public static void showInformMassage(String massage, Color color) {
         informLabel.setText(massage);
-        if (green) {
-            informLabel.setForeground(new Color(29, 142, 27));
-        } else {
-            informLabel.setForeground(Color.DARK_GRAY);
-        }
+        informLabel.setForeground(color);
         informLabel.repaint();
     }
 
@@ -550,7 +576,7 @@ public class MainFrame extends JFrame {
             }
             List<String> list = camerasAddress.get(addressNumber);
             if (list != null) {
-                System.out.println("Работает камера - " + addressNumber);
+                log.info("Камера - " + addressNumber+ " будет запущена.");
                 URL url = null;
                 try {
                     url = new URL(list.get(0) + "&streamprofile="+profileName);//TODO fgfvdafxvarfd
@@ -564,7 +590,7 @@ public class MainFrame extends JFrame {
                 }
                 cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url);
             } else {
-                System.out.println("Вимкнена камера - " + addressNumber);
+                log.info("Камера - " + addressNumber+ " НЕ будет запущена.");
                 cameras.get(addressNumber).getVideoCatcher().stopCatchVideo();
             }
         }
@@ -626,6 +652,16 @@ public class MainFrame extends JFrame {
         MainFrame.percentDiffWhite = percentDiffWhite;
         changeWhiteLabel.setText("Збільшення світла: " + percentDiffWhite + "%");
         changeWhiteLabel.repaint();
+    }
+
+    private void setAlarmServerLabelColor(int port, Color color){
+        alarmServerLabel.setText("PORT:"+port);
+        alarmServerLabel.setForeground(color);
+        alarmServerLabel.repaint();
+    }
+
+    public SoundSaver getSoundSaver() {
+        return soundSaver;
     }
 
     public static int getColorLightNumber() {

@@ -3,6 +3,7 @@ package entity;
 import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
 import com.xuggle.xuggler.ICodec;
+import entity.sound.SoundSaver;
 import org.apache.log4j.Logger;
 import ui.camera.CameraPanel;
 import ui.main.MainFrame;
@@ -22,7 +23,7 @@ public class MainVideoCreator {
     private static Date date;
     private static boolean saveVideo;
     private static Thread continueVideoThread;
-    private static int secondVideoSave;
+    private static int secondVideoSave = 1;
 
 //    private static Map<Integer,Thread> threadMap;
 //    private static List<Integer> saveVideoGroupsNumbers = new ArrayList<>();
@@ -66,41 +67,48 @@ public class MainVideoCreator {
 //    }
 
     public static void startCatchVideo(boolean programingLightCatch) {
-//        if(!mainCreatorThread.isAlive()){
-//            mainCreatorThread.start();
-//        }
+
+        SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
+        if (soundSaver != null) {
+            soundSaver.startSaveAudio();
+        }
+
         if (!isSaveVideo()) {
             date = new Date(System.currentTimeMillis());
-            log.info("Событие "+date.toString());
+            log.info("Событие " + date.toString());
             continueVideoThread = new Thread(() -> {
                 MainVideoCreator.setSaveVideo(true);
                 while (saveVideo) {
-                    MainFrame.showInformMassage("Збережено " + (secondVideoSave++) + " сек.", true);
+                    MainFrame.showInformMassage("Збережено " + (secondVideoSave++) + " сек.",
+                            new Color(23, 114, 26));
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                secondVideoSave = 0;
+                secondVideoSave = 1;
                 continueVideoThread = null;
             });
             continueVideoThread.start();
         } else {
-            log.info("Продолжаем событие "+date.toString());
-            secondVideoSave = 0;
+            log.info("Продолжаем событие " + date.toString());
+            secondVideoSave = 1;
         }
-        for(Integer creator:MainFrame.creatorMap.keySet()){
-            MainFrame.creatorMap.get(creator).startSaveVideo(programingLightCatch,date);
+        for (Integer creator : MainFrame.creatorMap.keySet()) {
+            MainFrame.creatorMap.get(creator).startSaveVideo(programingLightCatch, date);
         }
     }
 
     public static void stopCatchVideo() {
+        SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
+        if (soundSaver != null) {
+            soundSaver.stopSaveAudio();
+        }
         saveVideo = false;
     }
 
     public static void saveAudioBytes(Map<Long, byte[]> map) {
-
         int size = 0;
         List<Long> longList = new ArrayList<>();
 
@@ -109,11 +117,11 @@ public class MainVideoCreator {
         }
 
         Collections.sort(longList);
-
         for (Long integer : map.keySet()) {
             byte[] bytes = map.get(integer);
             size = size + bytes.length;
         }
+
         ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(35535);
         for (Long l : longList) {
             byte[] bytes = map.get(l);
@@ -135,7 +143,7 @@ public class MainVideoCreator {
                 true);  // byte order
 
         final int numberOfFrames = size;
-        File audioFile = new File(MainFrame.getPath()+"\\buff\\bytes\\" + date.getTime() + ".wav");
+        File audioFile = new File(MainFrame.getPath() + "\\bytes\\" + date.getTime() + ".wav");
         final AudioInputStream audioStream = new AudioInputStream(interleavedStream, audioFormat, numberOfFrames);
 
         try {
@@ -145,46 +153,70 @@ public class MainVideoCreator {
         } catch (IOException e1) {
             e1.printStackTrace();
         }
-
-
-        String path = MainFrame.getPath()+"\\buff\\bytes\\" + date.getTime() + ".sound";
-        System.out.println("Создаем аудио файл - " + path);
-
-        File file = new File(path);
-        try {
-            if (file.createNewFile()) {
-                FileOutputStream fileOutputStream = new FileOutputStream(file);
-                for (long l : map.keySet()) {
-                    byte[] bytes = map.get(l);
-                    try {
-                        if (bytes != null) {
-                            fileOutputStream.write(bytes);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                try {
-                    fileOutputStream.flush();
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        String path = MainFrame.getPath()+"\\buff\\bytes\\" + date.getTime() + ".sound";
+//        File file = new File(path);
+//        try {
+//            if (file.createNewFile()) {
+//                FileOutputStream fileOutputStream = new FileOutputStream(file);
+//                for (long l : map.keySet()) {
+//                    byte[] bytes = map.get(l);
+//                    try {
+//                        if (bytes != null) {
+//                            fileOutputStream.write(bytes);
+//                        }
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//                try {
+//                    fileOutputStream.flush();
+//                    fileOutputStream.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
-    public static void encodeVideoXuggle(File file) {
-        String name = file.getName();
+    public static void encodeVideoXuggle(File folderWithTempraryFiles) {
+
+        String name = folderWithTempraryFiles.getName();
         String[] split = name.split("-");
         long dateLong = Long.parseLong(split[0]);
+
         Date date = new Date(dateLong);
         SimpleDateFormat dateFormat = new SimpleDateFormat();
         dateFormat.applyPattern("dd MMMM yyyy,HH-mm-ss");
         String dateString = dateFormat.format(date);
+
+
+        String audioPath = MainFrame.getPath() + "\\bytes\\" + dateLong + ".wav";
+        File audioFile = new File(audioPath);
+        if (audioFile.exists()) {
+            File newAudioFile = new File(MainFrame.getPath() + "\\" + dateString + ".wav");
+
+            try {
+                if (newAudioFile.createNewFile()) {
+                    log.info("Сохраняем аудиофайл " + newAudioFile.getAbsolutePath());
+                    FileInputStream fileInputStream = new FileInputStream(audioFile);
+                    FileOutputStream fileOutputStream = new FileOutputStream(newAudioFile);
+                    byte[] buff = new byte[1024];
+                    while (fileInputStream.read(buff) > 0) {
+                        fileOutputStream.write(buff);
+                    }
+                    fileOutputStream.flush();
+                    fileOutputStream.close();
+                    fileInputStream.close();
+                    audioFile.delete();
+                    log.info("Аудиофайл сохранен. " + newAudioFile.getAbsolutePath());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         String[] fpsSplit = split[1].split("\\.");
         String numberOfGroupCameraString = fpsSplit[0].substring(0, 1);
         int integer = 0;
@@ -202,7 +234,8 @@ public class MainVideoCreator {
         System.out.println("Общий FPS String = " + totalFpsString);
         System.out.println("Общий FPS = " + totalFPS);
 
-        String path = MainFrame.getPath() +"\\"+ dateString + ", Группа камер -" + numberOfGroupCameraString + ".mp4";
+        String path = MainFrame.getPath() + "\\" + dateString + ", Группа камер -" + numberOfGroupCameraString + ".mp4";
+        log.info("Сохраняем видеофайл " + path);
         float opacity = 0f;
         BufferedImage imageToConnect = null;
         boolean connectImage = false;
@@ -211,66 +244,67 @@ public class MainVideoCreator {
             opacity = CameraPanel.getOpacity();
             connectImage = true;
             System.out.println("Соединяем изображения - " + connectImage + ". Прозрачность - " + opacity);
+            log.info("Накладываем изображение на файл " + path);
         }
 
         File videoFile = new File(path);
         if (videoFile.exists()) {
             videoFile.delete();
         }
+
         try {
-            videoFile.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            if (videoFile.createNewFile()) {
+                final IMediaWriter writer = ToolFactory.makeWriter(path);
+                boolean addVideoStream = false;
+                long nextFrameTime = 0;
+                final long frameRate = (1000 / totalFPS);
+                int count = 0;
+                int countImageNotSaved = 0;
 
-        final IMediaWriter writer = ToolFactory.makeWriter(path);
-
-
-        boolean addVideoStream = false;
-        long nextFrameTime = 0;
-        final long frameRate = 1000 / totalFPS;
-        FileInputStream fileInputStream = null;
-        try {
-            fileInputStream = new FileInputStream(file);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        BufferedInputStream bufferedInputStream = null;
-        if (fileInputStream != null) {
-            bufferedInputStream = new BufferedInputStream(fileInputStream);
-            ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(65535);
-            int count = 0;
-            int x = 0;
-            int t;
-            int countImageNotSaved = 0;
-            BufferedImage image = null;
-            while (x >= 0) {
-                t = x;
-                try {
-                    x = bufferedInputStream.read();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                temporaryStream.write(x);
-                if (x == 216 && t == 255) {// начало изображения
-                    temporaryStream.reset();
-
-                    temporaryStream.write(t);
-                    temporaryStream.write(x);
-                } else if (x == 217 && t == 255) {//конец изображения
-                    byte[] imageBytes = temporaryStream.toByteArray();
-                    ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
-
+                FileInputStream fileInputStream = null;
+                File[] temporaryFiles = folderWithTempraryFiles.listFiles();
+                for (File file : temporaryFiles) {
                     try {
-                        image = ImageIO.read(inputStream);
-                    } catch (Exception ignored) {
+                        fileInputStream = new FileInputStream(file);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
+                    BufferedInputStream bufferedInputStream = null;
+                    if (fileInputStream != null) {
+                        bufferedInputStream = new BufferedInputStream(fileInputStream);
+                        ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(65535);
 
-                    if (image != null) {
-                        if (!addVideoStream) {
-                            writer.addVideoStream(0, 0,
-                                    ICodec.ID.CODEC_ID_MPEG4,
-                                    image.getWidth(), image.getHeight());
+                        int x = 0;
+                        int t;
+
+                        BufferedImage image = null;
+                        while (x >= 0) {
+                            t = x;
+                            try {
+                                x = bufferedInputStream.read();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            temporaryStream.write(x);
+                            if (x == 216 && t == 255) {// начало изображения
+                                temporaryStream.reset();
+
+                                temporaryStream.write(t);
+                                temporaryStream.write(x);
+                            } else if (x == 217 && t == 255) {//конец изображения
+                                byte[] imageBytes = temporaryStream.toByteArray();
+                                ByteArrayInputStream inputStream = new ByteArrayInputStream(imageBytes);
+
+                                try {
+                                    image = ImageIO.read(inputStream);
+                                } catch (Exception ignored) {
+                                }
+
+                                if (image != null) {
+                                    if (!addVideoStream) {
+                                        writer.addVideoStream(0, 0,
+                                                ICodec.ID.CODEC_ID_MPEG4,
+                                                image.getWidth(), image.getHeight());
 //                            ========================================================
 //                            ========================================================
 //                            ========================================================
@@ -296,34 +330,49 @@ public class MainVideoCreator {
 ////                            ========================================================
 ////                            ========================================================
 ////                            ========================================================
-                            addVideoStream = true;
-                        }
+                                        addVideoStream = true;
+                                    }
 
-                        if (connectImage) {
-//                            BufferedImage conImage = connectImage(image, imageToConnect, opacity);
-                            writer.encodeVideo(0, connectImage(image, imageToConnect, opacity), nextFrameTime,
-                                    TimeUnit.MILLISECONDS);
-                        } else {
-                            writer.encodeVideo(0, image, nextFrameTime,
-                                    TimeUnit.MILLISECONDS);
+                                    if (connectImage) {
+                                        writer.encodeVideo(0, connectImage(image, imageToConnect, opacity), nextFrameTime,
+                                                TimeUnit.MILLISECONDS);
+                                    } else {
+                                        writer.encodeVideo(0, image, nextFrameTime,
+                                                TimeUnit.MILLISECONDS);
+                                    }
+                                    image = null;
+                                    if (count % 2 == 0) {
+                                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, new Color(23, 114, 26));
+                                    } else {
+                                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, new Color(181, 31, 27));
+                                    }
+                                    nextFrameTime += frameRate;
+                                } else {
+                                    countImageNotSaved++;
+                                }
+                            }
                         }
-                        image = null;
-                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, true);
-                        nextFrameTime += frameRate;
-                    } else {
-                        countImageNotSaved++;
+                        temporaryStream.close();
+                        fileInputStream.close();
+                        bufferedInputStream.close();
                     }
                 }
-            }
-            writer.flush();
-            writer.close();
-            MainFrame.showInformMassage("Збережено. Кадрів - " + count, true);
-            System.out.println("Сохранено кадров " + count + ". Не сохранено " + countImageNotSaved);
-        }
 
-        try {
-            fileInputStream.close();
-            bufferedInputStream.close();
+                writer.flush();
+                writer.close();
+                MainFrame.showInformMassage("Збережено. Кадрів - " + count, new Color(23, 114, 26));
+
+                Date videoLenght = new Date(nextFrameTime);
+                dateFormat.applyPattern("mm:ss");
+                log.info("Видеофайл сохранен - " + path +
+                        ". Сохранено кадров - " + count +
+                        ". Не сохранено кадров - " + countImageNotSaved +
+                        ". Длинна видео - " + dateFormat.format(videoLenght));
+                System.out.println("Видеофайл сохранен - " + path +
+                        ". Сохранено кадров - " + count +
+                        ". Не сохранено кадров - " + countImageNotSaved +
+                        ". Длинна видео - " + dateFormat.format(videoLenght));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
