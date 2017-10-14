@@ -24,7 +24,7 @@ public class CameraAddressSetting extends JPanel {
     private Map<Integer, JLabel> labelMap;
 
     private CameraAddressSetting() {
-        this.setPreferredSize(new Dimension(1100, 550));
+        this.setPreferredSize(new Dimension(1100, 540));
         textFieldsIpAddressMap = new HashMap<>();
         textFieldsUsernameMap = new HashMap<>();
         textFieldsPasswordMap = new HashMap<>();
@@ -44,7 +44,6 @@ public class CameraAddressSetting extends JPanel {
     }
 
     private void buildCameraSetting() {
-
         JButton saveButton = new JButton("Зберегти");
         saveButton.setFont(new Font("Comic Sans MS", Font.BOLD, 17));
         saveButton.addActionListener((e) -> {
@@ -65,7 +64,7 @@ public class CameraAddressSetting extends JPanel {
             firstCameraLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 15));
             JTextField firstCameraTextField = new JTextField();
 //            JTextField firstCameraTextField = new JTextField("http://195.235.198.107:3346/axis-cgi/mjpg/video.cgi?size=640x480");
-            firstCameraTextField.setPreferredSize(new Dimension(250, 20));
+            firstCameraTextField.setPreferredSize(new Dimension(320, 20));
 
             JLabel firstCameraUserNameLabel = new JLabel("Ім'я");
             JTextField firstCameraUserNameTextField = new JTextField();
@@ -78,6 +77,7 @@ public class CameraAddressSetting extends JPanel {
             textFieldsPasswordMap.put(i * 2 - 1, firstCameraPasswordTextField);
             cameraOneSetting.add(firstCameraLabel);
             cameraOneSetting.add(firstCameraTextField);
+            cameraOneSetting.add(Box.createRigidArea(new Dimension(5,20)));
             cameraOneSetting.add(firstCameraUserNameLabel);
             cameraOneSetting.add(firstCameraUserNameTextField);
             cameraOneSetting.add(firstCameraPasswordLabel);
@@ -88,7 +88,7 @@ public class CameraAddressSetting extends JPanel {
             JLabel secondCameraLabel = new JLabel("Камера " + (i * 2));
             secondCameraLabel.setFont(new Font("Comic Sans MS", Font.BOLD, 15));
             JTextField secondCameraTextField = new JTextField();
-            secondCameraTextField.setPreferredSize(new Dimension(250, 20));
+            secondCameraTextField.setPreferredSize(new Dimension(320, 20));
 
             JLabel secondCameraUserNameLabel = new JLabel("Ім'я");
             JTextField secondCameraUserNameTextField = new JTextField();
@@ -104,11 +104,11 @@ public class CameraAddressSetting extends JPanel {
 
             cameraTwoSetting.add(secondCameraLabel);
             cameraTwoSetting.add(secondCameraTextField);
+            cameraTwoSetting.add(Box.createRigidArea(new Dimension(5,20)));
             cameraTwoSetting.add(secondCameraUserNameLabel);
             cameraTwoSetting.add(secondCameraUserNameTextField);
             cameraTwoSetting.add(secondCameraPasswordLabel);
             cameraTwoSetting.add(secondCameraPasswordTextField);
-//            cameraTwoSetting.add(secondCameraCheckBox);
 
             cameraBlock.add(cameraOneSetting);
             cameraBlock.add(cameraTwoSetting);
@@ -136,7 +136,7 @@ public class CameraAddressSetting extends JPanel {
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
-                    File imageFile = new File("C:\\ipCamera\\buff\\" + number + ".jpg");
+                    File imageFile = new File(MainFrame.getDefaultPath()+"\\buff\\" + number + ".jpg");
                     if (imageFile.exists()) {
                         imageFile.delete();
                     }
@@ -175,7 +175,7 @@ public class CameraAddressSetting extends JPanel {
 
             JButton removeButton = new JButton("Видалити файл");
             removeButton.addActionListener((e) -> {
-                File imageFile = new File("C:\\ipCamera\\buff\\" + number + ".jpg");
+                File imageFile = new File("C:\\LIGHTNING_STABLE\\buff\\" + number + ".jpg");
                 if (imageFile.exists()) {
                     imageFile.delete();
                 }
@@ -198,7 +198,7 @@ public class CameraAddressSetting extends JPanel {
             titleMainSetting.setTitleJustification(TitledBorder.CENTER);
             titleMainSetting.setTitleFont((new Font("Comic Sans MS", Font.BOLD, 14)));
             titleMainSetting.setTitleColor(new Color(46, 139, 87));
-            titleMainSetting.setBorder(new LineBorder(new Color(46, 139, 87), 2, true));
+            titleMainSetting.setBorder(new LineBorder(new Color(46, 139, 87), 1, true));
             blockPanel.setBorder(titleMainSetting);
 
             blockPanel.add(inputPanel);
@@ -211,7 +211,7 @@ public class CameraAddressSetting extends JPanel {
                 titleAudio.setTitleJustification(TitledBorder.CENTER);
                 titleAudio.setTitleFont((new Font("Comic Sans MS", Font.BOLD, 14)));
                 titleAudio.setTitleColor(new Color(46, 139, 87));
-                titleAudio.setBorder(new LineBorder(new Color(46, 139, 87), 2, true));
+                titleAudio.setBorder(new LineBorder(new Color(46, 139, 87), 1, true));
                 audioPane.setBorder(titleAudio);
                 JLabel addressAudioLabel = new JLabel("Адреса");
                 JTextField addressAudioTextField = new JTextField();//"rtsp://192.168.3.221/axis-media/media.amp"

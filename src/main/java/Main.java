@@ -1,3 +1,4 @@
+import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 
 import java.io.File;
@@ -5,9 +6,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 public class Main {
+   private static Logger log = Logger.getLogger(Main.class);
     public static void main(String[] args) {
         long maxMemory = Runtime.getRuntime().maxMemory() / (1024 * 1024);
+        log.info("Выделенная память для приложения - " + maxMemory);
         if (maxMemory < 25000) {
+            log.info("Памяти не достаточно, перегружаем приложени, с указанием большего количества памяти.");
             String currentPath = null;
             try {
                 currentPath = Main.class
@@ -26,7 +30,16 @@ public class Main {
             }
             return;
         }
+
+        log.info("Памяти достаточно.");
         MainFrame.setMaxMemory((int) maxMemory);
-        MainFrame.getMainFrame();
+        try{
+            MainFrame.getMainFrame();
+        }catch (Exception e){
+            log.info(e.getLocalizedMessage());
+        }catch (Error error){
+            log.error(error.getLocalizedMessage());
+        }
+
     }
 }

@@ -30,7 +30,7 @@ public class VideoCatcher {
     private int maxHeight;
     private boolean isFullSize;
 
-//    private int countDoNotShowImages;
+    private int countDoNotShowImages = 1;
 //    private int settingCountDoNotShowImages;
     //    private Map<Long, byte[]> bufferBytes;
 //    private Map<Long, byte[]> mapBytes;
@@ -103,6 +103,7 @@ public class VideoCatcher {
                         numberGRB = MainFrame.getColorRGBNumber();
                         percentDiffWhite = MainFrame.getPercentDiffWhite();
                         programLightCatchWork = MainFrame.isProgramLightCatchWork();
+                        countDoNotShowImages = MainFrame.getShowImagePerSecond();
                         checkData = 0;
                     } else {
                         byte[] bytes = null;
@@ -120,14 +121,12 @@ public class VideoCatcher {
                                 showImage = true;
                             }
                         }
-
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
                         checkData++;
+                    }
+                    try {
+                        Thread.sleep((1000/countDoNotShowImages));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 } else {
                     panel.getTitle().setTitle("Камера вимкнена");

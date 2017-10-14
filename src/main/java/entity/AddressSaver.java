@@ -67,7 +67,7 @@ public class AddressSaver {
     }
 
     private void savePasswordSaverToFile() {
-        String pathFile = "C:\\ipCamera\\data\\address.txt";
+        String pathFile = "C:\\LIGHTNING_STABLE\\data\\address.txt";
         File file = new File(pathFile);
         try {
             boolean ok = file.exists();
@@ -86,7 +86,7 @@ public class AddressSaver {
     }
 
     public static AddressSaver restorePasswords() {
-        String pathFile = "C:\\ipCamera\\data\\address.txt";
+        String pathFile = "C:\\LIGHTNING_STABLE\\data\\address.txt";
         File file = new File(pathFile);
         Object passwordsSaverObject = null;
         if (file.canRead()) {
@@ -111,7 +111,7 @@ public class AddressSaver {
         }
 
         for(int i=1;i<5;i++){
-            File imageFile = new File("C:\\ipCamera\\data\\"+i+".jpg");
+            File imageFile = new File("C:\\LIGHTNING_STABLE\\buff\\"+i+".jpg");
             if(imageFile.exists()){
                 BufferedImage bufferedImage=null;
                 try {
