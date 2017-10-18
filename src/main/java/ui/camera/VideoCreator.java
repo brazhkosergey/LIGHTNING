@@ -8,7 +8,6 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -28,7 +27,7 @@ public class VideoCreator {
     private List<Integer> fpsList;
 
     private Map<Long, byte[]> buffMapImages;
-    private Map<File, Integer> buffFilesSize;
+    private Map<File, Integer> buffFilesSizeImagesCount;
 
     private int totalFPS = 0;
 
@@ -50,7 +49,7 @@ public class VideoCreator {
         this.cameraGroupNumber = cameraGroupNumber;
 
         fileDeque = new ConcurrentLinkedDeque<>();
-        buffFilesSize = new HashMap<>();
+        buffFilesSizeImagesCount = new HashMap<>();
         fpsDeque = new ConcurrentLinkedDeque<>();
 
         fpsList = new ArrayList<>();
@@ -63,6 +62,7 @@ public class VideoCreator {
         timerThread = new Thread(() -> {
             while (true) {
                 try {
+
                     fpsList.add(totalFPS);
                     fpsDeque.addFirst(totalFPS);
 //                    int temporaryFPS=0;
@@ -94,7 +94,7 @@ public class VideoCreator {
                         while (fileDeque.size() > 0) {
                             File fileToDel = fileDeque.pollLast();
                             fileToDel.delete();
-                            Integer remove = buffFilesSize.remove(fileToDel);
+                            Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
                             totalCountImages -= remove;
                         }
                     }
@@ -117,13 +117,13 @@ public class VideoCreator {
                     try {
                         Thread saveFileThread = new Thread(() -> {
                             if (dequeImagesTime.size() > 0) {
+                                int size = fpsDeque.size();
                                 File temporaryFile = new File(MainFrame.getDefaultPath() + "\\buff\\" + cameraGroupNumber + "\\" + System.currentTimeMillis() + ".tmp");
                                 int countImagesInFile = 0;
                                 try {
                                     if (temporaryFile.createNewFile()) {
                                         temporaryFile.deleteOnExit();
                                         FileOutputStream fileOutputStream = new FileOutputStream(temporaryFile);
-                                        int size = fpsDeque.size();
                                         for (int i = 0; i < size; i++) {
                                             Integer integer = fpsDeque.pollLast();
                                             for (int j = 0; j < integer; j++) {
@@ -149,8 +149,7 @@ public class VideoCreator {
                                         + System.currentTimeMillis() + "-" + countImagesInFile + ".tmp");
                                 if (temporaryFile.renameTo(file)) {
                                     fileDeque.addFirst(file);
-                                    buffFilesSize.put(file, countImagesInFile);
-
+                                    buffFilesSizeImagesCount.put(file, countImagesInFile);
 //                                    System.out.println("Сохранили файл - " + temporaryFile.getAbsolutePath());
 //                                    System.out.println("Размер буфера - " + fileDeque.size());
                                 }
@@ -169,13 +168,19 @@ public class VideoCreator {
 
                                     for (Integer integer : eventsFramesNumber.keySet()) {
                                         iCount++;
-                                        int percent = (integer * 1000) / currentTotalCountImage;
+//                                        int percent = (integer * 1000) / currentTotalCountImage;
 
                                         if (eventsFramesNumber.get(integer)) {
-                                            stringBuilder.append("(").append(percent).append(")");
+                                            stringBuilder.append("(").append(integer).append(")");
                                         } else {
-                                            stringBuilder.append(percent);
+                                            stringBuilder.append(integer);
                                         }
+
+//                                        if (eventsFramesNumber.get(integer)) {
+//                                            stringBuilder.append("(").append(percent).append(")");
+//                                        } else {
+//                                            stringBuilder.append(percent);
+//                                        }
                                         if (iCount != eventsFramesNumber.size()) {
                                             stringBuilder.append(",");
                                         }
@@ -187,11 +192,11 @@ public class VideoCreator {
                                     int totalFPSForFile = 0;
 
                                     int sizeFps = fpsList.size();
-                                    for(int i=0;i<sizeFps;i++){
-                                        totalFPSForFile+=fpsList.get(i);
+                                    for (int i = 0; i < sizeFps; i++) {
+                                        totalFPSForFile += fpsList.get(i);
                                     }
 
-                                    totalFPSForFile = totalFPSForFile/sizeFps;
+                                    totalFPSForFile = totalFPSForFile / sizeFps;
 
                                     String eventPercent = stringBuilder.toString();
                                     String path = MainFrame.getPath() + "\\bytes\\" + date.getTime() +
@@ -207,16 +212,16 @@ public class VideoCreator {
                                             secondsCount++;
                                             File fileToSave = fileDeque.pollLast();
                                             fileToSave.renameTo(new File(destFolder, fileToSave.getName()));
-                                            Integer remove = buffFilesSize.remove(fileToSave);
+                                            Integer remove = buffFilesSizeImagesCount.remove(fileToSave);
                                             totalCountImages -= remove;
                                         }
                                     }
 
                                     BufferedImage image = MainFrame.imagesForBlock.get(cameraGroupNumber);
-                                    if(image!=null){
+                                    if (image != null) {
                                         File imageFile = new File(MainFrame.getPath() + "\\bytes\\" + date.getTime() +
                                                 "-" + cameraGroupNumber + "(" + totalFPSForFile + ")"
-                                                + eventPercent+".jpg");
+                                                + eventPercent + ".jpg");
                                         try {
                                             if (imageFile.createNewFile()) {
                                                 ImageIO.write(image, "jpg", imageFile);
@@ -242,7 +247,7 @@ public class VideoCreator {
                                 while (fileDeque.size() > i) {
                                     File fileToDel = fileDeque.pollLast();
                                     fileToDel.delete();
-                                    Integer remove = buffFilesSize.remove(fileToDel);
+                                    Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
                                     totalCountImages -= remove;
                                     fpsList.remove(0);
 //                                    System.out.println("Удалили файл - " + fileToDel.getAbsolutePath());
@@ -306,7 +311,7 @@ public class VideoCreator {
             }
 
             int imageNumber = totalCountImages;
-            System.out.println("Сработка. Кадр номер - "+imageNumber);
+            System.out.println("Сработка. Кадр номер - " + imageNumber);
             eventsFramesNumber.put(imageNumber, programSave);
         }
     }

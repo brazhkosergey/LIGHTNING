@@ -351,7 +351,6 @@ public class MainFrame extends JFrame {
             VideoPlayer.setShowVideoPlayer(false);
             setting.saveButton.setForeground(Color.BLACK);
             setting.saveButton.setText("Зберегти");
-            setting.setPassword();
             setCentralPanel(setting);
             mainLabel.setText("Налаштування");
         });
