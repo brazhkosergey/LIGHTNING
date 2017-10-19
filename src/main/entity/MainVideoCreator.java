@@ -31,11 +31,11 @@ public class MainVideoCreator {
         if (soundSaver != null) {
             soundSaver.startSaveAudio();
         }
-        String event = null;
 
-        if(programingLightCatch){
-            event=". Сработка - програмная.";
-        }else {
+        String event;
+        if (programingLightCatch) {
+            event = ". Сработка - програмная.";
+        } else {
             event = ". Сработка - аппаратная.";
         }
 
@@ -45,7 +45,8 @@ public class MainVideoCreator {
             continueVideoThread = new Thread(() -> {
                 MainVideoCreator.setSaveVideo(true);
                 while (saveVideo) {
-                    MainFrame.showSecondsAlreadySaved("Збережено " + (secondVideoSave++) + " сек.");
+                    MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("savedword") +
+                            (secondVideoSave++) + MainFrame.getBundle().getString("seconds"));
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -57,7 +58,7 @@ public class MainVideoCreator {
             });
             continueVideoThread.start();
         } else {
-            log.info("Продолжаем событие " + date.toString() +  event);
+            log.info("Продолжаем событие " + date.toString() + event);
             secondVideoSave = 1;
         }
         for (Integer creator : MainFrame.creatorMap.keySet()) {
@@ -71,7 +72,7 @@ public class MainVideoCreator {
         if (soundSaver != null) {
             soundSaver.stopSaveAudio();
         }
-        MainFrame.showSecondsAlreadySaved("Запис закінчено");
+        MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsaving"));
         saveVideo = false;
     }
 
@@ -198,16 +199,16 @@ public class MainVideoCreator {
         int totalFPS = Integer.parseInt(totalFpsString);
 
 
-        String path = MainFrame.getPath() + "\\" + dateString + ", Группа камер -" + numberOfGroupCameraString + ".mp4";
+        String path = MainFrame.getPath() + "\\" + dateString + ", group -" + numberOfGroupCameraString + ".mp4";
         log.info("Сохраняем видеофайл " + path);
         float opacity = 0f;
         BufferedImage imageToConnect = null;
         boolean connectImage = false;
 
 
-        String absolutePathToImage = folderWithTempraryFiles.getAbsolutePath().replace(".tmp",".jpg");
+        String absolutePathToImage = folderWithTempraryFiles.getAbsolutePath().replace(".tmp", ".jpg");
         File imageFile = new File(absolutePathToImage);
-        if(imageFile.exists()){
+        if (imageFile.exists()) {
             try {
                 imageToConnect = ImageIO.read(new FileInputStream(imageFile));
                 opacity = CameraPanel.getOpacity();
@@ -316,9 +317,11 @@ public class MainVideoCreator {
                                     }
                                     image = null;
                                     if (count % 2 == 0) {
-                                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, new Color(23, 114, 26));
+                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber")+
+                                                count++, new Color(23, 114, 26));
                                     } else {
-                                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, new Color(181, 31, 27));
+                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber") +
+                                                count++, new Color(181, 31, 27));
                                     }
                                     nextFrameTime += frameRate;
                                 } else {
@@ -334,7 +337,7 @@ public class MainVideoCreator {
 
                 writer.flush();
                 writer.close();
-                MainFrame.showInformMassage("Збережено. Кадрів - " + count, new Color(23, 114, 26));
+                MainFrame.showInformMassage(MainFrame.getBundle().getString("encodingdone") + count, new Color(23, 114, 26));
 
                 Date videoLenght = new Date(nextFrameTime);
                 dateFormat.applyPattern("mm:ss");
@@ -354,7 +357,7 @@ public class MainVideoCreator {
     }
 
 
-    static void savePartOfVideoFile(String pathToFileToSave, List<File> filesToEncodeToVideo, int totalFPS, BufferedImage imageToConnect){
+    static void savePartOfVideoFile(String pathToFileToSave, List<File> filesToEncodeToVideo, int totalFPS, BufferedImage imageToConnect) {
 
         File videoFile = new File(pathToFileToSave);
         if (videoFile.exists()) {
@@ -363,7 +366,7 @@ public class MainVideoCreator {
 
         boolean connectImage = false;
         float opacity = 0;
-        if(imageToConnect!=null){
+        if (imageToConnect != null) {
             connectImage = true;
             opacity = CameraPanel.getOpacity();
         }
@@ -489,7 +492,6 @@ public class MainVideoCreator {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
         }
-
 
 
     }
