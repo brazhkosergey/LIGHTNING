@@ -220,7 +220,7 @@ class VideoPlayerPanel extends JPanel {
         endPartExportTextField.setFocusable(false);
         endPartExportTextField.setPreferredSize(new Dimension(70, 25));
 
-        JLabel informPartExportLabel = new JLabel("<html>Вкажіть номер першого <br> та останнього кадру</html>");
+        JLabel informPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstinformvideoplayerlabel"));
         informPartExportLabel.setFocusable(false);
         informPartExportLabel.setPreferredSize(new Dimension(200, 50));
         informPartExportLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -241,23 +241,24 @@ class VideoPlayerPanel extends JPanel {
                     endFrameInt = Integer.parseInt(endFrameText);
                     continueSave = true;
                 } catch (Exception e) {
-                    informPartExportLabel.setText("<html>Не вірно вказаний номер кадру <hr></html>");
+                    informPartExportLabel.setText(MainFrame.getBundle().getString("wrongframenumberlabel"));
                     e.printStackTrace();
                 }
 
                 if (startFrame < 1 || endFrameInt < 1) {
                     continueSave = false;
-                    informPartExportLabel.setText("<html>Не можливо <br> зберегти кадри з " + startFrame + " по " + endFrameInt + "<hr></html>");
+                    informPartExportLabel.setText(MainFrame.getBundle().getString("secondinformvideoplayerlabel")
+                            + startFrame +MainFrame.getBundle().getString("thirdinformvideoplayerlabel") + endFrameInt + "<hr></html>");
                 }
 
                 if (endFrameInt > totalCountFrames || endFrameInt > totalCountFrames) {
                     continueSave = false;
-                    informPartExportLabel.setText("<html>Запис мае меньше <br> кадрів ніж " + startFrame + " чи " + endFrameInt + "<hr></html>");
+                    informPartExportLabel.setText(MainFrame.getBundle().getString("fourthinformvideoplayerlabel") + startFrame + " : " + endFrameInt + "<hr></html>");
                 }
 
                 if (startFrame > endFrameInt) {
                     continueSave = false;
-                    informPartExportLabel.setText("<html>Перший кадр знаходиться після останнього<hr></html>");
+                    informPartExportLabel.setText(MainFrame.getBundle().getString("fifthinformvideoplayerlabel"));
                 }
 
                 if (continueSave) {
@@ -328,7 +329,7 @@ class VideoPlayerPanel extends JPanel {
 
                         String pathToVideo = MainFrame.getPath() + "\\" + dateString + ".from " + firstFile + " till " + lastFile + ". group -" + numberVideoPanel + ".mp4";
                         System.out.println(dateString);
-                        informPartExportLabel.setText("<html>Буде збережено <br> Cекунд: " + (lastFile - firstFile) + ".<br> Кадрів: " + totalFramesToSave + ".<hr></html>");
+                        informPartExportLabel.setText(MainFrame.getBundle().getString("sixinformvideoplayerlabel") + (lastFile - firstFile) + MainFrame.getBundle().getString("seveninformvideoplayerlabel") + totalFramesToSave + ".<hr></html>");
                         MainVideoCreator.savePartOfVideoFile(pathToVideo, filesToSave, totalFPS, imageToConnect);
                     }
                 }
