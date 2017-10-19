@@ -1,21 +1,10 @@
-import entity.MainVideoCreator;
-import entity.sound.SoundSaver;
-
-import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.BufferedImageOp;
 import java.io.*;
-import java.lang.reflect.Field;
-import java.net.*;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class Test {
     static ImagePanel mainPanel = new ImagePanel();

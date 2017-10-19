@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 public class Main {
-   private static Logger log = Logger.getLogger(Main.class);
+    private static Logger log = Logger.getLogger(Main.class);
     public static void main(String[] args) {
         long maxMemory = Runtime.getRuntime().maxMemory() / (1024 * 1024);
         log.info("Выделенная память для приложения - " + maxMemory);
@@ -33,11 +33,11 @@ public class Main {
 
         log.info("Памяти достаточно.");
         MainFrame.setMaxMemory((int) maxMemory);
-        try{
+        try {
             MainFrame.getMainFrame();
-        }catch (Exception e){
+        } catch (Exception e) {
             log.info(e.getLocalizedMessage());
-        }catch (Error error){
+        } catch (Error error) {
             log.error(error.getLocalizedMessage());
         }
 

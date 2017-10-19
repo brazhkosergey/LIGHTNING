@@ -1,7 +1,7 @@
 package entity;
 
-import ui.main.MainFrame;
 import ui.setting.CameraAddressSetting;
+import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -31,7 +31,7 @@ public class AddressSaver {
     private int port;
     private String path;
     private String profileName;
-
+    private String password ="";
 
     public void savePasswords(int numberOfCamera, String ipAddress,String username, String password){
         if(numberOfCamera==0){
@@ -98,15 +98,12 @@ public class AddressSaver {
                 e.printStackTrace();
             }
         }
-
         AddressSaver passwordSaver = null;
         if (passwordsSaverObject != null) {
             try {
                 passwordSaver = (AddressSaver) passwordsSaverObject;
-                System.out.println("Пароли восстановлены");
             } catch (ClassCastException e) {
                 e.printStackTrace();
-                System.out.println("Проблема во время восстановления цепочек");
             }
         }
 
@@ -169,11 +166,12 @@ public class AddressSaver {
         MainFrame.setPercentDiffWhite(changeWhitePercent);
         MainFrame.setColorLightNumber(lightSensitivity);
         MainFrame.setOpacitySetting(opacity);
-        MainFrame.setTimeToSave(timeToSave);
+        MainFrame.setCountSecondsToSaveVideo(timeToSave);
         if(path!=null){
             MainFrame.setPath(path);
         }
         MainFrame.setPort(port);
         MainFrame.setProfileName(profileName);
+        MainFrame.setPassword(password);
     }
 }

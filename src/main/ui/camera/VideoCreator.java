@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoCreator {
-    Logger log = Logger.getLogger(VideoCreator.class);
+    private static Logger log = Logger.getLogger(VideoCreator.class);
 
     private int cameraGroupNumber;
     private BufferedImage bufferedImageBack;
@@ -62,18 +62,8 @@ public class VideoCreator {
         timerThread = new Thread(() -> {
             while (true) {
                 try {
-
                     fpsList.add(totalFPS);
                     fpsDeque.addFirst(totalFPS);
-//                    int temporaryFPS=0;
-//                    for (Integer integer : fpsDeque) {
-//                        temporaryFPS += integer;
-//                    }
-//
-//                    temporaryFPS = temporaryFPS / fpsDeque.size();
-//                    if(temporaryFPS!=0){
-//                        totalFPSForFile = temporaryFPS;
-//                    }
                     totalFPS = 0;
                     oneSecond = true;
                     timeToSave = MainFrame.getTimeToSave();
@@ -84,7 +74,7 @@ public class VideoCreator {
                         }
 
                         if (fileDeque.size() >= timeToSave) {
-                            catcher.setBorderColor(new Color(46, 139, 87));
+                            catcher.setBorderColor(new Color(70, 193, 84));
                         } else {
                             catcher.setBorderColor(Color.RED);
                         }
@@ -150,8 +140,6 @@ public class VideoCreator {
                                 if (temporaryFile.renameTo(file)) {
                                     fileDeque.addFirst(file);
                                     buffFilesSizeImagesCount.put(file, countImagesInFile);
-//                                    System.out.println("Сохранили файл - " + temporaryFile.getAbsolutePath());
-//                                    System.out.println("Размер буфера - " + fileDeque.size());
                                 }
                             }
 
@@ -168,19 +156,11 @@ public class VideoCreator {
 
                                     for (Integer integer : eventsFramesNumber.keySet()) {
                                         iCount++;
-//                                        int percent = (integer * 1000) / currentTotalCountImage;
-
                                         if (eventsFramesNumber.get(integer)) {
                                             stringBuilder.append("(").append(integer).append(")");
                                         } else {
                                             stringBuilder.append(integer);
                                         }
-
-//                                        if (eventsFramesNumber.get(integer)) {
-//                                            stringBuilder.append("(").append(percent).append(")");
-//                                        } else {
-//                                            stringBuilder.append(percent);
-//                                        }
                                         if (iCount != eventsFramesNumber.size()) {
                                             stringBuilder.append(",");
                                         }
@@ -188,14 +168,11 @@ public class VideoCreator {
                                     eventsFramesNumber.clear();
                                     stringBuilder.append("]");
 
-
                                     int totalFPSForFile = 0;
-
                                     int sizeFps = fpsList.size();
                                     for (int i = 0; i < sizeFps; i++) {
                                         totalFPSForFile += fpsList.get(i);
                                     }
-
                                     totalFPSForFile = totalFPSForFile / sizeFps;
 
                                     String eventPercent = stringBuilder.toString();
@@ -242,7 +219,6 @@ public class VideoCreator {
                                             "Сохранили секунд " + secondsCount);
                                 }
                             } else {
-//                                int i = timeToSave + 1;
                                 int i = timeToSave;
                                 while (fileDeque.size() > i) {
                                     File fileToDel = fileDeque.pollLast();
@@ -250,18 +226,13 @@ public class VideoCreator {
                                     Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
                                     totalCountImages -= remove;
                                     fpsList.remove(0);
-//                                    System.out.println("Удалили файл - " + fileToDel.getAbsolutePath());
-//                                    System.out.println("Размер буфера - " + fileDeque.size());
                                 }
                             }
                         });
-
                         saveFileThread.start();
-
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-
                     oneSecond = false;
                 } else {
                     try {
@@ -280,7 +251,6 @@ public class VideoCreator {
         while (dequeImagesTime.contains(time)) {
             time++;
         }
-
         if (!dequeImagesTime.contains(time)) {
             dequeImagesTime.addFirst(time);
             buffMapImages.put(time, bytes);
@@ -292,6 +262,7 @@ public class VideoCreator {
     }
 
     public void startSaveVideo(boolean programSave, Date date) {
+
         boolean work = false;
         for (VideoCatcher catcher : catcherList) {
             work = catcher.isCatchVideo();
@@ -301,18 +272,17 @@ public class VideoCreator {
         }
 
         if (work) {
-            if (!startSaveVideo) {
-                log.info("Начинаем запись. Группа " + cameraGroupNumber);
-                startSaveVideo = true;
-                this.date = date;
-            } else {
-                log.info("Продлжаем запись. Группа " + cameraGroupNumber);
-                stopSaveVideoInt = 0;
-            }
-
             int imageNumber = totalCountImages;
             System.out.println("Сработка. Кадр номер - " + imageNumber);
             eventsFramesNumber.put(imageNumber, programSave);
+            if (!startSaveVideo) {
+                log.info("Начинаем запись. Группа " + cameraGroupNumber+". Кадр номер - "+ imageNumber);
+                startSaveVideo = true;
+                this.date = date;
+            } else {
+                log.info("Продлжаем запись. Группа " + cameraGroupNumber+". Кадр номер - "+ imageNumber);
+                stopSaveVideoInt = 0;
+            }
         }
     }
 

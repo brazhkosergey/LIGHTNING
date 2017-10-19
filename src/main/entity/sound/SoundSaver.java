@@ -1,6 +1,5 @@
 package entity.sound;
 
-import com.xuggle.xuggler.IAudioSamples;
 import entity.MainVideoCreator;
 import ui.main.MainFrame;
 

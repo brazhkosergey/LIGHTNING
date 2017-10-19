@@ -12,36 +12,29 @@ import java.util.List;
 public class VideoPlayer extends JPanel {
 
     private static boolean showVideoPlayer;
-    private boolean STOP;
     private boolean PAUSE;
     private boolean PLAY;
     private boolean SetPOSITION;
-    private boolean NextIMAGE;
-    private boolean PrewIMAGE;
     private boolean fullSize;
 
-    private static int nextImagesInt;
-    private static int prewImagesInt;
     private static int position;
 
-    private static int countDoNotShowImage;
     private double speed = 1;
 
     public static JLabel informLabel = new JLabel("STOP");
     private JLabel speedLabel;
+    private JLabel FPSLabel;
 
     private JLabel sliderLabel;
     private JLabel currentFrameLabel;
 
-    private static List<JPanel> sliderPanelsLst;
-    private static Map<Integer, Boolean> eventFrameNumberMap = null;
-    private static Map<Integer, Boolean> eventPercent = null;
+    private List<JPanel> sliderPanelsLst;
+    private Map<Integer, Boolean> eventPercent = null;
     private List<Integer> eventFrameNumberList = null;
     private List<VideoPlayerPanel> videoPlayerPanelsList;
 
     private JPanel centralPane;
     private JPanel mainVideoPane;
-    private Map<Integer, File> foldersWithTemporaryVideoFiles;
 
     private int FPS = 0;
     private int totalCountFrames = 0;
@@ -50,10 +43,9 @@ public class VideoPlayer extends JPanel {
     private int currentSliderPosition = 0;
 
     public VideoPlayer(Map<Integer, File> foldersWithTemporaryVideoFiles, String date, int numberInt) {
-        this.foldersWithTemporaryVideoFiles = foldersWithTemporaryVideoFiles;
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
-        this.setPreferredSize(new Dimension(1100, 535));
-        centralPane = new JPanel();
+        this.setLayout(new BorderLayout());
+        centralPane = new JPanel(new BorderLayout());
         mainVideoPane = new JPanel();
         GridLayout mainVideoPaneLayout = new GridLayout(2, 2, 3, 3);
         mainVideoPane.setLayout(mainVideoPaneLayout);
@@ -72,7 +64,7 @@ public class VideoPlayer extends JPanel {
 
         List<Thread> threadList = new ArrayList<>();
 
-        eventFrameNumberMap = new HashMap<>();
+        Map<Integer, Boolean> eventFrameNumberMap = new HashMap<>();
         eventPercent = new HashMap<>();
         eventFrameNumberList = new ArrayList<>();
         videoPlayerPanelsList = new ArrayList<>();
@@ -86,6 +78,7 @@ public class VideoPlayer extends JPanel {
                 int i = fpsSplit[0].indexOf(")");
                 String totalFpsString = fpsSplit[0].substring(2, i);
                 int totalFPS = Integer.parseInt(totalFpsString);
+
                 if (FPS < totalFPS) {
                     FPS = totalFPS;
                     totalCountFrames = 0;
@@ -132,7 +125,6 @@ public class VideoPlayer extends JPanel {
                             }
                         }
                     }
-
                     Collections.sort(eventFrameNumberList);
                 }
             }
@@ -152,8 +144,8 @@ public class VideoPlayer extends JPanel {
                                 for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
                                     videoPlayerPanel.setShowVideoNow(false);
                                 }
-                                videoPlayer.setWidthAndHeight(770, 425);
                                 videoPlayer.setShowVideoNow(true);
+                                videoPlayer.setFullSize(true);
                                 centralPane.removeAll();
                                 centralPane.add(videoPlayer);
                                 centralPane.validate();
@@ -170,19 +162,10 @@ public class VideoPlayer extends JPanel {
             videoPlayerPanelsList.add(videoPlayer);
         }
 
-        System.out.println("Наибольший ФПС - " + FPS);
-        System.out.println("Количество кадров - " + totalCountFrames);
-
         for (Integer integer : eventFrameNumberMap.keySet()) {
             int percent = integer * 1000 / totalCountFrames;
             System.out.println(integer + " - кадр, процентов -" + percent);
             eventPercent.put(percent, eventFrameNumberMap.get(integer));
-        }
-
-        for (Thread thread : threadList) {
-            if (thread != null) {
-                thread.start();
-            }
         }
 
         centralPane.add(mainVideoPane);
@@ -252,7 +235,7 @@ public class VideoPlayer extends JPanel {
         speedLabel = new JLabel(speed + "X");
         speedLabel.setPreferredSize(new Dimension(50, 15));
         speedLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        JLabel FPSLabel = new JLabel("FPS: "+ FPS);
+        FPSLabel = new JLabel("FPS: " + FPS);
         FPSLabel.setPreferredSize(new Dimension(80, 15));
         FPSLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -274,7 +257,6 @@ public class VideoPlayer extends JPanel {
         buttonsPane.add(FPSLabel);
 
         JPanel sliderForVideo = new JPanel();
-        sliderForVideo.setBorder(BorderFactory.createEtchedBorder());
         GridLayout layout = new GridLayout(1, 1000, 0, 0);
         sliderForVideo.setLayout(layout);
         sliderPanelsLst = new ArrayList<>();
@@ -288,7 +270,7 @@ public class VideoPlayer extends JPanel {
                     position = finalI;
                     double percent = (double) position / 1000;
                     frameNumber = (int) (totalCountFrames * percent);
-                    setSetPOSITION(true);
+                    setSetPOSITION();
                 }
             });
 
@@ -303,9 +285,10 @@ public class VideoPlayer extends JPanel {
         sliderPanel.add(sliderForVideo, BorderLayout.NORTH);//85 - 50
         sliderPanel.add(buttonsPane, BorderLayout.CENTER);
 
-        JPanel southPane = new JPanel(new BorderLayout());
+        JPanel southPane = new JPanel(new BorderLayout(2,2));
         southPane.add(backButton, BorderLayout.WEST);//85 - 50
         southPane.add(sliderPanel, BorderLayout.CENTER);
+
         this.add(southPane, BorderLayout.SOUTH);
 
         playButton.addKeyListener(new KeyAdapter() {
@@ -334,13 +317,22 @@ public class VideoPlayer extends JPanel {
             }
         });
         stopPlayingWhileRecordingThread.start();
+        for (Thread thread : threadList) {
+            if (thread != null) {
+                thread.start();
+            }
+        }
         createPlayerThread();
     }
 
     private void createPlayerThread() {
-
         int frameRate = 1000 / FPS;
         Thread timer = new Thread(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             while (VideoPlayer.isShowVideoPlayer()) {
                 if (PLAY) {
                     try {
@@ -348,7 +340,6 @@ public class VideoPlayer extends JPanel {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
 
                     frameNumber++;
 
@@ -415,13 +406,6 @@ public class VideoPlayer extends JPanel {
                     }
                     SetPOSITION = false;
                 }
-//                }
-//                else if (PAUSE) {
-//
-//
-//                } else if (STOP) {
-//
-//                }
 
                 try {
                     Thread.sleep(1);
@@ -441,7 +425,7 @@ public class VideoPlayer extends JPanel {
         for (int i = 0; i < 4; i++) {
             VideoPlayerPanel playerPanel = videoPlayerPanelsList.get(i);
             playerPanel.setShowVideoNow(true);
-            playerPanel.setWidthAndHeight(364, 205);
+            playerPanel.setFullSize(false);
             mainVideoPane.add(playerPanel);
         }
         centralPane.add(mainVideoPane);
@@ -456,7 +440,6 @@ public class VideoPlayer extends JPanel {
             }
         }
         setPLAY(true);
-        setSTOP(false);
         setPAUSE(false);
         informLabel.setText("PLAY");
     }
@@ -468,7 +451,6 @@ public class VideoPlayer extends JPanel {
             }
         }
         setPLAY(false);
-        setSTOP(true);
         setPAUSE(false);
         setSliderPosition(0);
         frameNumber = 0;
@@ -490,10 +472,13 @@ public class VideoPlayer extends JPanel {
         String s = "";
         if (speed <= 1) {
             i = 1 / speed;
+            FPSLabel.setText("FPS: " + (FPS * i));
         } else {
             i = speed;
             s = "-";
+            FPSLabel.setText("FPS: " + (FPS / i));
         }
+
         speedLabel.setText(s + i + "X");
     }
 
@@ -503,10 +488,13 @@ public class VideoPlayer extends JPanel {
         String s = "";
         if (speed <= 1) {
             i = 1 / speed;
+            FPSLabel.setText("FPS: " + (FPS * i));
         } else {
             i = speed;
             s = "-";
+            FPSLabel.setText("FPS: " + (FPS / i));
         }
+
         speedLabel.setText(s + i + "X");
     }
 
@@ -520,16 +508,12 @@ public class VideoPlayer extends JPanel {
         frameNumber--;
     }
 
-    private void setSetPOSITION(boolean setPOSITION) {
-        SetPOSITION = setPOSITION;
+    private void setSetPOSITION() {
+        SetPOSITION = true;
     }
 
     private void setPLAY(boolean PLAY) {
         this.PLAY = PLAY;
-    }
-
-    private void setSTOP(boolean STOP) {
-        this.STOP = STOP;
     }
 
     private void setPAUSE(boolean PAUSE) {
@@ -571,10 +555,6 @@ public class VideoPlayer extends JPanel {
         sliderLabel.setText(i + "%");
     }
 
-    static int getCountDoNotShowImage() {
-        return countDoNotShowImage;
-    }
-
     public static boolean isShowVideoPlayer() {
         return showVideoPlayer;
     }
@@ -583,7 +563,7 @@ public class VideoPlayer extends JPanel {
         VideoPlayer.showVideoPlayer = showVideoPlayer;
     }
 
-    void setCurrentFrameLabelText(int currentFrameLabelText) {
-        currentFrameLabel.setText("Кадр " + currentFrameLabelText);
+    private void setCurrentFrameLabelText(int currentFrameLabelText) {
+        currentFrameLabel.setText(MainFrame.getBundle().getString("framenumberlabel") + currentFrameLabelText);
     }
 }

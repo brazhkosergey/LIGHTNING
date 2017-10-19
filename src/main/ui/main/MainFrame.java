@@ -4,28 +4,25 @@ import entity.AddressSaver;
 import entity.MainVideoCreator;
 import entity.VideoPlayer;
 import entity.sound.SoundSaver;
-import org.apache.log4j.Logger;
 import ui.camera.CameraPanel;
 import ui.camera.VideoCreator;
 import ui.setting.CameraAddressSetting;
 import ui.setting.Setting;
 import ui.video.VideoFilesPanel;
+import org.apache.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class MainFrame extends JFrame {
+    private static String password;
     private static Logger log = Logger.getLogger(MainFrame.class);
 
     private static JButton startButton;
@@ -45,11 +42,10 @@ public class MainFrame extends JFrame {
 
     private JPanel allCameraPanel;
 
-
-    private static JLabel countSaveVideo;
+    private static JLabel countSecondsToSaveVideo;
     private static JLabel opacityLabel;
     private static JLabel showImagesLabel;
-    private static JLabel lightSensitivityLabel;
+    private static JLabel photosensitivityLabel;
     private static JLabel changeWhiteLabel;
 
 
@@ -82,41 +78,78 @@ public class MainFrame extends JFrame {
     private static String defaultPath = "C:\\LIGHTNING_STABLE\\";
 
     private static String profileName;
-
     private SoundSaver soundSaver;
-
     private static int showImagePerSecond = 1;
+    private static boolean fullSize = false;
+
+    private static ResourceBundle bundle;
 
     private MainFrame() {
-        super("LIGHTNING_STABLE");
+        super("LIGHTNING STABLE");
         imagesForBlock = new HashMap<>();
         cameras = new HashMap<>();
         cameraBlock = new HashMap<>();
         camerasAddress = new HashMap<>();
         creatorMap = new HashMap<>();
-//===================================================
 
-        this.getContentPane().setBackground(Color.LIGHT_GRAY);
-        this.getContentPane().setLayout(new FlowLayout(1));
+        this.getContentPane().setLayout(new BorderLayout());
+        this.setMinimumSize(new Dimension(1150, 700));
 
         mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        mainPanel.setMaximumSize(new Dimension(1120,650));
+
+        JPanel languageSelectPanel = new JPanel(new BorderLayout(5, 5));
+
+        JLabel languageSelectLabel = new JLabel("Select Language");
+        languageSelectLabel.setFont(new Font(null, Font.BOLD, 15));
+        languageSelectLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JPanel buttonPane = new JPanel(new FlowLayout());
+        JButton englishLanguageButton = new JButton("ENGLISH");
+        englishLanguageButton.setPreferredSize(new Dimension(100, 50));
+        englishLanguageButton.addActionListener((e) -> {
+            mainPanel.removeAll();
+            Locale.setDefault(new Locale("en", "US"));
+            startApplication();
+        });
+
+        JButton russianLanguageButton = new JButton("РУССКИЙ");
+        russianLanguageButton.setPreferredSize(new Dimension(100, 50));
+        russianLanguageButton.addActionListener((e) -> {
+            mainPanel.removeAll();
+            Locale.setDefault(new Locale("ru", "RU"));//ru_RU
+            startApplication();
+        });
+
+        buttonPane.add(englishLanguageButton);
+        buttonPane.add(russianLanguageButton);
+        languageSelectPanel.add(languageSelectLabel, BorderLayout.NORTH);
+        languageSelectPanel.add(buttonPane, BorderLayout.CENTER);
+
+        mainPanel.add(languageSelectPanel);
+
+        this.add(mainPanel);
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setVisible(true);
+        pack();
+    }
+
+    private void startApplication() {
+
+        bundle = ResourceBundle.getBundle("Labels");
 
         northPanel = new JPanel(new FlowLayout());
         northPanel.setPreferredSize(new Dimension(1110, 54));
 
         centralPanel = new JPanel();
         centralPanel.setBorder(BorderFactory.createEtchedBorder());
-        centralPanel.setPreferredSize(new Dimension(1110, 550));//new Dimension(1150, 720)580
 
         southPanel = new JPanel();
-        southPanel.setPreferredSize(new Dimension(1110, 45));//new Dimension(1150, 720)
+        southPanel.setPreferredSize(new Dimension(1110, 45));
 
-        mainPanel.add(northPanel,BorderLayout.NORTH);
-        mainPanel.add(centralPanel,BorderLayout.CENTER);
-        mainPanel.add(southPanel,BorderLayout.SOUTH);
-        this.add(mainPanel);
+        mainPanel.add(northPanel, BorderLayout.NORTH);
+        mainPanel.add(centralPanel, BorderLayout.CENTER);
+        mainPanel.add(southPanel, BorderLayout.SOUTH);
 
         cameraAddressSetting = CameraAddressSetting.getCameraAddressSetting();
         videoFilesPanel = VideoFilesPanel.getVideoFilesPanel();
@@ -124,29 +157,30 @@ public class MainFrame extends JFrame {
         informLabel = new JLabel();
         informLabel.setPreferredSize(new Dimension(170, 30));
         informLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        opacityLabel = new JLabel("Прозорість: 30%");
-        opacityLabel.setPreferredSize(new Dimension(110, 30));
-        showImagesLabel = new JLabel("Транслюемо 1 FPS");
-        showImagesLabel.setPreferredSize(new Dimension(120,30));
-        countSaveVideo = new JLabel("Зберігаемо " + timeToSave + "сек.");
-        countSaveVideo.setPreferredSize(new Dimension(120, 30));
-        lightSensitivityLabel = new JLabel("Чутливість: " + colorLightNumber);
-        changeWhiteLabel = new JLabel("Збільшення світла: " + percentDiffWhite + "%");
+
+        opacityLabel = new JLabel(bundle.getString("opacitycount") + "30%");
+        opacityLabel.setPreferredSize(new Dimension(120, 30));
+
+        showImagesLabel = new JLabel(bundle.getString("showframescountlabel") + " 1 FPS");
+        showImagesLabel.setPreferredSize(new Dimension(120, 30));
+
+        countSecondsToSaveVideo = new JLabel(bundle.getString("savesecondcount") + timeToSave + bundle.getString("seconds"));
+        countSecondsToSaveVideo.setPreferredSize(new Dimension(120, 30));
+
+        photosensitivityLabel = new JLabel(bundle.getString("photosensitivity") + colorLightNumber);
+
+        changeWhiteLabel = new JLabel(bundle.getString("lightening") + percentDiffWhite + "%");
+
         usedMemoryLabel = new JLabel();
         usedMemoryLabel.setPreferredSize(new Dimension(80, 30));
         maxMemoryLabel = new JLabel();
-        maxMemoryLabel.setText("Total:" + maxMemory +" mb");
+        maxMemoryLabel.setText("Total:" + maxMemory + " mb");
         alarmServerLabel = new JLabel();
-        alarmServerLabel.setPreferredSize(new Dimension(65,30));
-
-
+        alarmServerLabel.setPreferredSize(new Dimension(65, 30));
 
         addressSaver = AddressSaver.restorePasswords();
         buildMainWindow();
-        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setVisible(true);
-        pack();
-//        =============================================
+
         addressSaver.setPasswordsToFields();
         addressSaver.setSetting();
         cameraAddressSetting.saveAddressToMap();
@@ -186,9 +220,9 @@ public class MainFrame extends JFrame {
                 usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
                 usedMemoryLabel.repaint();
 
-                if(writeLogs>60){
-                    log.info("Используем памяти "+usedMemory+ " mb");
-                    writeLogs=0;
+                if (writeLogs > 60) {
+                    log.info("Используем памяти " + usedMemory + " mb");
+                    writeLogs = 0;
                 } else {
                     writeLogs++;
                 }
@@ -222,15 +256,16 @@ public class MainFrame extends JFrame {
             ServerSocket ss = null;
             try {
                 ss = new ServerSocket(port);
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+            }
 
             while (true) {
                 try {
                     audioPacketCount.setForeground(new Color(29, 142, 27));
-                    setAlarmServerLabelColor(port,new Color(29, 142, 27));
-                    log.info("Ждем сигнал сработки на порт - "+port);
+                    setAlarmServerLabelColor(port, new Color(29, 142, 27));
+                    log.info("Ждем сигнал сработки на порт - " + port);
                     Socket socket = ss.accept();
-                    log.info("Получили сигнал сработки на порт "+port);
+                    log.info("Получили сигнал сработки на порт " + port);
                     MainVideoCreator.startCatchVideo(false);
                     socket.close();
                 } catch (Exception e) {
@@ -239,7 +274,7 @@ public class MainFrame extends JFrame {
                     } catch (InterruptedException e1) {
                         e1.printStackTrace();
                     }
-                    setAlarmServerLabelColor(port,Color.red);
+                    setAlarmServerLabelColor(port, Color.red);
                     audioPacketCount.setForeground(Color.red);
                 }
             }
@@ -247,14 +282,14 @@ public class MainFrame extends JFrame {
         alarmThread.setName("Alarm Thread");
         alarmThread.start();
 
-        File fileAddressSaver = new File(defaultPath+"\\data\\");
+        File fileAddressSaver = new File(defaultPath + "\\data\\");
         fileAddressSaver.mkdirs();
 
-        File fileBuffBytes = new File(path+"\\bytes\\");
+        File fileBuffBytes = new File(path + "\\bytes\\");
         fileBuffBytes.mkdirs();
 
         for (int i = 1; i < 5; i++) {
-            File folder = new File(defaultPath+"\\buff\\" + i + "\\");
+            File folder = new File(defaultPath + "\\buff\\" + i + "\\");
             folder.mkdirs();
             File[] files = folder.listFiles();
             for (int j = 0; j < files.length; j++) {
@@ -302,71 +337,73 @@ public class MainFrame extends JFrame {
     private void buildNorthPanel() {
         audioPacketCount = new JLabel("AUDIO");
 
-        JButton mainWindowButton = new JButton("Головна");
+        JButton mainWindowButton = new JButton(bundle.getString("mainpage"));
         mainWindowButton.setPreferredSize(new Dimension(120, 30));
         mainWindowButton.addActionListener((e) -> {
             VideoPlayer.setShowVideoPlayer(false);
-            for (Integer cameraNumber : cameras.keySet()) {
-                CameraPanel cameraPanel = cameras.get(cameraNumber);
-                if (cameraPanel.getVideoCatcher().isFullSize()) {
-                    cameraPanel.getVideoCatcher().setWidthAndHeight(270, 158);
-                    cameraPanel.revalidate();
-
-                    int blockNumber = (cameraNumber + 1) / 2;
-                    JPanel blockPanel = cameraBlock.get(blockNumber);
-                    if (cameraNumber % 2 == 0) {
-                        blockPanel.remove(cameraPanel);
-                        blockPanel.add(cameraPanel);
-                        blockPanel.repaint();
-                    } else {
-                        Component firstCamera = blockPanel.getComponent(0);
-                        blockPanel.removeAll();
-                        blockPanel.add(cameraPanel);
-                        blockPanel.add(firstCamera);
-                        blockPanel.validate();
-                        blockPanel.repaint();
+            if (fullSize) {
+                for (Integer cameraNumber : cameras.keySet()) {
+                    CameraPanel cameraPanel = cameras.get(cameraNumber);
+                    if (cameraPanel.isFullSize()) {
+                        cameraPanel.setFullSize(false);
+                        int blockNumber = (cameraNumber + 1) / 2;
+                        JPanel blockPanel = cameraBlock.get(blockNumber);
+                        if (cameraNumber % 2 == 0) {
+                            blockPanel.remove(cameraPanel);
+                            blockPanel.add(cameraPanel);
+                            blockPanel.repaint();
+                        } else {
+                            Component firstCamera = blockPanel.getComponent(0);
+                            blockPanel.removeAll();
+                            blockPanel.add(cameraPanel);
+                            blockPanel.add(firstCamera);
+                            blockPanel.validate();
+                            blockPanel.repaint();
+                        }
                     }
                 }
+                fullSize = false;
             }
             setCentralPanel(allCameraPanel);
-            mainLabel.setText("Головна");
+            mainLabel.setText(bundle.getString("mainpage"));
         });
 
-        JButton cameraButton = new JButton("Камери");
+        JButton cameraButton = new JButton(bundle.getString("camerassettingpage"));
         cameraButton.setPreferredSize(new Dimension(120, 30));
         cameraButton.addActionListener((e) -> {
             VideoPlayer.setShowVideoPlayer(false);
             setCentralPanel(cameraAddressSetting);
-            mainLabel.setText("Камери");
+            mainLabel.setText(bundle.getString("camerassettingpage"));
         });
 
-        JButton videoButton = new JButton("Відео");
+        JButton videoButton = new JButton(bundle.getString("videospage"));
         videoButton.setPreferredSize(new Dimension(120, 30));
         videoButton.addActionListener((e) -> {
             showVideosWindow();
         });
-        JButton settingButton = new JButton("Налаштування");
+
+        JButton settingButton = new JButton(bundle.getString("settingpage"));
         settingButton.setPreferredSize(new Dimension(120, 30));
         settingButton.addActionListener((e) -> {
             VideoPlayer.setShowVideoPlayer(false);
             setting.saveButton.setForeground(Color.BLACK);
-            setting.saveButton.setText("Зберегти");
+            setting.saveButton.setText(bundle.getString("savebutton"));
+            setting.reSetPassword();
             setCentralPanel(setting);
-            mainLabel.setText("Налаштування");
+            mainLabel.setText(bundle.getString("settingpage"));
         });
 
         mainLabel.setFont(new Font(null, Font.BOLD, 15));
         mainLabel.setPreferredSize(new Dimension(120, 30));
 
         JPanel informPane = new JPanel(new FlowLayout());
-//        recordLabel = new JLabel(String.valueOf((char) 8226));
         recordLabel = new JLabel(String.valueOf((char) 8623));
         recordLabel.setFont(new Font(null, Font.BOLD, 23));
         recordLabel.setForeground(Color.DARK_GRAY);
         informPane.add(mainLabel);
         informPane.add(recordLabel);
         recordSecondsLabel = new JLabel();
-        recordSecondsLabel.setPreferredSize(new Dimension(150,30));
+        recordSecondsLabel.setPreferredSize(new Dimension(150, 30));
         recordSecondsLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         startButton = new JButton("REC");
@@ -397,16 +434,15 @@ public class MainFrame extends JFrame {
         northPanel.add(informPane);
     }
 
-    public void showVideosWindow(){
+    public void showVideosWindow() {
         VideoPlayer.setShowVideoPlayer(false);
         videoFilesPanel.showVideos();
         setCentralPanel(videoFilesPanel);
-        mainLabel.setText("Відео");
+        mainLabel.setText(bundle.getString("videospage"));
     }
 
     private void buildCentralPanel() {
-
-        centralPanel.setLayout(new FlowLayout());
+        centralPanel.setLayout(new BorderLayout());
         GridLayout gridLayout = new GridLayout(2, 2, 2, 2);
         allCameraPanel = new JPanel();
         allCameraPanel.setLayout(gridLayout);
@@ -421,13 +457,11 @@ public class MainFrame extends JFrame {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() == 2) {
-
-                        if (cameraOne.getVideoCatcher().isFullSize()) {
+                        if (fullSize) {
                             for (Integer cameraNumber : cameras.keySet()) {
                                 CameraPanel cameraPanel = cameras.get(cameraNumber);
-                                if (cameraPanel.getVideoCatcher().isFullSize()) {
-                                    cameraPanel.getVideoCatcher().setWidthAndHeight(270, 158);
-
+                                if (cameraPanel.isFullSize()) {
+                                    cameraPanel.setFullSize(false);
                                     int blockNumber = (cameraNumber + 1) / 2;
                                     JPanel blockPanel = cameraBlock.get(blockNumber);
                                     if (cameraNumber % 2 == 0) {
@@ -443,10 +477,12 @@ public class MainFrame extends JFrame {
                                 }
                             }
                             setCentralPanel(allCameraPanel);
-                            mainLabel.setText("Головна");
+                            fullSize = false;
+                            mainLabel.setText(bundle.getString("mainpage"));
                         } else {
-                            cameraOne.getVideoCatcher().setWidthAndHeight(918, 540);
+                            cameraOne.setFullSize(true);
                             setCentralPanel(cameraOne);
+                            fullSize = true;
                         }
                     }
                 }
@@ -458,13 +494,11 @@ public class MainFrame extends JFrame {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() == 2) {
-
-                        if (cameraTwo.getVideoCatcher().isFullSize()) {
+                        if (fullSize) {
                             for (Integer cameraNumber : cameras.keySet()) {
                                 CameraPanel cameraPanel = cameras.get(cameraNumber);
-                                if (cameraPanel.getVideoCatcher().isFullSize()) {
-                                    cameraPanel.getVideoCatcher().setWidthAndHeight(270, 158);
-                                    cameraPanel.revalidate();
+                                if (cameraPanel.isFullSize()) {
+                                    cameraPanel.setFullSize(false);
                                     int blockNumber = (cameraNumber + 1) / 2;
                                     JPanel blockPanel = cameraBlock.get(blockNumber);
                                     if (cameraNumber % 2 == 0) {
@@ -480,16 +514,17 @@ public class MainFrame extends JFrame {
                                 }
                             }
                             setCentralPanel(allCameraPanel);
-                            mainLabel.setText("Головна");
+                            fullSize = false;
+                            mainLabel.setText(bundle.getString("mainpage"));
                         } else {
-                            cameraTwo.getVideoCatcher().setWidthAndHeight(918, 540);
+                            cameraTwo.setFullSize(true);
                             setCentralPanel(cameraTwo);
+                            fullSize = true;
                         }
                     }
                 }
             });
             cameras.put(i * 2, cameraTwo);
-
             blockPanel = new JPanel();
             GridLayout gridLayout1 = new GridLayout(1, 2);
             blockPanel.setLayout(gridLayout1);
@@ -500,19 +535,18 @@ public class MainFrame extends JFrame {
             allCameraPanel.add(blockPanel);
         }
         centralPanel.add(allCameraPanel);
-
     }
 
     private void buildSouthPanel() {
         southPanel.setLayout(new FlowLayout());
         southPanel.add(alarmServerLabel);
-        southPanel.add(countSaveVideo);
+        southPanel.add(countSecondsToSaveVideo);
         southPanel.add(opacityLabel);
         southPanel.add(showImagesLabel);
-        southPanel.add(lightSensitivityLabel);
+        southPanel.add(photosensitivityLabel);
         southPanel.add(changeWhiteLabel);
         southPanel.add(informLabel);
-        southPanel.add(new JLabel("Використано: "));
+        southPanel.add(new JLabel("Used:"));
         southPanel.add(usedMemoryLabel);
         southPanel.add(maxMemoryLabel);
     }
@@ -530,7 +564,8 @@ public class MainFrame extends JFrame {
         informLabel.setForeground(color);
         informLabel.repaint();
     }
-    public static void showSecondsAlreadySaved(String massage){
+
+    public static void showSecondsAlreadySaved(String massage) {
         recordSecondsLabel.setText(massage);
         recordSecondsLabel.repaint();
     }
@@ -546,10 +581,10 @@ public class MainFrame extends JFrame {
             }
             List<String> list = camerasAddress.get(addressNumber);
             if (list != null) {
-                log.info("Камера - " + addressNumber+ " будет запущена.");
+                log.info("Камера - " + addressNumber + " будет запущена.");
                 URL url = null;
                 try {
-                    url = new URL(list.get(0) + "&streamprofile="+profileName);//TODO fgfvdafxvarfd
+                    url = new URL(list.get(0) + "&streamprofile=" + profileName);//TODO fgfvdafxvarfd
                     Authenticator.setDefault(new Authenticator() {
                         protected PasswordAuthentication getPasswordAuthentication() {
                             return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
@@ -560,7 +595,7 @@ public class MainFrame extends JFrame {
                 }
                 cameras.get(addressNumber).getVideoCatcher().startCatchVideo(url);
             } else {
-                log.info("Камера - " + addressNumber+ " НЕ будет запущена.");
+                log.info("Камера - " + addressNumber + " НЕ будет запущена.");
                 cameras.get(addressNumber).getVideoCatcher().stopCatchVideo();
             }
         }
@@ -582,6 +617,10 @@ public class MainFrame extends JFrame {
         }
     }
 
+    public static ResourceBundle getBundle() {
+        return bundle;
+    }
+
     public void setCentralPanel(JPanel panel) {
         centralPanel.removeAll();
         centralPanel.add(panel);
@@ -591,7 +630,7 @@ public class MainFrame extends JFrame {
 
     public static void setOpacitySetting(int opacity) {
         MainFrame.opacitySetting = opacity;
-        opacityLabel.setText("Прозорість: " + opacity + "%");
+        opacityLabel.setText(bundle.getString("opacitycount") + opacity + "%");
         opacityLabel.repaint();
         Float f = (float) opacity / 100;
         CameraPanel.setOpacity(f);
@@ -608,10 +647,10 @@ public class MainFrame extends JFrame {
         return opacitySetting;
     }
 
-    public void setCountSaveVideo(int countSave) {
+    public static void setCountSecondsToSaveVideo(int countSave) {
         timeToSave = countSave;
-        countSaveVideo.setText("Зберігаемо " + countSave + " сек.");
-        countSaveVideo.repaint();
+        countSecondsToSaveVideo.setText(bundle.getString("savesecondcount") + timeToSave + bundle.getString("seconds"));
+        countSecondsToSaveVideo.repaint();
     }
 
     public static int getPercentDiffWhite() {
@@ -620,12 +659,12 @@ public class MainFrame extends JFrame {
 
     public static void setPercentDiffWhite(int percentDiffWhite) {
         MainFrame.percentDiffWhite = percentDiffWhite;
-        changeWhiteLabel.setText("Збільшення світла: " + percentDiffWhite + "%");
+        changeWhiteLabel.setText(bundle.getString("lightening") + percentDiffWhite + "%");
         changeWhiteLabel.repaint();
     }
 
-    private void setAlarmServerLabelColor(int port, Color color){
-        alarmServerLabel.setText("PORT:"+port);
+    private void setAlarmServerLabelColor(int port, Color color) {
+        alarmServerLabel.setText("PORT:" + port);
         alarmServerLabel.setForeground(color);
         alarmServerLabel.repaint();
     }
@@ -640,8 +679,8 @@ public class MainFrame extends JFrame {
 
     public static void setColorLightNumber(int colorLightNumber) {
         MainFrame.colorLightNumber = colorLightNumber;
-        lightSensitivityLabel.setText("Чутливість: " + colorLightNumber);
-        lightSensitivityLabel.repaint();
+        photosensitivityLabel.setText(bundle.getString("photosensitivity") + colorLightNumber);
+        photosensitivityLabel.repaint();
         MainFrame.colorRGBNumber = new Color(colorLightNumber, colorLightNumber, colorLightNumber).getRGB();
     }
 
@@ -656,24 +695,19 @@ public class MainFrame extends JFrame {
     public static void setProgramLightCatchWork(boolean programLightCatchWork) {
         MainFrame.programLightCatchWork = programLightCatchWork;
         if (programLightCatchWork) {
-            lightSensitivityLabel.setForeground(new Color(23, 114, 26));
-            changeWhiteLabel.setForeground(new Color(23, 114, 26));
+            photosensitivityLabel.setForeground(new Color(32, 175, 33));
+            changeWhiteLabel.setForeground(new Color(32, 175, 33));
         } else {
-            lightSensitivityLabel.setForeground(Color.LIGHT_GRAY);
+            photosensitivityLabel.setForeground(Color.LIGHT_GRAY);
             changeWhiteLabel.setForeground(Color.LIGHT_GRAY);
         }
 
-        lightSensitivityLabel.repaint();
+        photosensitivityLabel.repaint();
         changeWhiteLabel.repaint();
     }
 
     public static int getTimeToSave() {
         return timeToSave;
-    }
-
-    public static void setTimeToSave(int timeToSave) {
-        MainFrame.timeToSave = timeToSave;
-        countSaveVideo.setText("Зберігаемо " + timeToSave + "сек.");
     }
 
     public static void setPort(int port) {
@@ -721,9 +755,17 @@ public class MainFrame extends JFrame {
     }
 
     public static void setShowImagePerSecond(int showImagePerSecond) {
-        showImagesLabel.setText("Транслюемо "+showImagePerSecond+" FPS");
+        showImagesLabel.setText(bundle.getString("showframescountlabel") + showImagePerSecond + " FPS");
         showImagesLabel.repaint();
         MainFrame.showImagePerSecond = showImagePerSecond;
+    }
+
+    public static String getPassword() {
+        return password;
+    }
+
+    public static void setPassword(String password) {
+        MainFrame.password = password;
     }
 }
 

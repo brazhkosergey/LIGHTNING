@@ -13,7 +13,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoCatcher {
@@ -26,17 +25,8 @@ public class VideoCatcher {
 
     private int fps;
     private int countTimesToHaveNotBytesToRead;
-    private int maxWidth;
-    private int maxHeight;
-    private boolean isFullSize;
 
     private int countDoNotShowImages = 1;
-//    private int settingCountDoNotShowImages;
-    //    private Map<Long, byte[]> bufferBytes;
-//    private Map<Long, byte[]> mapBytes;
-//    private Map<Integer, Boolean> eventsFramesNumber;
-//    private Deque<Long> timeDeque;
-
 
     private Deque<byte[]> imageDeque;
     private VideoCreator videoCreator;
@@ -47,7 +37,7 @@ public class VideoCatcher {
     private InputStream inputStream;
     private ByteArrayOutputStream temporaryStream = null;
 
-    private CameraPanel panel;
+    private CameraPanel cameraPanel;
 
     private boolean restart;
     private boolean catchVideo;
@@ -58,15 +48,15 @@ public class VideoCatcher {
     private Thread MainThread;
     private boolean showImage = true;
 
-    public VideoCatcher(CameraPanel panel, VideoCreator videoCreatorForBouth) {
-        log.info("Создаем наблюдатель для камеры номер " + panel.getCameraNumber());
+    public VideoCatcher(CameraPanel cameraPanel, VideoCreator videoCreatorForBouth) {
+        log.info("Создаем наблюдатель для камеры номер " + cameraPanel.getCameraNumber());
         FpsCountThread = new Thread(() -> {
             while (true) {
                 if (catchVideo) {
                     if (fps != 0) {
-                        panel.getTitle().setTitle(
+                        cameraPanel.getTitle().setTitle(
                                 "FPS = " + fps + ". WHITE: " + whitePercent);
-                        panel.repaint();
+                        cameraPanel.repaint();
                         fps = 0;
                         countTimesToHaveNotBytesToRead = 0;
                     } else {
@@ -114,8 +104,9 @@ public class VideoCatcher {
                                 try {
                                     BufferedImage image = ImageIO.read(inputStream);
                                     inputStream.close();
-                                    panel.setBufferedImage(processImage(image, maxWidth, maxHeight));
-                                    panel.repaint();
+                                    cameraPanel.setBufferedImage(findProgramEvent(processImage(image, cameraPanel.getWidth(),
+                                            cameraPanel.getHeight())));
+                                    cameraPanel.repaint();
                                 } catch (Exception ignored) {
                                 }
                                 showImage = true;
@@ -124,12 +115,12 @@ public class VideoCatcher {
                         checkData++;
                     }
                     try {
-                        Thread.sleep((1000/countDoNotShowImages));
+                        Thread.sleep((1000 / countDoNotShowImages));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 } else {
-                    panel.getTitle().setTitle("Камера вимкнена");
+                    cameraPanel.getTitle().setTitle(MainFrame.getBundle().getString("cameradoesnotwork"));
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {
@@ -138,12 +129,13 @@ public class VideoCatcher {
                 }
             }
         });
+
         UpdateDataThread.setPriority(Thread.MIN_PRIORITY);
 
         MainThread = new Thread(() -> {
             UpdateDataThread.start();
             FpsCountThread.start();
-            log.info("Запускаем наблюдатель для камеры номер " + panel.getCameraNumber());
+            log.info("Запускаем наблюдатель для камеры номер " + cameraPanel.getCameraNumber());
 
             int x = 0;
             int t;
@@ -174,7 +166,7 @@ public class VideoCatcher {
                                 long l = System.currentTimeMillis();
                                 byte[] bytes = temporaryStream.toByteArray();
 
-                                if(showImage){
+                                if (showImage) {
                                     imageDeque.addFirst(bytes);
                                     showImage = false;
                                 }
@@ -231,9 +223,8 @@ public class VideoCatcher {
         });
         MainThread.setPriority(Thread.MAX_PRIORITY);
         imageDeque = new ConcurrentLinkedDeque<>();
-        this.panel = panel;
-        setWidthAndHeight(270, 260);
-        panel.repaint();
+        this.cameraPanel = cameraPanel;
+        cameraPanel.repaint();
         this.videoCreator = videoCreatorForBouth;
         videoCreator.addVideoCatcher(this);
     }
@@ -245,7 +236,7 @@ public class VideoCatcher {
                 catchVideo = false;
             } else {
                 catchVideo = true;
-                panel.startShowVideo();
+                cameraPanel.startShowVideo();
             }
             this.url = urlMainStream;
         }
@@ -277,8 +268,8 @@ public class VideoCatcher {
                 if (!restart && catchVideo) {
                     createInputStream();
                 } else {
-                    panel.getTitle().setTitle("Відновлюемо зв'язок");
-                    panel.repaint();
+                    cameraPanel.getTitle().setTitle( MainFrame.getBundle().getString("restoreconnection"));
+                    cameraPanel.repaint();
                 }
             }
         } else {
@@ -287,31 +278,43 @@ public class VideoCatcher {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println(catchVideo+" URL = NULL "+ Thread.currentThread().getName() + "- "  + changeURL);
+            System.out.println(catchVideo + " URL = NULL " + Thread.currentThread().getName() + "- " + changeURL);
             catchVideo = false;
         }
     }
 
     public void start() {
-        MainThread.setName("Save Stream Thread. Camera " + panel.getCameraNumber());
-        UpdateDataThread.setName("Update Data Thread. Camera " + panel.getCameraNumber());
-        FpsCountThread.setName("FPS CountThread. Camera " + panel.getCameraNumber());
+        MainThread.setName("Save Stream Thread. Camera " + cameraPanel.getCameraNumber());
+        UpdateDataThread.setName("Update Data Thread. Camera " + cameraPanel.getCameraNumber());
+        FpsCountThread.setName("FPS CountThread. Camera " + cameraPanel.getCameraNumber());
         MainThread.start();
     }
 
-    private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
+    public static BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
+        int width;
+        int height;
+
+        if (maxWidth / 1.77 > maxHeight) {
+            height = maxHeight;
+            width = (int) (height * 1.77);
+        } else {
+
+            width = maxWidth;
+            height = (int) (width / 1.77);
+        }
+
         BufferedImage bi2 = null;
         double max;
         int size;
-        int ww = maxWidth - bi.getWidth();
-        int hh = maxHeight - bi.getHeight();
+        int ww = width - bi.getWidth();
+        int hh = height - bi.getHeight();
 
         if (ww < 0 || hh < 0) {
             if (ww < hh) {
-                max = maxWidth;
+                max = width;
                 size = bi.getWidth();
             } else {
-                max = maxHeight;
+                max = height;
                 size = bi.getHeight();
             }
 
@@ -328,73 +331,67 @@ public class VideoCatcher {
         }
 
         if (bi2 != null) {
-            if (programLightCatchWork && maxWidth <= 280) {
-                int[] rgb1 = bi2.getRGB(0, 0, bi2.getWidth(), bi2.getHeight(), null, 0, 1024);
-                int countWhite = 0;
-                int allPixels = rgb1.length;
-
-                int k = 10;
-
-                for (int i = 0; i < allPixels; i = i + k) {
-                    if (rgb1[i] > numberGRB && rgb1[i] < -1) {
-                        countWhite++;
-                    }
-                }
-
-                if (countWhite != 0) {
-                    countWhite = countWhite * k;
-                }
-
-                double percent = (double) countWhite / allPixels;
-                int percentInt = (int) (percent * 100);
-
-                if (whitePercent != -1) {
-                    int differentWhitePercent = Math.abs(percentInt - whitePercent);
-                    if (differentWhitePercent > percentDiffWhite) {
-                        MainVideoCreator.startCatchVideo(true);
-                        whitePercent = -1;
-                    } else {
-                        if (percentInt != whitePercent) {
-                            whitePercent = percentInt;
-                        }
-                    }
-                } else {
-                    whitePercent = percentInt;
-                }
-            }
             return bi2;
         } else {
             return bi;
         }
     }
 
-    void setBorderColor(Color color){
-        panel.getTitle().setTitleColor(color);
+    private BufferedImage findProgramEvent(BufferedImage bi2) {
+        if (programLightCatchWork && !cameraPanel.isFullSize()) {
+            int[] rgb1 = bi2.getRGB(0, 0, bi2.getWidth(), bi2.getHeight(), null, 0, 1024);
+            int countWhite = 0;
+            int allPixels = rgb1.length;
+            int k = 10;
+            for (int i = 0; i < allPixels; i = i + k) {
+                if (rgb1[i] > numberGRB && rgb1[i] < -1) {
+                    countWhite++;
+                }
+            }
+
+            if (countWhite != 0) {
+                countWhite = countWhite * k;
+            }
+
+            double percent = (double) countWhite / allPixels;
+            int percentInt = (int) (percent * 100);
+
+            if (whitePercent != -1) {
+                int differentWhitePercent = Math.abs(percentInt - whitePercent);
+                if (differentWhitePercent > percentDiffWhite) {
+                    MainVideoCreator.startCatchVideo(true);
+                    whitePercent = -1;
+                } else {
+                    if (percentInt != whitePercent) {
+                        whitePercent = percentInt;
+                    }
+                }
+            } else {
+                whitePercent = percentInt;
+            }
+        }
+        return bi2;
+    }
+
+    void setBorderColor(Color color) {
+        cameraPanel.getTitle().setTitleColor(color);
     }
 
     VideoCreator getVideoCreator() {
         return videoCreator;
     }
 
-    public void setWidthAndHeight(int width, int height) {
-        isFullSize = width > 270;
-        panel.setWindowSize(width, height);
-        panel.setPreferredSize(new Dimension(width + 5, height + 5));
-        this.maxWidth = width;
-        this.maxHeight = height;
-    }
-
-    public boolean isFullSize() {
-        return isFullSize;
-    }
-
     public void stopCatchVideo() {
         catchVideo = false;
-        panel.stopShowVideo();
+        cameraPanel.stopShowVideo();
         url = null;
     }
 
     public boolean isCatchVideo() {
         return catchVideo;
+    }
+
+    CameraPanel getCameraPanel() {
+        return cameraPanel;
     }
 }

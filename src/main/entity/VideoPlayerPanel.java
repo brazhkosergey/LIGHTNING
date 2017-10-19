@@ -1,14 +1,13 @@
 package entity;
 
 import ui.camera.CameraPanel;
+import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.LayerUI;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -17,29 +16,14 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 class VideoPlayerPanel extends JPanel {
-    private int width;
-    private int height;
-//    private int numberVideoPanel;
-
     private File folder;
-
-//    private Thread showVideoThread;
-//    private Thread mainVideoThread;
-
-
-//    private int changeImage;
-//    private int nextImageInt;
-//    private int prewImageIng;
-//    private int countImageFramesChangeIng;
-//    private int positionForNextPreviousImage;
-
     private int x = 0;
     private int t = 0;
     private VideoPlayerToShowOneVideo videoPlayerToShowOneVideo;
     private JLayer<JPanel> videoStreamLayer;
     private JLabel informLabel;
+
     private boolean blockHaveVideo = true;
-    private boolean videoPlay = true;
 
     private BufferedInputStream bufferedInputStream = null;
     private FileInputStream fileInputStream = null;
@@ -52,11 +36,16 @@ class VideoPlayerPanel extends JPanel {
     private boolean showVideoNow;
 
     private JPanel videoPanel;
-    private JPanel exportPanel;
     private JLabel currentFrameLabel;
+
+    private JPanel partExportPanel;
 
     private Thread buffBytesThread;
     private Thread showFrameThread;
+    private Thread FPSThread;
+
+    private int FPS = 0;
+    private JLabel totalSecondsLabel;
 
     private List<Integer> eventFrameNumberList;
     private Map<Integer, byte[]> framesBytesInBuffMap;
@@ -64,26 +53,21 @@ class VideoPlayerPanel extends JPanel {
     private int numberOfFrameFromStartVideo = 0;
     private int currentFrameNumber = 0;
 
-
     private boolean setPosition;
     private boolean play;
     private boolean allFilesIsInBuff;
     private int startFrame;
     private int startFileNumber = 0;
 
-
     VideoPlayerPanel(File folderWithTemporaryFiles, int numberVideoPanel) {
         this.folder = folderWithTemporaryFiles;
-
         videoPlayerToShowOneVideo = new VideoPlayerToShowOneVideo();
-
         eventFrameNumberList = new ArrayList<>();
         framesBytesInBuffMap = new HashMap<>();
         frameInBuffDeque = new ConcurrentLinkedDeque<>();
         filesList = new ArrayList<>();
 
         if (folderWithTemporaryFiles != null) {
-
             String name = folder.getName();
             int first = name.indexOf("[");
             int second = name.indexOf("]");
@@ -145,26 +129,34 @@ class VideoPlayerPanel extends JPanel {
 
             LayerUI<JPanel> layerUI = new VideoPlayerPanel.MyLayer(image);
             videoStreamLayer = new JLayer<JPanel>(videoPlayerToShowOneVideo, layerUI);
-            informLabel = new JLabel("Натистіть PLAY");
+            videoStreamLayer.setAlignmentX(CENTER_ALIGNMENT);
+
+
+            informLabel = new JLabel(MainFrame.getBundle().getString("clickplaylabel"));
         } else {
             blockHaveVideo = false;
-            informLabel = new JLabel("Камери не працювали");
+            informLabel = new JLabel(MainFrame.getBundle().getString("cameradoesnotwork"));
         }
 
-        videoPanel = new JPanel();
-        videoPanel.setPreferredSize(new Dimension(377, 219));
+        informLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        informLabel.setVerticalAlignment(SwingConstants.CENTER);
+
+        videoPanel = new JPanel(new BorderLayout());
         videoPanel.setBorder(BorderFactory.createEtchedBorder());
         videoPanel.add(informLabel);
 
-        exportPanel = new JPanel();
-        exportPanel.setPreferredSize(new Dimension(150, 219));
+        JPanel totalExportPanel = new JPanel(new FlowLayout());
+        totalExportPanel.setPreferredSize(new Dimension(200, 300));
+
+        JPanel exportPanel = new JPanel(new FlowLayout());
+        exportPanel.setPreferredSize(new Dimension(190, 235));
         exportPanel.setBorder(BorderFactory.createEtchedBorder());
 
-        JLabel label = new JLabel("ЕКСПОРТ");
+        JLabel label = new JLabel(MainFrame.getBundle().getString("savevideolabel"));
         label.setPreferredSize(new Dimension(150, 30));
         label.setHorizontalTextPosition(SwingConstants.CENTER);
         label.setHorizontalAlignment(SwingConstants.CENTER);
-        JButton exportButton = new JButton("ВІДЕО");
+        JButton exportButton = new JButton(MainFrame.getBundle().getString("savevideobutton"));
         exportButton.setFocusable(false);
         exportButton.setPreferredSize(new Dimension(120, 50));
         exportButton.addActionListener((e) -> {
@@ -177,7 +169,7 @@ class VideoPlayerPanel extends JPanel {
             }
         });
 
-        JButton imageButton = new JButton("КАДР");
+        JButton imageButton = new JButton(MainFrame.getBundle().getString("saveframebutton"));
         imageButton.setFocusable(false);
         imageButton.setPreferredSize(new Dimension(120, 50));
         imageButton.addActionListener((e) -> {
@@ -191,38 +183,38 @@ class VideoPlayerPanel extends JPanel {
                             ImageIO.write(image, "jpg", file);
                         }
                     } catch (Exception xe) {
-                        MainFrame.showInformMassage("Не вдалось зберегти", new Color(171, 55, 49));
+                        MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
                         xe.printStackTrace();
                     }
                 } else {
-                    MainFrame.showInformMassage("Не вдалось зберегти", new Color(171, 40, 33));
+                    MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
                 }
             });
             thread.start();
         });
 
-        currentFrameLabel = new JLabel("  Кадр:   0");
+        currentFrameLabel = new JLabel(MainFrame.getBundle().getString("framenumberlabel"));
         currentFrameLabel.setPreferredSize(new Dimension(150, 15));
-        JLabel totalFrameLabel = new JLabel("  Всього кадрів:   " + totalCountFrames);
+        JLabel totalFrameLabel = new JLabel(MainFrame.getBundle().getString("totalframecountlabel") + totalCountFrames);
         totalFrameLabel.setPreferredSize(new Dimension(150, 15));
 
-        JLabel totalSecondsLabel = new JLabel("  Всього секунд:   " + filesList.size());
+        totalSecondsLabel = new JLabel();
         totalSecondsLabel.setPreferredSize(new Dimension(150, 15));
 
-        JPanel partExportPanel = new JPanel(new FlowLayout());
+        partExportPanel = new JPanel(new FlowLayout());
         partExportPanel.setBorder(BorderFactory.createLineBorder(Color.lightGray));
-        partExportPanel.setPreferredSize(new Dimension(255, 283));
-        JLabel partExportLabel = new JLabel("Частковий експорт");
+        partExportPanel.setPreferredSize(new Dimension(200, 300));
+        JLabel partExportLabel = new JLabel(MainFrame.getBundle().getString("partsavelabel"));
         partExportLabel.setPreferredSize(new Dimension(200, 25));
         partExportLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JLabel startPartExportLabel = new JLabel("Перший кадр");
+        JLabel startPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstframelabel"));
         startPartExportLabel.setPreferredSize(new Dimension(100, 25));
         JTextField startPartExportTextField = new JTextField();
         startPartExportTextField.setFocusable(false);
         startPartExportTextField.setPreferredSize(new Dimension(70, 25));
 
-        JLabel endPartExportLabel = new JLabel("Останній кадр");
+        JLabel endPartExportLabel = new JLabel(MainFrame.getBundle().getString("lastframelabel"));
         endPartExportLabel.setPreferredSize(new Dimension(100, 25));
         JTextField endPartExportTextField = new JTextField();
         endPartExportTextField.setFocusable(false);
@@ -234,7 +226,7 @@ class VideoPlayerPanel extends JPanel {
         informPartExportLabel.setHorizontalAlignment(SwingConstants.CENTER);
         informPartExportLabel.setHorizontalTextPosition(SwingConstants.CENTER);
 
-        JButton partExportButton = new JButton("Зберегти");
+        JButton partExportButton = new JButton(MainFrame.getBundle().getString("savepartvideobutton"));
         partExportButton.setFocusable(false);
         partExportButton.setPreferredSize(new Dimension(100, 50));
         partExportButton.addActionListener((w) -> {
@@ -285,13 +277,11 @@ class VideoPlayerPanel extends JPanel {
                                     if (firstFile == 1) {
                                         lastFile++;
                                     }
-                                    System.out.println("Последний файл " + lastFile);
                                     break;
                                 }
                             } else {
                                 if (totalFrames > startFrame) {
                                     firstFile = i;
-                                    System.out.println("Первый файл - " + firstFile);
                                     findStartFile = true;
                                     continue;
                                 }
@@ -336,7 +326,7 @@ class VideoPlayerPanel extends JPanel {
                             }
                         }
 
-                        String pathToVideo = MainFrame.getPath() + "\\" + dateString + ". Секунди з " + firstFile + " по " + lastFile + ". Группа камер -" + numberVideoPanel + ".mp4";
+                        String pathToVideo = MainFrame.getPath() + "\\" + dateString + ".from " + firstFile + " till " + lastFile + ". group -" + numberVideoPanel + ".mp4";
                         System.out.println(dateString);
                         informPartExportLabel.setText("<html>Буде збережено <br> Cекунд: " + (lastFile - firstFile) + ".<br> Кадрів: " + totalFramesToSave + ".<hr></html>");
                         MainVideoCreator.savePartOfVideoFile(pathToVideo, filesToSave, totalFPS, imageToConnect);
@@ -353,6 +343,7 @@ class VideoPlayerPanel extends JPanel {
         partExportPanel.add(endPartExportTextField);
         partExportPanel.add(partExportButton);
         partExportPanel.add(informPartExportLabel);
+        partExportPanel.setVisible(false);
 
         exportPanel.add(label);
         exportPanel.add(exportButton);
@@ -360,40 +351,22 @@ class VideoPlayerPanel extends JPanel {
         exportPanel.add(currentFrameLabel);
         exportPanel.add(totalFrameLabel);
         exportPanel.add(totalSecondsLabel);
-        exportPanel.add(partExportPanel);
+
+
+        totalExportPanel.add(exportPanel);
+        totalExportPanel.add(partExportPanel);
+
+        this.setLayout(new BorderLayout());
         if (numberVideoPanel % 2 != 0) {
-            this.add(exportPanel);
-            this.add(videoPanel);
+            this.add(totalExportPanel, BorderLayout.WEST);
+            this.add(videoPanel, BorderLayout.CENTER);
         } else {
-            this.add(videoPanel);
-            this.add(exportPanel);
+            this.add(totalExportPanel, BorderLayout.EAST);
+            this.add(videoPanel, BorderLayout.CENTER);
         }
 
-        this.setLayout(new FlowLayout());
-        this.setPreferredSize(new Dimension(540, 227));
         this.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-
         createThread();
-        setWidthAndHeight(364, 205);
-    }
-
-    void setWidthAndHeight(int width, int height) {
-        if (width < 400) {
-            this.setPreferredSize(new Dimension(540, 227));
-            videoPanel.setPreferredSize(new Dimension(377, 219));
-            exportPanel.setPreferredSize(new Dimension(150, 219));
-        } else {
-            this.setPreferredSize(new Dimension(1085, 457));
-            videoPanel.setPreferredSize(new Dimension(800, 448));
-            exportPanel.setPreferredSize(new Dimension(270, 448));
-        }
-
-        if (videoPlayerToShowOneVideo != null) {
-            videoPlayerToShowOneVideo.setPreferredSize(new Dimension(width, height));
-        }
-
-        this.width = width - 5;
-        this.height = height - 5;
     }
 
     void showFrameNumber(int partNumber, int currentFramePositionPercent) {
@@ -413,16 +386,16 @@ class VideoPlayerPanel extends JPanel {
                             byte[] bytes = framesBytesInBuffMap.get(frameToShowNumber);
                             BufferedImage image = readImage(bytes);
                             if (image != null) {
-//                    System.out.println("Показывем кадр номер - " + frameNumber);
-                                videoPlayerToShowOneVideo.setBufferedImage(processImage(image, width, height));
+                                videoPlayerToShowOneVideo.setBufferedImage(VideoCatcher.processImage(image, videoPanel.getWidth(), videoPanel.getHeight()));
                                 videoPlayerToShowOneVideo.repaint();
                                 currentFrameNumber = frameToShowNumber;
+
+                                FPS++;
                                 setCurrentFrameNumber(currentFrameNumber);
                                 try {
                                     Integer first = frameInBuffDeque.getFirst();
                                     if (framesBytesInBuffMap.size() > 999 && (first - frameToShowNumber) < 500) {
                                         Integer last = frameInBuffDeque.pollLast();
-                                        System.out.println("Удаляем кадр номер - " + last);
                                         framesBytesInBuffMap.remove(last);
                                     }
                                 } catch (Exception ignored) {
@@ -441,9 +414,22 @@ class VideoPlayerPanel extends JPanel {
     }
 
     private void createThread() {
-        informLabel = new JLabel("Натистіть PLAY");
+        FPSThread = new Thread(() -> {
+            while (VideoPlayer.isShowVideoPlayer()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                totalSecondsLabel.setText("FPS: " + FPS);
+                FPS = 0;
+            }
+        });
+
         if (blockHaveVideo) {
             buffBytesThread = new Thread(() -> {
+                FPSThread.start();
                 while (VideoPlayer.isShowVideoPlayer()) {
                     if (setPosition) {
                         startFileNumber = 0;
@@ -490,29 +476,8 @@ class VideoPlayerPanel extends JPanel {
                                 if (fileInputStream != null) {
                                     bufferedInputStream = new BufferedInputStream(fileInputStream);
                                     temporaryStream = new ByteArrayOutputStream(65535);
-                                    while (true) {// Сработка. Кадр номер - 1283
-//                                    while (x >= 0) {// Сработка. Кадр номер - 1283
-//                                        if (currentFrameNumber > 0) {
-////                                            int framesToCurrent = 0;
-////                                            for (Integer integer : frameInBuffDeque) {
-////                                                if (integer.compareTo(currentFrameNumber) == 0) {
-////                                                    break;
-////                                                } else {
-////                                                    framesToCurrent++;
-////                                                }
-////                                            }
-////
-////                                            System.out.println("Всего кадров в буфере до текущего - " + framesToCurrent);
-////                                            int countFramesToDel = 500 - framesToCurrent;
-////                                            if (countFramesToDel > 0 && frameInBuffDeque.size() > 999) {
-////                                                for (int k = 0; k < countFramesToDel; k++) {
-////                                                    Integer integer = frameInBuffDeque.pollLast();
-////                                                    framesBytesInBuffMap.remove(integer);
-////                                                }
-////                                            }
-//                                        }
+                                    while (true) {
                                         if (frameInBuffDeque.size() < 1000) {
-//                                            System.out.println("Размер буфера - " + frameInBuffDeque.size());
                                             readBytesImageToBuff();
                                         } else {
                                             try {
@@ -587,7 +552,7 @@ class VideoPlayerPanel extends JPanel {
     }
 
     private void setCurrentFrameNumber(int currentFrameLabelText) {
-        currentFrameLabel.setText("  Кадр:    " + currentFrameLabelText);
+        currentFrameLabel.setText(MainFrame.getBundle().getString("framenumberlabel") + currentFrameLabelText);
     }
 
     boolean isBlockHaveVideo() {
@@ -605,7 +570,7 @@ class VideoPlayerPanel extends JPanel {
         public void paint(Graphics g, JComponent c) {
             super.paint(g, c);
             if (bufferedImage != null) {
-                g.drawImage(CameraPanel.animateCircle(processImage(bufferedImage, width, height), BufferedImage.TYPE_INT_ARGB), 0, 0, null);
+                g.drawImage(CameraPanel.animateCircle(VideoCatcher.processImage(bufferedImage, videoPanel.getWidth(), videoPanel.getHeight()), BufferedImage.TYPE_INT_ARGB), 0, 0, null);
                 g.dispose();
             }
         }
@@ -629,43 +594,6 @@ class VideoPlayerPanel extends JPanel {
 
 //        System.out.println("Времени затрачено на создание изображения - " + (System.currentTimeMillis() - start));
         return bufferedImage;
-    }
-
-    private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
-        long start = System.currentTimeMillis();
-
-        BufferedImage bi2 = null;
-        double max;
-        int size;
-        int ww = maxWidth - bi.getWidth();
-        int hh = maxHeight - bi.getHeight();
-
-        if (ww < 0 || hh < 0) {
-            if (ww < hh) {
-                max = maxWidth;
-                size = bi.getWidth();
-            } else {
-                max = maxHeight;
-                size = bi.getHeight();
-            }
-
-            if (size > 0 && size > max) {
-                double trans = 1.0 / (size / max);
-                AffineTransform tr = new AffineTransform();
-                tr.scale(trans, trans);
-                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BILINEAR);
-                Double w = bi.getWidth() * trans;
-                Double h = bi.getHeight() * trans;
-                bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
-                op.filter(bi, bi2);
-            }
-        } else {
-            return bi;
-        }
-
-//        System.out.println("Время на сжатие изображения - " + (System.currentTimeMillis() - start));
-
-        return bi2;
     }
 
     private void closeStreams() {
@@ -718,7 +646,6 @@ class VideoPlayerPanel extends JPanel {
         private void setBufferedImage(BufferedImage bufferedImage) {
             this.bufferedImage = bufferedImage;
         }
-
     }
 
     void setShowVideoNow(boolean showVideoNow) {
@@ -727,5 +654,9 @@ class VideoPlayerPanel extends JPanel {
 
     boolean isShowVideoNow() {
         return showVideoNow;
+    }
+
+    void setFullSize(boolean fullSize) {
+        partExportPanel.setVisible(fullSize);
     }
 }

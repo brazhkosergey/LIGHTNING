@@ -1,16 +1,4 @@
-
-import ui.camera.VideoCatcher;
-
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import javax.swing.plaf.LayerUI;
-import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.FilteredImageSource;
-import java.awt.image.ImageProducer;
-import java.awt.image.RGBImageFilter;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;

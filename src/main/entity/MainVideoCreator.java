@@ -1,11 +1,11 @@
 package entity;
 
+import ui.camera.CameraPanel;
 import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
 import com.xuggle.xuggler.ICodec;
 import entity.sound.SoundSaver;
 import org.apache.log4j.Logger;
-import ui.camera.CameraPanel;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;

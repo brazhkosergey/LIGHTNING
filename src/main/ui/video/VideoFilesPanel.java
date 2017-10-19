@@ -12,16 +12,15 @@ import java.util.*;
 import java.util.List;
 
 public class VideoFilesPanel extends JPanel {
-    private SimpleDateFormat dateFormat = new SimpleDateFormat();
-    private static VideoFilesPanel videoFilesPanel;
 
+    private SimpleDateFormat dateFormat = new SimpleDateFormat();
+
+    private static VideoFilesPanel videoFilesPanel;
     private static Map<Long, Map<Integer, File>> mapOfFiles;
     private static List<Long> listOfFilesNames;
 
     private JPanel mainPanel;
     private JScrollPane mainScrollPanel;
-//    private JPanel exportSettingPanel;
-    private JSlider slider;
 
     private VideoFilesPanel() {
         mapOfFiles = new HashMap<>();
@@ -42,8 +41,8 @@ public class VideoFilesPanel extends JPanel {
         mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainScrollPanel = new JScrollPane(mainPanel);
-        mainScrollPanel.setPreferredSize(new Dimension(1090, 530));//650+400 = 1100
-        this.add(mainScrollPanel);
+        this.setLayout(new BorderLayout());
+        this.add(mainScrollPanel,BorderLayout.CENTER);
     }
 
     public void showVideos() {
@@ -81,9 +80,7 @@ public class VideoFilesPanel extends JPanel {
 
         Collections.sort(listOfFilesNames);
 
-
         JPanel mainVideoPanel;
-
         JLabel numberLabel;
         JLabel dateVideoLabel;
         JLabel timeVideoLabel;
@@ -94,13 +91,12 @@ public class VideoFilesPanel extends JPanel {
         JButton deleteButton;
 
         for (int i = listOfFilesNames.size() - 1; i >= 0; i--) {
-
             Long dataLong = listOfFilesNames.get(i);
             Date date = new Date(dataLong);
             Map<Integer, File> filesVideoBytes = mapOfFiles.get(dataLong);
 
             int videoSize = 0;
-            for(Integer integer:filesVideoBytes.keySet()){
+            for (Integer integer : filesVideoBytes.keySet()) {
                 File file1 = filesVideoBytes.get(integer);
                 videoSize = file1.listFiles().length;
             }
@@ -118,13 +114,14 @@ public class VideoFilesPanel extends JPanel {
             timeVideoLabel.setFont(new Font(null, Font.BOLD, 15));
             timeVideoLabel.setForeground(new Color(46, 139, 87));
 
-            countFilesLabel = new JLabel("Файлів - "+countFiles);
+            countFilesLabel = new JLabel(MainFrame.getBundle().getString("filesword") + countFiles);
             countFilesLabel.setPreferredSize(new Dimension(60, 30));
 
-            countTimeLabel = new JLabel(videoSize+" секунд ");
-            countTimeLabel.setPreferredSize(new Dimension(150,30));
+            countTimeLabel = new JLabel(videoSize + MainFrame.getBundle().getString("seconds"));
+            countTimeLabel.setPreferredSize(new Dimension(150, 30));
+
             showVideoButton = new JButton(String.valueOf((char) 9658));//PLAY
-            int finalI = i+1;
+            int finalI = i + 1;
             showVideoButton.addActionListener((ActionEvent e) -> {
                 VideoPlayer.setShowVideoPlayer(true);
                 VideoPlayer videoPlayer = new VideoPlayer(filesVideoBytes, dateFormat.format(new Date(dataLong)), finalI);
@@ -136,10 +133,9 @@ public class VideoFilesPanel extends JPanel {
                 for (Integer integer : filesVideoBytes.keySet()) {
                     File folderToDel = filesVideoBytes.get(integer);
 
-                    String absolutePathToImage = folderToDel.getAbsolutePath().replace(".tmp",".jpg");
-
+                    String absolutePathToImage = folderToDel.getAbsolutePath().replace(".tmp", ".jpg");
                     File imageFile = new File(absolutePathToImage);
-                    if(imageFile.exists()) {
+                    if (imageFile.exists()) {
                         imageFile.delete();
                     }
 
@@ -154,8 +150,8 @@ public class VideoFilesPanel extends JPanel {
                     }
 
                     File[] filesToDel = folderToDel.listFiles();
-                    if(filesToDel!=null){
-                        for(File f:filesToDel){
+                    if (filesToDel != null) {
+                        for (File f : filesToDel) {
                             f.delete();
                         }
                     }
@@ -166,7 +162,7 @@ public class VideoFilesPanel extends JPanel {
 
             mainVideoPanel = new JPanel(new FlowLayout());
             mainVideoPanel.setBorder(BorderFactory.createEtchedBorder());
-            mainVideoPanel.setMaximumSize(new Dimension(1065,45));
+            mainVideoPanel.setMaximumSize(new Dimension(1065, 45));
             mainVideoPanel.add(numberLabel);
             mainVideoPanel.add(Box.createRigidArea(new Dimension(20, 30)));
             mainVideoPanel.add(dateVideoLabel);
