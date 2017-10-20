@@ -8,6 +8,8 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.LayerUI;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -44,30 +46,45 @@ class VideoPlayerPanel extends JPanel {
     private Thread showFrameThread;
     private Thread FPSThread;
 
+    private Map<Integer, Thread> buffImageThreadMap;
+
     private int FPS = 0;
     private JLabel totalSecondsLabel;
 
     private List<Integer> eventFrameNumberList;
     private Map<Integer, byte[]> framesBytesInBuffMap;
+    private Map<Integer, BufferedImage> framesImagesInBuffMap;
     private Deque<Integer> frameInBuffDeque;
     private int numberOfFrameFromStartVideo = 0;
     private int currentFrameNumber = 0;
 
     private boolean setPosition;
-    private boolean play;
     private boolean allFilesIsInBuff;
     private int startFrame;
     private int startFileNumber = 0;
 
+    private boolean fullSize;
+
+    int numberVideoPanel;
+
     VideoPlayerPanel(File folderWithTemporaryFiles, int numberVideoPanel) {
+        this.numberVideoPanel = numberVideoPanel;
         this.folder = folderWithTemporaryFiles;
         videoPlayerToShowOneVideo = new VideoPlayerToShowOneVideo();
         eventFrameNumberList = new ArrayList<>();
+        buffImageThreadMap = new HashMap<>();
+
+        for (int i = 0; i < 10; i++) {
+            buffImageThreadMap.put(i, null);
+        }
+
         framesBytesInBuffMap = new HashMap<>();
+        framesImagesInBuffMap = new HashMap<>();
         frameInBuffDeque = new ConcurrentLinkedDeque<>();
         filesList = new ArrayList<>();
 
         if (folderWithTemporaryFiles != null) {
+            setShowVideoNow(true);
             String name = folder.getName();
             int first = name.indexOf("[");
             int second = name.indexOf("]");
@@ -248,7 +265,7 @@ class VideoPlayerPanel extends JPanel {
                 if (startFrame < 1 || endFrameInt < 1) {
                     continueSave = false;
                     informPartExportLabel.setText(MainFrame.getBundle().getString("secondinformvideoplayerlabel")
-                            + startFrame +MainFrame.getBundle().getString("thirdinformvideoplayerlabel") + endFrameInt + "<hr></html>");
+                            + startFrame + MainFrame.getBundle().getString("thirdinformvideoplayerlabel") + endFrameInt + "<hr></html>");
                 }
 
                 if (endFrameInt > totalCountFrames || endFrameInt > totalCountFrames) {
@@ -353,7 +370,6 @@ class VideoPlayerPanel extends JPanel {
         exportPanel.add(totalFrameLabel);
         exportPanel.add(totalSecondsLabel);
 
-
         totalExportPanel.add(exportPanel);
         totalExportPanel.add(partExportPanel);
 
@@ -371,6 +387,8 @@ class VideoPlayerPanel extends JPanel {
     }
 
     void showFrameNumber(int partNumber, int currentFramePositionPercent) {
+
+        System.out.println("Панель номер - " + numberVideoPanel);
         if (showFrameThread == null) {
             showFrameThread = new Thread(() -> {
                 Integer integer;
@@ -381,23 +399,34 @@ class VideoPlayerPanel extends JPanel {
                 }
                 double i = (double) currentFramePositionPercent / 100000;
                 int frameToShowNumber = (int) (i * integer) + 1;
-                if (framesBytesInBuffMap.size() > 0) {
+
+                if (frameInBuffDeque.size() > 0) {
                     if (frameToShowNumber != currentFrameNumber) {
-                        if (framesBytesInBuffMap.containsKey(frameToShowNumber)) {
-                            byte[] bytes = framesBytesInBuffMap.get(frameToShowNumber);
-                            BufferedImage image = readImage(bytes);
+                        if (framesImagesInBuffMap.containsKey(frameToShowNumber) || framesBytesInBuffMap.containsKey(frameToShowNumber)) {
+                            BufferedImage image;
+                            if (framesImagesInBuffMap.containsKey(frameToShowNumber)) {
+                                image = framesImagesInBuffMap.get(frameToShowNumber);
+                            } else {
+                                byte[] bytes = framesBytesInBuffMap.get(frameToShowNumber);
+                                image = readImage(bytes);
+                            }
+
                             if (image != null) {
-                                videoPlayerToShowOneVideo.setBufferedImage(VideoCatcher.processImage(image, videoPanel.getWidth(), videoPanel.getHeight()));
+                                videoPlayerToShowOneVideo.setBufferedImage(processImage(image, videoPanel.getWidth(), videoPanel.getHeight()));
                                 videoPlayerToShowOneVideo.repaint();
                                 currentFrameNumber = frameToShowNumber;
-
                                 FPS++;
                                 setCurrentFrameNumber(currentFrameNumber);
                                 try {
                                     Integer first = frameInBuffDeque.getFirst();
-                                    if (framesBytesInBuffMap.size() > 999 && (first - frameToShowNumber) < 500) {
+                                    if (frameInBuffDeque.size() > 999 && (first - frameToShowNumber) < 500) {
                                         Integer last = frameInBuffDeque.pollLast();
-                                        framesBytesInBuffMap.remove(last);
+                                        if (framesBytesInBuffMap.containsKey(last)) {
+                                            framesBytesInBuffMap.remove(last);
+                                        }
+                                        if (framesImagesInBuffMap.containsKey(last)) {
+                                            framesImagesInBuffMap.remove(last);
+                                        }
                                     }
                                 } catch (Exception ignored) {
                                 }
@@ -415,16 +444,52 @@ class VideoPlayerPanel extends JPanel {
     }
 
     private void createThread() {
-        FPSThread = new Thread(() -> {
-            while (VideoPlayer.isShowVideoPlayer()) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
 
-                totalSecondsLabel.setText("FPS: " + FPS);
-                FPS = 0;
+        FPSThread = new Thread(() -> {
+            int countTen = 0;
+            while (VideoPlayer.isShowVideoPlayer()) {
+                if (showVideoNow) {
+                    if (countTen == 10) {
+                        totalSecondsLabel.setText("FPS: " + FPS);
+                        FPS = 0;
+                        countTen = 0;
+                        List<Integer> list = new ArrayList<>();
+
+                        try {
+                            for (Integer integer : framesImagesInBuffMap.keySet()) {
+                                if (integer < currentFrameNumber) {
+                                    list.add(integer);
+                                }
+                            }
+                        } catch (Exception ignored) {
+                        }
+
+                        for (Integer integer : list) {
+                            framesImagesInBuffMap.remove(integer);
+                        }
+
+//                    System.out.println("Изображений в буфере - " + framesImagesInBuffMap.size());
+//                    System.out.println("Байт в буфере - " + framesBytesInBuffMap.size());
+                    } else {
+                        ++countTen;
+
+                        if (fullSize) {
+                            buffImage(countTen);
+                        }
+
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         });
 
@@ -432,36 +497,38 @@ class VideoPlayerPanel extends JPanel {
             buffBytesThread = new Thread(() -> {
                 FPSThread.start();
                 while (VideoPlayer.isShowVideoPlayer()) {
-                    if (setPosition) {
-                        startFileNumber = 0;
-                        int totalFrames = 0;
-                        for (int i = 0; i < filesList.size(); i++) {
-                            File fileToRead = filesList.get(i);
-                            Integer integer = framesInFiles.get(fileToRead);
+                    if (showVideoNow) {
+                        if (setPosition) {
+                            startFileNumber = 0;
+                            int totalFrames = 0;
+                            for (int i = 0; i < filesList.size(); i++) {
+                                File fileToRead = filesList.get(i);
+                                Integer integer = framesInFiles.get(fileToRead);
 
-                            if (startFrame < integer) {
-                                numberOfFrameFromStartVideo = 0;
-                                framesBytesInBuffMap.clear();
-                                frameInBuffDeque.clear();
-                                break;
-                            } else {
-                                if (totalFrames + integer > startFrame) {
-                                    startFileNumber = i;
+                                if (startFrame < integer) {
+                                    numberOfFrameFromStartVideo = 0;
                                     framesBytesInBuffMap.clear();
+                                    framesImagesInBuffMap.clear();
                                     frameInBuffDeque.clear();
                                     break;
                                 } else {
-                                    totalFrames += integer;
+                                    if (totalFrames + integer > startFrame) {
+                                        startFileNumber = i;
+                                        framesBytesInBuffMap.clear();
+                                        framesImagesInBuffMap.clear();
+                                        frameInBuffDeque.clear();
+                                        break;
+                                    } else {
+                                        totalFrames += integer;
+                                    }
+                                    numberOfFrameFromStartVideo = totalFrames;
                                 }
-                                numberOfFrameFromStartVideo = totalFrames;
                             }
+                            closeStreams();
+                            setPosition = false;
+                            allFilesIsInBuff = false;
                         }
-                        closeStreams();
-                        setPosition = false;
-                        allFilesIsInBuff = false;
-                    }
 
-                    if (play) {
                         if (!allFilesIsInBuff) {
                             for (int i = startFileNumber; i < filesList.size(); i++) {
                                 if (setPosition) {
@@ -479,7 +546,9 @@ class VideoPlayerPanel extends JPanel {
                                     temporaryStream = new ByteArrayOutputStream(65535);
                                     while (true) {
                                         if (frameInBuffDeque.size() < 1000) {
+                                            long startReadByteTime = System.currentTimeMillis();
                                             readBytesImageToBuff();
+//                                        System.out.println("Время на считывание массива байт номер - " + numberOfFrameFromStartVideo + ". Равно - " + (System.currentTimeMillis() - startReadByteTime));
                                         } else {
                                             try {
                                                 Thread.sleep(1);
@@ -496,20 +565,149 @@ class VideoPlayerPanel extends JPanel {
                             }
                             allFilesIsInBuff = true;
                         }
-                    }
-
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                    } else {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             });
         }
     }
 
+    private void buffImage(int number) {
+        if (frameInBuffDeque.size() > 0) {
+            int frameNumberFromBuff;
+
+            frameNumberFromBuff = currentFrameNumber + 10;
+
+            int count = 0;
+
+            for (int i = frameNumberFromBuff; ; i += number) {
+                if (framesBytesInBuffMap.containsKey(i)) {
+                    if (!framesImagesInBuffMap.containsKey(i)) {
+                        for (Integer integer : buffImageThreadMap.keySet()) {
+                            if (buffImageThreadMap.get(integer) == null) {
+                                int finalK = i;
+                                Thread thread = new Thread(() -> {
+                                    long startThread = System.currentTimeMillis();
+                                    framesImagesInBuffMap.put(finalK, readImage(framesBytesInBuffMap.get(finalK)));
+                                    framesBytesInBuffMap.remove(finalK);
+                                    buffImageThreadMap.put(integer, null);
+//                                    System.out.println("Работа потока буферизатора - " + (System.currentTimeMillis() - startThread));
+                                });
+                                buffImageThreadMap.put(integer, thread);
+                                thread.start();
+                                break;
+                            }
+                        }
+                        count++;
+                    } else {
+                        i--;
+                    }
+                } else {
+                    count++;
+                }
+
+                if (count > 1) {
+                    break;
+                }
+            }
+        }
+    }
+
+    private void readBytesImageToBuff() {
+        while (!setPosition) {
+            t = x;
+            try {
+                x = bufferedInputStream.read();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            temporaryStream.write(x);
+            if (x == 216 && t == 255) {// начало изображения
+                temporaryStream.reset();
+                temporaryStream.write(t);
+                temporaryStream.write(x);
+            } else if (x == 217 && t == 255) {//конец изображения
+                byte[] imageBytes = temporaryStream.toByteArray();
+                framesBytesInBuffMap.put(++numberOfFrameFromStartVideo, imageBytes);
+                frameInBuffDeque.addFirst(numberOfFrameFromStartVideo);
+                return;
+            }
+            if (x < 0) {
+                return;
+            }
+        }
+    }
+
+    private BufferedImage readImage(byte[] imageBytes) {
+        long start = System.currentTimeMillis();
+        BufferedImage bufferedImage = null;
+        if (imageBytes != null) {
+            try {
+                ByteArrayInputStream inputImageStream = new ByteArrayInputStream(imageBytes);
+                ImageIO.setUseCache(false);
+                bufferedImage = ImageIO.read(inputImageStream);
+                inputImageStream.close();
+            } catch (Exception e) {
+                System.out.println("Битая картинка");
+            }
+        }
+//        System.out.println("Создаем изображение - " + (System.currentTimeMillis() - start));
+        return bufferedImage;
+    }
+
+    private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
+        int width;
+        int height;
+
+        if (maxWidth / 1.77 > maxHeight) {
+            height = maxHeight;
+            width = (int) (height * 1.77);
+        } else {
+
+            width = maxWidth;
+            height = (int) (width / 1.77);
+        }
+
+        BufferedImage bi2 = null;
+        double max;
+        int size;
+        int ww = width - bi.getWidth();
+        int hh = height - bi.getHeight();
+
+        if (ww < 0 || hh < 0) {
+            if (ww < hh) {
+                max = width;
+                size = bi.getWidth();
+            } else {
+                max = height;
+                size = bi.getHeight();
+            }
+
+            if (size > 0 && size > max) {
+                double trans = 1.0 / (size / max);
+                AffineTransform tr = new AffineTransform();
+                tr.scale(trans, trans);
+                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BICUBIC);
+                Double w = bi.getWidth() * trans;
+                Double h = bi.getHeight() * trans;
+                bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
+                op.filter(bi, bi2);
+            }
+        }
+
+        if (bi2 != null) {
+            return bi2;
+        } else {
+            return bi;
+        }
+    }
+
     void showVideo() {
-        play = true;
         videoPanel.removeAll();
         videoPanel.add(videoStreamLayer);
         videoPanel.validate();
@@ -523,33 +721,6 @@ class VideoPlayerPanel extends JPanel {
         videoPanel.add(informLabel);
         videoPanel.validate();
         videoPanel.repaint();
-    }
-
-    private void readBytesImageToBuff() {
-        while (true && !setPosition) {
-            t = x;
-            try {
-                x = bufferedInputStream.read();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            temporaryStream.write(x);
-            if (x == 216 && t == 255) {// начало изображения
-                temporaryStream.reset();
-
-                temporaryStream.write(t);
-                temporaryStream.write(x);
-            } else if (x == 217 && t == 255) {//конец изображения
-                byte[] imageBytes = temporaryStream.toByteArray();
-                framesBytesInBuffMap.put(++numberOfFrameFromStartVideo, imageBytes);
-                frameInBuffDeque.addFirst(numberOfFrameFromStartVideo);
-                return;
-            }
-            if (x < 0) {
-                return;
-            }
-        }
     }
 
     private void setCurrentFrameNumber(int currentFrameLabelText) {
@@ -575,26 +746,6 @@ class VideoPlayerPanel extends JPanel {
                 g.dispose();
             }
         }
-    }
-
-    private BufferedImage readImage(byte[] imageBytes) {
-        long start = System.currentTimeMillis();
-        BufferedImage bufferedImage = null;
-        if (imageBytes != null) {
-            try {
-                ByteArrayInputStream inputImageStream = new ByteArrayInputStream(imageBytes);
-                ImageIO.setUseCache(false);
-                bufferedImage = ImageIO.read(inputImageStream);
-                inputImageStream.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            System.out.println("Пустой массив");
-        }
-
-//        System.out.println("Времени затрачено на создание изображения - " + (System.currentTimeMillis() - start));
-        return bufferedImage;
     }
 
     private void closeStreams() {
@@ -629,7 +780,11 @@ class VideoPlayerPanel extends JPanel {
     }
 
     Thread getShowVideoThread() {
-        return buffBytesThread;
+        if (blockHaveVideo) {
+            return buffBytesThread;
+        } else {
+            return null;
+        }
     }
 
     class VideoPlayerToShowOneVideo extends JPanel {
@@ -658,6 +813,7 @@ class VideoPlayerPanel extends JPanel {
     }
 
     void setFullSize(boolean fullSize) {
+        this.fullSize = fullSize;
         partExportPanel.setVisible(fullSize);
     }
 }

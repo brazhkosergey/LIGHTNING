@@ -1,6 +1,7 @@
 package ui.camera;
 
 import entity.MainVideoCreator;
+import entity.VideoPlayer;
 import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 
@@ -96,12 +97,13 @@ public class VideoCatcher {
                         countDoNotShowImages = MainFrame.getShowImagePerSecond();
                         checkData = 0;
                     } else {
-                        byte[] bytes = null;
-                        if (imageDeque.size() > 0) {
+                        byte[] bytes;
+                        if (imageDeque.size() > 0 && !VideoPlayer.isShowVideoPlayer()) {
                             bytes = imageDeque.pollLast();
                             if (bytes != null) {
                                 ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
                                 try {
+                                    ImageIO.setUseCache(false);
                                     BufferedImage image = ImageIO.read(inputStream);
                                     inputStream.close();
                                     cameraPanel.setBufferedImage(findProgramEvent(processImage(image, cameraPanel.getWidth(),
@@ -268,7 +270,7 @@ public class VideoCatcher {
                 if (!restart && catchVideo) {
                     createInputStream();
                 } else {
-                    cameraPanel.getTitle().setTitle( MainFrame.getBundle().getString("restoreconnection"));
+                    cameraPanel.getTitle().setTitle(MainFrame.getBundle().getString("restoreconnection"));
                     cameraPanel.repaint();
                 }
             }

@@ -60,6 +60,13 @@ public class VideoCreator {
         eventsFramesNumber = new HashMap<>();
 
         timerThread = new Thread(() -> {
+
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             while (true) {
                 try {
                     fpsList.add(totalFPS);

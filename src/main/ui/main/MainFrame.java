@@ -61,7 +61,7 @@ public class MainFrame extends JFrame {
     public static Map<Integer, BufferedImage> imagesForBlock;
     public static Map<Integer, VideoCreator> creatorMap;
 
-    private static JLabel mainLabel = new JLabel("Головна");
+    private static JLabel mainLabel;
     private JLabel recordLabel;
     private static JLabel recordSecondsLabel;
 
@@ -138,6 +138,7 @@ public class MainFrame extends JFrame {
 
         bundle = ResourceBundle.getBundle("Labels");
 
+        mainLabel = new JLabel(bundle.getString("mainpage"));
         northPanel = new JPanel(new FlowLayout());
         northPanel.setPreferredSize(new Dimension(1110, 54));
 
@@ -216,6 +217,7 @@ public class MainFrame extends JFrame {
                     }
                 }
 
+                Runtime.getRuntime().gc();
                 long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
                 usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
                 usedMemoryLabel.repaint();

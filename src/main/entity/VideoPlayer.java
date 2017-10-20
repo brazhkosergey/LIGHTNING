@@ -130,7 +130,7 @@ public class VideoPlayer extends JPanel {
             }
 
             VideoPlayerPanel videoPlayer = new VideoPlayerPanel(folder, j);
-            videoPlayer.setShowVideoNow(true);
+//            videoPlayer.setShowVideoNow(true);
             videoPlayer.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
