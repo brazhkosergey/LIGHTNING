@@ -50,7 +50,7 @@ public class VideoPlayer extends JPanel {
         GridLayout mainVideoPaneLayout = new GridLayout(2, 2, 3, 3);
         mainVideoPane.setLayout(mainVideoPaneLayout);
 
-        JButton backButton = new JButton("BACK");
+        JButton backButton = new JButton(MainFrame.getBundle().getString("backbutton"));
         backButton.setFocusable(false);
         backButton.addActionListener((e) -> {
             if (fullSize) {
@@ -130,7 +130,6 @@ public class VideoPlayer extends JPanel {
             }
 
             VideoPlayerPanel videoPlayer = new VideoPlayerPanel(folder, j);
-//            videoPlayer.setShowVideoNow(true);
             videoPlayer.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -164,50 +163,56 @@ public class VideoPlayer extends JPanel {
 
         for (Integer integer : eventFrameNumberMap.keySet()) {
             int percent = integer * 1000 / totalCountFrames;
-            System.out.println(integer + " - кадр, процентов -" + percent);
             eventPercent.put(percent, eventFrameNumberMap.get(integer));
         }
 
         centralPane.add(mainVideoPane);
         this.add(centralPane, BorderLayout.CENTER);
 
-        JButton nextImage = new JButton("NEXT");
+        JButton nextImage = new JButton("+1");
+        nextImage.setFont(new Font(null,Font.BOLD,17));
         nextImage.setFocusable(false);
         nextImage.addActionListener((e) -> {
             nextFrame();
         });
 
-        JButton previousImage = new JButton("PREV");
+        JButton previousImage = new JButton("-1");
+        previousImage.setFont(new Font(null,Font.BOLD,17));
         previousImage.setFocusable(false);
         previousImage.addActionListener((e) -> {
             prewFrame();
         });
 
-        JButton slowerButton = new JButton("<<");
+        JButton slowerButton = new JButton(String.valueOf((char) 9194));//⏪
+        slowerButton.setFont(new Font(null,Font.BOLD,17));
         slowerButton.setFocusable(false);
         slowerButton.addActionListener((e) -> {
             slow();
         });
 
-        JButton fasterButton = new JButton(">>");
+        JButton fasterButton = new JButton(String.valueOf((char) 9193));
+        fasterButton.setFont(new Font(null,Font.BOLD,17));
         fasterButton.setFocusable(false);
         fasterButton.addActionListener((e) -> {
             fast();
         });
 
-        JButton playButton = new JButton("PLAY");
+        JButton playButton = new JButton(String.valueOf((char) 9205));
+        playButton.setFont(new Font(null,Font.BOLD,17));
         playButton.setFocusable(true);
         playButton.addActionListener(actionEvent -> {
             play();
         });
 
-        JButton pauseButton = new JButton("PAUSE");
+        JButton pauseButton = new JButton(String.valueOf((char) 9208));
+        pauseButton.setFont(new Font(null,Font.BOLD,17));
         pauseButton.setFocusable(false);
         pauseButton.addActionListener((e) -> {
             pause();
         });
 
-        JButton stopButton = new JButton("STOP");
+        JButton stopButton = new JButton(String.valueOf((char) 9209));
+        stopButton.setFont(new Font(null,Font.BOLD,17));
         stopButton.setFocusable(false);
         stopButton.addActionListener(actionEvent -> {
             stop();
@@ -285,7 +290,7 @@ public class VideoPlayer extends JPanel {
         sliderPanel.add(sliderForVideo, BorderLayout.NORTH);//85 - 50
         sliderPanel.add(buttonsPane, BorderLayout.CENTER);
 
-        JPanel southPane = new JPanel(new BorderLayout(2,2));
+        JPanel southPane = new JPanel(new BorderLayout(2, 2));
         southPane.add(backButton, BorderLayout.WEST);//85 - 50
         southPane.add(sliderPanel, BorderLayout.CENTER);
 
@@ -316,6 +321,7 @@ public class VideoPlayer extends JPanel {
                 }
             }
         });
+        stopPlayingWhileRecordingThread.setName("Stop Playing While Recording Thread VIDEO PLAYER ");
         stopPlayingWhileRecordingThread.start();
         for (Thread thread : threadList) {
             if (thread != null) {
@@ -340,9 +346,7 @@ public class VideoPlayer extends JPanel {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
                     frameNumber++;
-
                     if (frameNumber == totalCountFrames) {
                         stop();
                     }
@@ -361,6 +365,7 @@ public class VideoPlayer extends JPanel {
                 }
             }
         });
+        timer.setName("Video Player  VIDEO PLAYER  Timer Thread  VIDEO PLAYER ");
         timer.start();
 
         Thread videoShowThread = new Thread(() -> {
@@ -415,6 +420,7 @@ public class VideoPlayer extends JPanel {
             }
             stop();
         });
+        videoShowThread.setName("Video Player MainShow Thread  VIDEO PLAYER ");
         videoShowThread.start();
     }
 

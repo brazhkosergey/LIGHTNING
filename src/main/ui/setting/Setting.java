@@ -21,6 +21,7 @@ public class Setting extends JPanel {
     private JPanel allSettingPane;
     private JPanel passwordPane;
     private JLabel wrongPasswordLabel;
+    private JTextField passwordTextField;
 
     private Setting() {
 //        this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
@@ -151,7 +152,6 @@ public class Setting extends JPanel {
 
         JPanel countImageToSHowPanel = new JPanel(new FlowLayout());
         JLabel countImagesToShowLabel = new JLabel(MainFrame.getBundle().getString("showframescountlabel"));
-
 
         JComboBox<Integer> comboBox = new JComboBox<>();
         comboBox.addItem(1);
@@ -287,15 +287,15 @@ public class Setting extends JPanel {
 
         passwordPane = new JPanel(new FlowLayout());
         passwordPane.setPreferredSize(new Dimension(1000, 500));
+        passwordPane.setBackground(Color.LIGHT_GRAY);
         JLabel passwordLabel = new JLabel(MainFrame.getBundle().getString("editpasswordlabel"));
-
 
         wrongPasswordLabel = new JLabel(MainFrame.getBundle().getString("wrongpasswordlabel"));
         wrongPasswordLabel.setHorizontalAlignment(SwingConstants.CENTER);
         wrongPasswordLabel.setPreferredSize(new Dimension(900, 30));
         wrongPasswordLabel.setVisible(false);
 
-        JTextField passwordTextField = new JTextField();
+        passwordTextField = new JTextField();
         passwordTextField.setPreferredSize(new Dimension(150, 30));
         JButton passwordButton = new JButton(MainFrame.getBundle().getString("editpasswordbutton"));
         passwordButton.setPreferredSize(new Dimension(150, 30));
@@ -316,11 +316,13 @@ public class Setting extends JPanel {
         passwordPane.add(wrongPasswordLabel);
         allSettingPane.setVisible(false);
 
+        this.setBackground(Color.LIGHT_GRAY);
         this.add(passwordPane);
         this.add(allSettingPane);
     }
 
     public void reSetPassword() {
+        passwordTextField.setText("");
         allSettingPane.setVisible(false);
         passwordPane.setVisible(true);
         wrongPasswordLabel.setVisible(false);

@@ -42,7 +42,9 @@ public class VideoFilesPanel extends JPanel {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainScrollPanel = new JScrollPane(mainPanel);
         this.setLayout(new BorderLayout());
-        this.add(mainScrollPanel,BorderLayout.CENTER);
+//        this.add(mainScrollPanel,BorderLayout.CENTER);
+//        this.setLayout(new FlowLayout());
+        this.add(mainScrollPanel);
     }
 
     public void showVideos() {
@@ -121,6 +123,7 @@ public class VideoFilesPanel extends JPanel {
             countTimeLabel.setPreferredSize(new Dimension(150, 30));
 
             showVideoButton = new JButton(String.valueOf((char) 9658));//PLAY
+            showVideoButton.setFont(new Font(null,Font.BOLD,17));
             int finalI = i + 1;
             showVideoButton.addActionListener((ActionEvent e) -> {
                 VideoPlayer.setShowVideoPlayer(true);
@@ -128,7 +131,8 @@ public class VideoFilesPanel extends JPanel {
                 MainFrame.getMainFrame().setCentralPanel(videoPlayer);
             });
 
-            deleteButton = new JButton("DEL");
+            deleteButton = new JButton("<html>&#10006</html>");
+            deleteButton.setFont(new Font(null,Font.BOLD,17));
             deleteButton.addActionListener((e) -> {
                 for (Integer integer : filesVideoBytes.keySet()) {
                     File folderToDel = filesVideoBytes.get(integer);
@@ -162,7 +166,7 @@ public class VideoFilesPanel extends JPanel {
 
             mainVideoPanel = new JPanel(new FlowLayout());
             mainVideoPanel.setBorder(BorderFactory.createEtchedBorder());
-            mainVideoPanel.setMaximumSize(new Dimension(1065, 45));
+            mainVideoPanel.setMaximumSize(new Dimension(1100, 45));
             mainVideoPanel.add(numberLabel);
             mainVideoPanel.add(Box.createRigidArea(new Dimension(20, 30)));
             mainVideoPanel.add(dateVideoLabel);

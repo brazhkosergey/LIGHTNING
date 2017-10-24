@@ -16,7 +16,6 @@ public class SoundSaver extends Thread {
     private DatagramSocket RTPsocket; //socket to be used to send and receive UDP packets
     private static int RTP_RCV_PORT = 25002; //port where the client will receive the RTP packets 25000
 
-
     private byte[] buf; //buffer used to store data received from the server
 
     private final static int INIT = 0;
@@ -35,30 +34,23 @@ public class SoundSaver extends Thread {
     private final static String CRLF = "\r\n";
 
     private int audioFPS = 0;
-//    private int fpsNotZero;
 
     private boolean hearSound;
     private boolean playSound;
 
     private int sizeAudioSecond;
-//    private int countHaveNotDataToRead;
     private SourceDataLine clipSDL = null;
     private boolean stopSaveAudio;
     private boolean startSaveAudio;
-    private boolean delBytes;
 
     private boolean connect = false;
 
     private Deque<Long> deque;
     private Deque<Integer> FPSDeque;
     private Map<Long, byte[]> mainMapSaveFile;
-    private List<Long> list;
 
     private Thread mainThread;
     private Thread updateDataThread;
-    private Thread playThread;
-
-
 
     public SoundSaver(String addressName) {
         try {
@@ -85,9 +77,6 @@ public class SoundSaver extends Thread {
                 mainMapSaveFile = new HashMap<>();
                 FPSDeque = new ConcurrentLinkedDeque<>();
 
-
-                list = new ArrayList<>();
-
                 hearSound = true;
                 mainThread = new Thread(() -> {
                     while (hearSound) {
@@ -103,7 +92,6 @@ public class SoundSaver extends Thread {
                             long l = System.currentTimeMillis();
                             deque.addFirst(l);
                             map.put(l, bytes);
-                            list.add(l);
                         } catch (InterruptedIOException iioe) {
 //                            countHaveNotDataToRead++;
                         } catch (IOException ioe) {
@@ -132,9 +120,9 @@ public class SoundSaver extends Thread {
 //                        }
                         if (!startSaveAudio) {
                             sizeAudioSecond = MainFrame.getTimeToSave();
-                            while (FPSDeque.size()>sizeAudioSecond){
+                            while (FPSDeque.size() > sizeAudioSecond) {
                                 Integer integer = FPSDeque.pollLast();
-                                for(int j = 0;j<integer;j++){
+                                for (int j = 0; j < integer; j++) {
                                     Long aLong = deque.pollLast();
                                     map.remove(aLong);
                                 }
@@ -155,7 +143,7 @@ public class SoundSaver extends Thread {
                                 int size = FPSDeque.size();
                                 for (int j = 0; j < size; j++) {
                                     Integer integer = FPSDeque.pollLast();
-                                    for(int k=0;k<integer;k++){
+                                    for (int k = 0; k < integer; k++) {
                                         Long timeLong = deque.pollLast();
                                         if (map.containsKey(timeLong)) {
                                             byte[] bytes1 = map.get(timeLong);
@@ -194,110 +182,6 @@ public class SoundSaver extends Thread {
                 updateDataThread.setName("Update Audio Thread");
                 updateDataThread.setPriority(MIN_PRIORITY);
 
-                playThread = new Thread(() -> {
-                    while (true) {
-                        if (playSound) {
-                            ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(35535);
-
-//                            Collections.sort(list);
-                            for (int j = 0; j < list.size(); j++) {
-                                Long time = list.get(j);
-                                if (map.containsKey(time)) {
-                                    byte[] bytes = map.get(time);
-                                    if (bytes != null) {
-                                        try {
-                                            temporaryStream.write(bytes);
-                                        } catch (IOException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                }
-                            }
-
-                            list.clear();
-
-                            if (clipSDL != null) {
-                                byte[] bytes = temporaryStream.toByteArray();
-                                clipSDL.write(bytes, 0, bytes.length);
-                                try {
-                                    temporaryStream.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-//                           List<Long> longList = new ArrayList<>();
-//                           int count=0;
-//                           for(Long l:deque){
-//                               count++;
-//                               longList.add(l);
-//                               if(count>fpsNotZero){
-//                                   break;
-//                               }
-//                           }
-//
-//                           Collections.sort(longList);
-//
-//                           int size = 0;
-//
-//                           for (Long integer : map.keySet()) {
-//                               byte[] bytes = map.get(integer);
-//                               size = size + bytes.length;
-//                           }
-//
-//                           ByteArrayOutputStream temporaryStream = new ByteArrayOutputStream(35535);
-//                           for (Long l:longList) {
-//                               byte[] bytes = map.get(l);
-//                               if(bytes!=null){
-//                                   try {
-//                                       temporaryStream.write(bytes);
-//                                   } catch (IOException e1) {
-//                                       e1.printStackTrace();
-//                                   }
-//                               }
-//                           }
-//
-//                           System.out.println("Количество байт - " + size);
-//                           ByteArrayInputStream interleavedStream = new ByteArrayInputStream(temporaryStream.toByteArray());
-////                           final AudioFormat audioFormat = new AudioFormat(
-////                                   AudioFormat.Encoding.ULAW,
-////                                   8000f, // sample rate - you didn't specify, 44.1k is typical
-////                                   8,      // how many bits per sample, i.e. per value in your byte array
-////                                   1,      // you want two channels (stereo)
-////                                   1,      // number of bytes per frame (frame == a sample for each channel)
-////                                   8000f, // frame rate
-////                                   true);  // byte order
-//
-//                           final AudioFormat audioFormat = new AudioFormat(8000.0f,8,1,true,true);
-//             //            final int numberOfFrames = size/2; // one frame contains both a left and a right sample
-//                           final int numberOfFrames = size; // one frame contains both a left and a right sample
-//                           final AudioInputStream audioStream = new AudioInputStream(interleavedStream, audioFormat, numberOfFrames);
-//
-//                           if(clip.isActive()){
-//                               clip.stop();
-//                           }
-//
-//                           try {
-//                               clip.open(audioStream);
-//                           } catch (LineUnavailableException e) {
-//                               e.printStackTrace();
-//                           } catch (IOException e) {
-//                               e.printStackTrace();
-//                           }
-//
-//                           clip.setFramePosition(0); //устанавливаем указатель на старт
-//                           clip.start(); //Поехали!!!
-//
-////                           clip.stop(); //Останавливаем
-////                           clip.close(); //Закрываем
-//                       }
-//                       try {
-//                           Thread.sleep(1000);
-//                       } catch (InterruptedException e) {
-//                           e.printStackTrace();
-//                       }
-                        }
-                    }
-                });
                 state = INIT;
                 try {
                     RTPsocket = new DatagramSocket(RTP_RCV_PORT);
@@ -313,11 +197,11 @@ public class SoundSaver extends Thread {
         }
     }
 
-    public void startSaveAudio(){
+    public void startSaveAudio() {
         startSaveAudio = true;
     }
 
-    public void stopSaveAudio(){
+    public void stopSaveAudio() {
         stopSaveAudio = true;
     }
 
@@ -344,7 +228,6 @@ public class SoundSaver extends Thread {
                 state = PLAYING;
                 mainThread.start();
                 updateDataThread.start();
-                playAudio();
             }
         }
     }
@@ -358,41 +241,6 @@ public class SoundSaver extends Thread {
         }
     }
 
-    private void playAudio() {
-
-        try {
-////            final AudioFormat audioFormat = new AudioFormat(
-////                    AudioFormat.Encoding.ULAW,
-////                    8000f,// sample rate - you didn't specify, 44.1k is typical
-////                    8,// how many bits per sample, i.e. per value in your byte array
-////                    2,     // you want two channels (stereo)
-////                    1,     // number of bytes per frame (frame == a sample for each channel)
-////                    8000f,// frame rate
-////                    true);// byte ordzer
-//
-////            AudioFormat audioFormat = new AudioFormat(32000.0f,
-//////                (int) IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
-////                    (int) IAudioSamples.findSampleBitDepth(IAudioSamples.Format.FMT_DBLP),
-////                    1,
-////                    true, /* xuggler defaults to signed 16 bit samples */
-////                    false);
-//
-//            AudioFormat audioFormat = new AudioFormat(8000.0f, 8, 1, false, true);
-//            DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-//            clipSDL = (SourceDataLine) AudioSystem.getLine(info);
-//
-//
-////            clipSDL = AudioSystem.getSourceDataLine(audioFormat);
-//            clipSDL.open(audioFormat);
-//            clipSDL.start();
-//            playSound = true;
-//            playThread.start();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void saveSoundToFile(Map<Long, byte[]> mainMapSaveFile) {
         MainVideoCreator.saveAudioBytes(mainMapSaveFile);
     }
@@ -400,34 +248,25 @@ public class SoundSaver extends Thread {
     private int parse_server_response() {
         int reply_code = 0;
         try {
-//            System.out.println("===============================================");
             String StatusLine = RTSPBufferedReader.readLine();
             while (!StatusLine.contains("RTSP/1.0")) {
-//                System.out.println("Status Line - " + StatusLine);
                 StatusLine = RTSPBufferedReader.readLine();
             }
 
-//            System.out.println("Status Line - " + StatusLine);
             StringTokenizer tokens = new StringTokenizer(StatusLine);
             tokens.nextToken(); //skip over the RTSP version
             try {
                 reply_code = Integer.parseInt(tokens.nextToken());
-//                System.out.println("Reply CODE:" + reply_code);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             if (reply_code == 200) {
                 String SeqNumLine = RTSPBufferedReader.readLine();
-//                System.out.println(SeqNumLine);
 
                 String SessionLine = RTSPBufferedReader.readLine();
-//                System.out.println("Session line-" + SessionLine);
 
                 String transportLine = RTSPBufferedReader.readLine();
-//                System.out.println(transportLine);
                 String stringDate = RTSPBufferedReader.readLine();
-//                System.out.println(stringDate);
-//                System.out.println("Session line is: " + SessionLine);
 
                 tokens = new StringTokenizer(SessionLine);
                 tokens.nextToken();//skip over the RTSP version

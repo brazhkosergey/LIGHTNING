@@ -48,10 +48,9 @@ public class MainFrame extends JFrame {
     private static JLabel photosensitivityLabel;
     private static JLabel changeWhiteLabel;
 
-
-    private JLabel usedMemoryLabel;
+    //    private JLabel usedMemoryLabel;
     private JLabel alarmServerLabel;
-    private JLabel maxMemoryLabel;
+    //    private JLabel maxMemoryLabel;
     private static int maxMemory;
     private static JLabel informLabel;
 
@@ -66,7 +65,6 @@ public class MainFrame extends JFrame {
     private static JLabel recordSecondsLabel;
 
     public static AddressSaver addressSaver;
-
     private static int opacitySetting;
     private static int timeToSave = 30;
     private static int percentDiffWhite = 10;
@@ -96,6 +94,7 @@ public class MainFrame extends JFrame {
         this.setMinimumSize(new Dimension(1150, 700));
 
         mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.LIGHT_GRAY);
         mainPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
         JPanel languageSelectPanel = new JPanel(new BorderLayout(5, 5));
@@ -137,15 +136,17 @@ public class MainFrame extends JFrame {
     private void startApplication() {
 
         bundle = ResourceBundle.getBundle("Labels");
-
         mainLabel = new JLabel(bundle.getString("mainpage"));
         northPanel = new JPanel(new FlowLayout());
+        northPanel.setBackground(Color.LIGHT_GRAY);
         northPanel.setPreferredSize(new Dimension(1110, 54));
 
         centralPanel = new JPanel();
-        centralPanel.setBorder(BorderFactory.createEtchedBorder());
+        centralPanel.setBackground(Color.LIGHT_GRAY);
+//        centralPanel.setBorder(BorderFactory.createEtchedBorder());
 
         southPanel = new JPanel();
+        southPanel.setBackground(Color.LIGHT_GRAY);
         southPanel.setPreferredSize(new Dimension(1110, 45));
 
         mainPanel.add(northPanel, BorderLayout.NORTH);
@@ -156,28 +157,39 @@ public class MainFrame extends JFrame {
         videoFilesPanel = VideoFilesPanel.getVideoFilesPanel();
 
         informLabel = new JLabel();
-        informLabel.setPreferredSize(new Dimension(170, 30));
+        informLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        informLabel.setPreferredSize(new Dimension(270, 30));
         informLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         opacityLabel = new JLabel(bundle.getString("opacitycount") + "30%");
-        opacityLabel.setPreferredSize(new Dimension(120, 30));
+        opacityLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        opacityLabel.setPreferredSize(new Dimension(150, 30));
 
         showImagesLabel = new JLabel(bundle.getString("showframescountlabel") + " 1 FPS");
-        showImagesLabel.setPreferredSize(new Dimension(120, 30));
+        showImagesLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        showImagesLabel.setPreferredSize(new Dimension(150, 30));
 
         countSecondsToSaveVideo = new JLabel(bundle.getString("savesecondcount") + timeToSave + bundle.getString("seconds"));
+        countSecondsToSaveVideo.setHorizontalAlignment(SwingConstants.CENTER);
         countSecondsToSaveVideo.setPreferredSize(new Dimension(120, 30));
 
         photosensitivityLabel = new JLabel(bundle.getString("photosensitivity") + colorLightNumber);
 
+        photosensitivityLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        photosensitivityLabel.setPreferredSize(new Dimension(180, 30));
         changeWhiteLabel = new JLabel(bundle.getString("lightening") + percentDiffWhite + "%");
+        changeWhiteLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        usedMemoryLabel = new JLabel();
-        usedMemoryLabel.setPreferredSize(new Dimension(80, 30));
-        maxMemoryLabel = new JLabel();
-        maxMemoryLabel.setText("Total:" + maxMemory + " mb");
+//        usedMemoryLabel = new JLabel();
+//        usedMemoryLabel.setPreferredSize(new Dimension(80, 30));
+//        usedMemoryLabel.setHorizontalTextPosition(SwingConstants.CENTER);
+//        maxMemoryLabel = new JLabel();
+//        maxMemoryLabel.setText("Total:" + maxMemory + " mb");
+//        maxMemoryLabel.setHorizontalTextPosition(SwingConstants.CENTER);
+
         alarmServerLabel = new JLabel();
-        alarmServerLabel.setPreferredSize(new Dimension(65, 30));
+        alarmServerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        alarmServerLabel.setPreferredSize(new Dimension(100, 30));
 
         addressSaver = AddressSaver.restorePasswords();
         buildMainWindow();
@@ -219,8 +231,8 @@ public class MainFrame extends JFrame {
 
                 Runtime.getRuntime().gc();
                 long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
-                usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
-                usedMemoryLabel.repaint();
+//                usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
+//                usedMemoryLabel.repaint();
 
                 if (writeLogs > 60) {
                     log.info("Используем памяти " + usedMemory + " mb");
@@ -244,6 +256,15 @@ public class MainFrame extends JFrame {
                         e.printStackTrace();
                     }
                 }
+//                List<String> runningThreads = getRunningThreads();
+//
+//                System.out.println("============================================");
+//                System.out.println("Запущено потоков - " + runningThreads.size());
+//                for(String s:runningThreads){
+//                    System.out.println(s);
+//                }
+//                System.out.println("============================================");
+//                System.out.println("Запущено потоков - " + runningThreads.size());
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
@@ -308,14 +329,18 @@ public class MainFrame extends JFrame {
         ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
         ThreadGroup parent;
         while ((parent = threadGroup.getParent()) != null) {
-            if (threadGroup != null) {
-                threadGroup = parent;
-                Thread[] threadList = new Thread[threadGroup.activeCount()];
-                threadGroup.enumerate(threadList);
-                for (Thread thread : threadList)
-                    threads.add(new StringBuilder().append(thread.getThreadGroup().getName())
-                            .append("::").append(thread.getName()).append("::PRIORITY:-")
-                            .append(thread.getPriority()).toString());
+            try {
+                if (threadGroup != null) {
+                    threadGroup = parent;
+                    Thread[] threadList = new Thread[threadGroup.activeCount()];
+                    threadGroup.enumerate(threadList);
+                    for (Thread thread : threadList)
+                        threads.add(new StringBuilder().append(thread.getThreadGroup().getName())
+                                .append("::").append(thread.getName()).append("::PRIORITY:-")
+                                .append(thread.getPriority()).toString());
+                }
+            } catch (Exception e) {
+
             }
         }
         return threads;
@@ -399,6 +424,7 @@ public class MainFrame extends JFrame {
         mainLabel.setPreferredSize(new Dimension(120, 30));
 
         JPanel informPane = new JPanel(new FlowLayout());
+        informPane.setBackground(Color.LIGHT_GRAY);
         recordLabel = new JLabel(String.valueOf((char) 8623));
         recordLabel.setFont(new Font(null, Font.BOLD, 23));
         recordLabel.setForeground(Color.DARK_GRAY);
@@ -548,9 +574,9 @@ public class MainFrame extends JFrame {
         southPanel.add(photosensitivityLabel);
         southPanel.add(changeWhiteLabel);
         southPanel.add(informLabel);
-        southPanel.add(new JLabel("Used:"));
-        southPanel.add(usedMemoryLabel);
-        southPanel.add(maxMemoryLabel);
+//        southPanel.add(new JLabel("Used:"));
+//        southPanel.add(usedMemoryLabel);
+//        southPanel.add(maxMemoryLabel);
     }
 
     public static void removeImageForBlock(int number) {
@@ -666,7 +692,7 @@ public class MainFrame extends JFrame {
     }
 
     private void setAlarmServerLabelColor(int port, Color color) {
-        alarmServerLabel.setText("PORT:" + port);
+        alarmServerLabel.setText(bundle.getString("portstring") + port);
         alarmServerLabel.setForeground(color);
         alarmServerLabel.repaint();
     }

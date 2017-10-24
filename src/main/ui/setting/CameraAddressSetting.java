@@ -23,13 +23,15 @@ public class CameraAddressSetting extends JPanel {
     private Map<Integer, JLabel> labelMap;
 
     private CameraAddressSetting() {
-        this.setPreferredSize(new Dimension(1100, 540));
+//        this.setPreferredSize(new Dimension(1110, 540));
         textFieldsIpAddressMap = new HashMap<>();
         textFieldsUsernameMap = new HashMap<>();
         textFieldsPasswordMap = new HashMap<>();
         labelMap = new HashMap<>();
         buildCameraSetting();
-        this.setLayout(new BorderLayout());
+//        this.setLayout(new BorderLayout());
+        this.setLayout(new FlowLayout());
+        this.setBackground(Color.LIGHT_GRAY);
         this.add(mainCameraSettingPanel, BorderLayout.CENTER);
     }
 
@@ -51,6 +53,8 @@ public class CameraAddressSetting extends JPanel {
             MainFrame.getMainFrame().showAllCameras();
         });
         mainCameraSettingPanel = new JPanel();
+//        mainCameraSettingPanel.setPreferredSize(new Dimension(1110,530));
+        mainCameraSettingPanel.setBorder(BorderFactory.createEtchedBorder());
         mainCameraSettingPanel.setLayout(new BoxLayout(mainCameraSettingPanel, BoxLayout.Y_AXIS));
         for (int i = 1; i < 5; i++) {
             JPanel blockPanel = new JPanel(new FlowLayout());
@@ -190,20 +194,21 @@ public class CameraAddressSetting extends JPanel {
             titleMainSetting.setTitleJustification(TitledBorder.CENTER);
             titleMainSetting.setTitleFont((new Font(null, Font.BOLD, 14)));
             titleMainSetting.setTitleColor(new Color(46, 139, 87));
-            titleMainSetting.setBorder(new LineBorder(new Color(46, 139, 87), 1, true));
+            titleMainSetting.setBorder(BorderFactory.createEtchedBorder());
             blockPanel.setBorder(titleMainSetting);
 
             blockPanel.add(inputPanel);
-            blockPanel.setMaximumSize(new Dimension(1100, 80));
+            blockPanel.setMaximumSize(new Dimension(1110, 110));
             mainCameraSettingPanel.add(blockPanel);
 
             if (i == 4) {
                 JPanel audioPane = new JPanel(new FlowLayout());
+                audioPane.setMaximumSize(new Dimension(1110, 110));
                 TitledBorder titleAudio = BorderFactory.createTitledBorder(MainFrame.getBundle().getString("soundtitle"));
                 titleAudio.setTitleJustification(TitledBorder.CENTER);
                 titleAudio.setTitleFont((new Font(null, Font.BOLD, 14)));
                 titleAudio.setTitleColor(new Color(46, 139, 87));
-                titleAudio.setBorder(new LineBorder(new Color(46, 139, 87), 1, true));
+                titleAudio.setBorder(BorderFactory.createEtchedBorder());
                 audioPane.setBorder(titleAudio);
                 JLabel addressAudioLabel = new JLabel(MainFrame.getBundle().getString("rtspaddress"));
                 JTextField addressAudioTextField = new JTextField();

@@ -39,6 +39,7 @@ class VideoPlayerPanel extends JPanel {
 
     private JPanel videoPanel;
     private JLabel currentFrameLabel;
+    private JLabel totalFPSLabel;
 
     private JPanel partExportPanel;
 
@@ -49,7 +50,7 @@ class VideoPlayerPanel extends JPanel {
     private Map<Integer, Thread> buffImageThreadMap;
 
     private int FPS = 0;
-    private JLabel totalSecondsLabel;
+    private JLabel currentFPSLabel;
 
     private List<Integer> eventFrameNumberList;
     private Map<Integer, byte[]> framesBytesInBuffMap;
@@ -65,7 +66,7 @@ class VideoPlayerPanel extends JPanel {
 
     private boolean fullSize;
 
-    int numberVideoPanel;
+    private int numberVideoPanel;
 
     VideoPlayerPanel(File folderWithTemporaryFiles, int numberVideoPanel) {
         this.numberVideoPanel = numberVideoPanel;
@@ -83,6 +84,7 @@ class VideoPlayerPanel extends JPanel {
         frameInBuffDeque = new ConcurrentLinkedDeque<>();
         filesList = new ArrayList<>();
 
+        int totalFPSForFile = 0;
         if (folderWithTemporaryFiles != null) {
             setShowVideoNow(true);
             String name = folder.getName();
@@ -109,10 +111,15 @@ class VideoPlayerPanel extends JPanel {
                     }
                 }
             }
-
             Collections.sort(eventFrameNumberList);
-
             framesInFiles = new HashMap<>();
+            String[] split1 = name.split("-");
+            String[] fpsSplit = split1[1].split("\\.");
+            int i1 = fpsSplit[0].indexOf(")");
+            String totalFpsString = fpsSplit[0].substring(2, i1);
+            totalFPSForFile = Integer.parseInt(totalFpsString);
+
+
             File[] files = folder.listFiles();
             if (files != null) {
                 for (File file : files) {
@@ -138,7 +145,9 @@ class VideoPlayerPanel extends JPanel {
             File imageFile = new File(absolutePathToImage);
             if (imageFile.exists()) {
                 try {
-                    image = ImageIO.read(new FileInputStream(imageFile));
+                    FileInputStream fileInputStream = new FileInputStream(imageFile);
+                    image = ImageIO.read(fileInputStream);
+                    fileInputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -147,7 +156,6 @@ class VideoPlayerPanel extends JPanel {
             LayerUI<JPanel> layerUI = new VideoPlayerPanel.MyLayer(image);
             videoStreamLayer = new JLayer<JPanel>(videoPlayerToShowOneVideo, layerUI);
             videoStreamLayer.setAlignmentX(CENTER_ALIGNMENT);
-
 
             informLabel = new JLabel(MainFrame.getBundle().getString("clickplaylabel"));
         } else {
@@ -191,7 +199,8 @@ class VideoPlayerPanel extends JPanel {
         imageButton.setPreferredSize(new Dimension(120, 50));
         imageButton.addActionListener((e) -> {
             Thread thread = new Thread(() -> {
-                BufferedImage image = readImage(framesBytesInBuffMap.get(currentFrameNumber));
+                int i=currentFrameNumber;
+                BufferedImage image = readImage(framesBytesInBuffMap.get(i));
                 if (image != null) {
                     String path = MainFrame.getPath() + System.currentTimeMillis() + "-" + numberVideoPanel + ".jpg";
                     File file = new File(path);
@@ -199,6 +208,7 @@ class VideoPlayerPanel extends JPanel {
                         if (file.createNewFile()) {
                             ImageIO.write(image, "jpg", file);
                         }
+                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveoneframenumber")+i, Color.DARK_GRAY);
                     } catch (Exception xe) {
                         MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
                         xe.printStackTrace();
@@ -215,8 +225,11 @@ class VideoPlayerPanel extends JPanel {
         JLabel totalFrameLabel = new JLabel(MainFrame.getBundle().getString("totalframecountlabel") + totalCountFrames);
         totalFrameLabel.setPreferredSize(new Dimension(150, 15));
 
-        totalSecondsLabel = new JLabel();
-        totalSecondsLabel.setPreferredSize(new Dimension(150, 15));
+        currentFPSLabel = new JLabel();
+        currentFPSLabel.setPreferredSize(new Dimension(150, 15));
+
+        totalFPSLabel = new JLabel(MainFrame.getBundle().getString("totalword")+" FPS: " + totalFPSForFile);
+        totalFPSLabel.setPreferredSize(new Dimension(150, 15));
 
         partExportPanel = new JPanel(new FlowLayout());
         partExportPanel.setBorder(BorderFactory.createLineBorder(Color.lightGray));
@@ -228,13 +241,11 @@ class VideoPlayerPanel extends JPanel {
         JLabel startPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstframelabel"));
         startPartExportLabel.setPreferredSize(new Dimension(100, 25));
         JTextField startPartExportTextField = new JTextField();
-        startPartExportTextField.setFocusable(false);
         startPartExportTextField.setPreferredSize(new Dimension(70, 25));
 
         JLabel endPartExportLabel = new JLabel(MainFrame.getBundle().getString("lastframelabel"));
         endPartExportLabel.setPreferredSize(new Dimension(100, 25));
         JTextField endPartExportTextField = new JTextField();
-        endPartExportTextField.setFocusable(false);
         endPartExportTextField.setPreferredSize(new Dimension(70, 25));
 
         JLabel informPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstinformvideoplayerlabel"));
@@ -367,8 +378,9 @@ class VideoPlayerPanel extends JPanel {
         exportPanel.add(exportButton);
         exportPanel.add(imageButton);
         exportPanel.add(currentFrameLabel);
+        exportPanel.add(currentFPSLabel);
         exportPanel.add(totalFrameLabel);
-        exportPanel.add(totalSecondsLabel);
+        exportPanel.add(totalFPSLabel);
 
         totalExportPanel.add(exportPanel);
         totalExportPanel.add(partExportPanel);
@@ -387,8 +399,6 @@ class VideoPlayerPanel extends JPanel {
     }
 
     void showFrameNumber(int partNumber, int currentFramePositionPercent) {
-
-        System.out.println("Панель номер - " + numberVideoPanel);
         if (showFrameThread == null) {
             showFrameThread = new Thread(() -> {
                 Integer integer;
@@ -399,7 +409,6 @@ class VideoPlayerPanel extends JPanel {
                 }
                 double i = (double) currentFramePositionPercent / 100000;
                 int frameToShowNumber = (int) (i * integer) + 1;
-
                 if (frameInBuffDeque.size() > 0) {
                     if (frameToShowNumber != currentFrameNumber) {
                         if (framesImagesInBuffMap.containsKey(frameToShowNumber) || framesBytesInBuffMap.containsKey(frameToShowNumber)) {
@@ -439,6 +448,7 @@ class VideoPlayerPanel extends JPanel {
                 }
                 showFrameThread = null;
             });
+            showFrameThread.setName("Show frame VIDEO PLAYER thread number " + numberVideoPanel);
             showFrameThread.start();
         }
     }
@@ -450,7 +460,7 @@ class VideoPlayerPanel extends JPanel {
             while (VideoPlayer.isShowVideoPlayer()) {
                 if (showVideoNow) {
                     if (countTen == 10) {
-                        totalSecondsLabel.setText("FPS: " + FPS);
+                        currentFPSLabel.setText("FPS: " + FPS);
                         FPS = 0;
                         countTen = 0;
                         List<Integer> list = new ArrayList<>();
@@ -467,9 +477,7 @@ class VideoPlayerPanel extends JPanel {
                         for (Integer integer : list) {
                             framesImagesInBuffMap.remove(integer);
                         }
-
-//                    System.out.println("Изображений в буфере - " + framesImagesInBuffMap.size());
-//                    System.out.println("Байт в буфере - " + framesBytesInBuffMap.size());
+//                        System.out.println(framesBytesInBuffMap.size() + " - буфер "+numberVideoPanel+" - " + framesImagesInBuffMap.size());
                     } else {
                         ++countTen;
 
@@ -492,6 +500,8 @@ class VideoPlayerPanel extends JPanel {
                 }
             }
         });
+        FPSThread.setName("FPS Thread VIDEO PLAYER for video panel " + numberVideoPanel);
+
 
         if (blockHaveVideo) {
             buffBytesThread = new Thread(() -> {
@@ -544,7 +554,7 @@ class VideoPlayerPanel extends JPanel {
                                 if (fileInputStream != null) {
                                     bufferedInputStream = new BufferedInputStream(fileInputStream);
                                     temporaryStream = new ByteArrayOutputStream(65535);
-                                    while (true) {
+                                    while (VideoPlayer.isShowVideoPlayer()) {
                                         if (frameInBuffDeque.size() < 1000) {
                                             long startReadByteTime = System.currentTimeMillis();
                                             readBytesImageToBuff();
@@ -564,6 +574,12 @@ class VideoPlayerPanel extends JPanel {
                                 closeStreams();
                             }
                             allFilesIsInBuff = true;
+                        } else {
+                            try {
+                                Thread.sleep(1);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
                     } else {
                         try {
@@ -574,6 +590,7 @@ class VideoPlayerPanel extends JPanel {
                     }
                 }
             });
+            buffBytesThread.setName("Buff byte VIDEO PLAYER for video panel " + numberVideoPanel);
         }
     }
 
@@ -599,6 +616,7 @@ class VideoPlayerPanel extends JPanel {
 //                                    System.out.println("Работа потока буферизатора - " + (System.currentTimeMillis() - startThread));
                                 });
                                 buffImageThreadMap.put(integer, thread);
+                                thread.setName(" Image Buff Thread . VIDEO PLAYER  Panel number" + numberVideoPanel + ". Frame number - " + finalK);
                                 thread.start();
                                 break;
                             }
@@ -619,7 +637,7 @@ class VideoPlayerPanel extends JPanel {
     }
 
     private void readBytesImageToBuff() {
-        while (!setPosition) {
+        while (!setPosition && VideoPlayer.isShowVideoPlayer()) {
             t = x;
             try {
                 x = bufferedInputStream.read();

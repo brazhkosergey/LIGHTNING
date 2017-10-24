@@ -149,7 +149,7 @@ public class MainVideoCreator {
 //        }
     }
 
-    public static void encodeVideoXuggle(File folderWithTempraryFiles) {
+    static void encodeVideoXuggle(File folderWithTempraryFiles) {
 
         String name = folderWithTempraryFiles.getName();
         String[] split = name.split("-");
@@ -213,7 +213,6 @@ public class MainVideoCreator {
                 imageToConnect = ImageIO.read(new FileInputStream(imageFile));
                 opacity = CameraPanel.getOpacity();
                 connectImage = true;
-                System.out.println("Соединяем изображения - " + connectImage + ". Прозрачность - " + opacity);
                 log.info("Накладываем изображение на файл " + path);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -355,7 +354,6 @@ public class MainVideoCreator {
             log.error(e.getLocalizedMessage());
         }
     }
-
 
     static void savePartOfVideoFile(String pathToFileToSave, List<File> filesToEncodeToVideo, int totalFPS, BufferedImage imageToConnect) {
 
