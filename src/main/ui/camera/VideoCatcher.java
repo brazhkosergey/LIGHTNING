@@ -1,7 +1,7 @@
 package ui.camera;
 
 import entity.MainVideoCreator;
-import entity.VideoPlayer;
+import ui.video.VideoPlayer;
 import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 

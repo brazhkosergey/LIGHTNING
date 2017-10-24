@@ -2,7 +2,7 @@ package ui.main;
 
 import entity.AddressSaver;
 import entity.MainVideoCreator;
-import entity.VideoPlayer;
+import ui.video.VideoPlayer;
 import entity.sound.SoundSaver;
 import ui.camera.CameraPanel;
 import ui.camera.VideoCreator;

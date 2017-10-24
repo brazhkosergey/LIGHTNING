@@ -149,7 +149,7 @@ public class MainVideoCreator {
 //        }
     }
 
-    static void encodeVideoXuggle(File folderWithTempraryFiles) {
+    public static void encodeVideoXuggle(File folderWithTempraryFiles) {
 
         String name = folderWithTempraryFiles.getName();
         String[] split = name.split("-");
@@ -355,7 +355,7 @@ public class MainVideoCreator {
         }
     }
 
-    static void savePartOfVideoFile(String pathToFileToSave, List<File> filesToEncodeToVideo, int totalFPS, BufferedImage imageToConnect) {
+    public static void savePartOfVideoFile(String pathToFileToSave, List<File> filesToEncodeToVideo, int totalFPS, BufferedImage imageToConnect) {
 
         File videoFile = new File(pathToFileToSave);
         if (videoFile.exists()) {

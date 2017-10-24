@@ -1,5 +1,6 @@
-package entity;
+package ui.video;
 
+import entity.MainVideoCreator;
 import ui.main.MainFrame;
 
 import javax.swing.*;
@@ -41,8 +42,10 @@ public class VideoPlayer extends JPanel {
     private int frameNumber = 0;
     private int currentFrameNumber = 0;
     private int currentSliderPosition = 0;
+    private JButton playButton;
 
-    public VideoPlayer(Map<Integer, File> foldersWithTemporaryVideoFiles, String date, int numberInt) {
+
+    VideoPlayer(Map<Integer, File> foldersWithTemporaryVideoFiles, String date, int numberInt) {
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         this.setLayout(new BorderLayout());
         centralPane = new JPanel(new BorderLayout());
@@ -197,7 +200,7 @@ public class VideoPlayer extends JPanel {
             fast();
         });
 
-        JButton playButton = new JButton(String.valueOf((char) 9205));
+        playButton = new JButton(String.valueOf((char) 9205));
         playButton.setFont(new Font(null,Font.BOLD,17));
         playButton.setFocusable(true);
         playButton.addActionListener(actionEvent -> {
@@ -440,6 +443,7 @@ public class VideoPlayer extends JPanel {
     }
 
     private void play() {
+        playButton.requestFocus();
         for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
             if (videoPlayerPanel.isBlockHaveVideo()) {
                 videoPlayerPanel.showVideo();
@@ -451,6 +455,7 @@ public class VideoPlayer extends JPanel {
     }
 
     private void stop() {
+        playButton.requestFocus();
         for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
             if (videoPlayerPanel.isBlockHaveVideo()) {
                 videoPlayerPanel.stopVideo();
@@ -467,12 +472,14 @@ public class VideoPlayer extends JPanel {
     }
 
     private void pause() {
+        playButton.requestFocus();
         setPLAY(false);
         setPAUSE(true);
         informLabel.setText("PAUSE");
     }
 
     private void fast() {
+        playButton.requestFocus();
         speed *= 0.5;
         double i = 0;
         String s = "";
@@ -489,6 +496,7 @@ public class VideoPlayer extends JPanel {
     }
 
     private void slow() {
+        playButton.requestFocus();
         speed /= 0.5;
         double i = 0;
         String s = "";
@@ -505,13 +513,21 @@ public class VideoPlayer extends JPanel {
     }
 
     private void nextFrame() {
+        playButton.requestFocus();
         pause();
         frameNumber++;
+        if(frameNumber>totalCountFrames){
+            stop();
+        }
     }
 
     private void prewFrame() {
+        playButton.requestFocus();
         pause();
         frameNumber--;
+        if(frameNumber<1){
+            frameNumber = 1;
+        }
     }
 
     private void setSetPOSITION() {

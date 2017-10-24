@@ -1,6 +1,5 @@
 package ui.video;
 
-import entity.VideoPlayer;
 import ui.main.MainFrame;
 
 import javax.swing.*;

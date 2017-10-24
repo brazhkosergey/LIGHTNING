@@ -1,5 +1,6 @@
-package entity;
+package ui.video;
 
+import entity.MainVideoCreator;
 import ui.camera.CameraPanel;
 import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
@@ -8,6 +9,8 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.LayerUI;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -39,7 +42,6 @@ class VideoPlayerPanel extends JPanel {
 
     private JPanel videoPanel;
     private JLabel currentFrameLabel;
-    private JLabel totalFPSLabel;
 
     private JPanel partExportPanel;
 
@@ -199,7 +201,7 @@ class VideoPlayerPanel extends JPanel {
         imageButton.setPreferredSize(new Dimension(120, 50));
         imageButton.addActionListener((e) -> {
             Thread thread = new Thread(() -> {
-                int i=currentFrameNumber;
+                int i = currentFrameNumber;
                 BufferedImage image = readImage(framesBytesInBuffMap.get(i));
                 if (image != null) {
                     String path = MainFrame.getPath() + System.currentTimeMillis() + "-" + numberVideoPanel + ".jpg";
@@ -208,7 +210,7 @@ class VideoPlayerPanel extends JPanel {
                         if (file.createNewFile()) {
                             ImageIO.write(image, "jpg", file);
                         }
-                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveoneframenumber")+i, Color.DARK_GRAY);
+                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveoneframenumber") + i, Color.DARK_GRAY);
                     } catch (Exception xe) {
                         MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
                         xe.printStackTrace();
@@ -228,7 +230,7 @@ class VideoPlayerPanel extends JPanel {
         currentFPSLabel = new JLabel();
         currentFPSLabel.setPreferredSize(new Dimension(150, 15));
 
-        totalFPSLabel = new JLabel(MainFrame.getBundle().getString("totalword")+" FPS: " + totalFPSForFile);
+        JLabel totalFPSLabel = new JLabel(MainFrame.getBundle().getString("totalword") + " FPS: " + totalFPSForFile);
         totalFPSLabel.setPreferredSize(new Dimension(150, 15));
 
         partExportPanel = new JPanel(new FlowLayout());
@@ -240,13 +242,23 @@ class VideoPlayerPanel extends JPanel {
 
         JLabel startPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstframelabel"));
         startPartExportLabel.setPreferredSize(new Dimension(100, 25));
-        JTextField startPartExportTextField = new JTextField();
-        startPartExportTextField.setPreferredSize(new Dimension(70, 25));
-
         JLabel endPartExportLabel = new JLabel(MainFrame.getBundle().getString("lastframelabel"));
         endPartExportLabel.setPreferredSize(new Dimension(100, 25));
+
+        JTextField startPartExportTextField = new JTextField();
+        startPartExportTextField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == 37 || e.getKeyCode() == 39) {
+
+                }
+            }
+        });
+
+        startPartExportTextField.setPreferredSize(new Dimension(70, 25));
         JTextField endPartExportTextField = new JTextField();
         endPartExportTextField.setPreferredSize(new Dimension(70, 25));
+
 
         JLabel informPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstinformvideoplayerlabel"));
         informPartExportLabel.setFocusable(false);
