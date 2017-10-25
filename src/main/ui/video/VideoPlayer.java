@@ -427,21 +427,6 @@ public class VideoPlayer extends JPanel {
                         }
                     }
 
-
-//                    for (int i = 0; i < eventFrameNumberList.size(); i++) {
-//                        Integer integer = eventFrameNumberList.get(i);
-//                        if (integer > frameNumber) {
-//                            partNumber = i;
-//                            currentFramePositionPercent = frameNumber * 100000 / integer;
-//                            break;
-//                        } else {
-//                            if (i == (eventFrameNumberList.size() - 1)) {
-//                                partNumber = i + 1;
-//                                currentFramePositionPercent = frameNumber * 100000 / totalCountFrames;
-//                            }
-//                        }
-//                    }
-
                     for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
                         if (videoPlayerPanel.isShowVideoNow()) {
                             videoPlayerPanel.showFrameNumber(partNumber, currentFramePositionPercent);
