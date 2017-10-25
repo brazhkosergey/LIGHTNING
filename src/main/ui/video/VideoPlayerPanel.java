@@ -55,6 +55,7 @@ class VideoPlayerPanel extends JPanel {
     private JLabel currentFPSLabel;
 
     private List<Integer> eventFrameNumberList;
+    Map<Integer, Integer> tempEventsMapPartSize;
     private Map<Integer, byte[]> framesBytesInBuffMap;
     private Map<Integer, BufferedImage> framesImagesInBuffMap;
     private Deque<Integer> frameInBuffDeque;
@@ -114,6 +115,7 @@ class VideoPlayerPanel extends JPanel {
                 }
             }
             Collections.sort(eventFrameNumberList);
+
             framesInFiles = new HashMap<>();
             String[] split1 = name.split("-");
             String[] fpsSplit = split1[1].split("\\.");
@@ -140,6 +142,21 @@ class VideoPlayerPanel extends JPanel {
                     }
                 }
                 Collections.sort(filesList);
+            }
+
+            tempEventsMapPartSize = new HashMap<>();
+            int lastFrame = 0;
+            for (int i = 0; i < eventFrameNumberList.size(); i++) {
+                Integer integer = eventFrameNumberList.get(i);
+                tempEventsMapPartSize.put(i, (integer - lastFrame));
+                lastFrame = integer;
+                if (i == eventFrameNumberList.size() - 1) {
+                    tempEventsMapPartSize.put(i + 1, (totalCountFrames - lastFrame));
+                }
+            }
+
+            for(Integer o:tempEventsMapPartSize.keySet()){
+                System.out.println("Часть номер - " + o+" равна = "+tempEventsMapPartSize.get(o));
             }
 
             BufferedImage image = null;
@@ -413,14 +430,24 @@ class VideoPlayerPanel extends JPanel {
     void showFrameNumber(int partNumber, int currentFramePositionPercent) {
         if (showFrameThread == null) {
             showFrameThread = new Thread(() -> {
-                Integer integer;
-                if (partNumber < eventFrameNumberList.size()) {
-                    integer = eventFrameNumberList.get(partNumber);
-                } else {
-                    integer = totalCountFrames;
-                }
+
+                System.out.println("Часть номер - " + partNumber);
+                System.out.println("Позиция в части - " + currentFramePositionPercent);
+                Integer sizeOfPart = tempEventsMapPartSize.get(partNumber);
                 double i = (double) currentFramePositionPercent / 100000;
-                int frameToShowNumber = (int) (i * integer) + 1;
+                int frameToShowInPart = (int) (i * sizeOfPart);
+                System.out.println("Размер части - "+sizeOfPart);
+                System.out.println("Номер кадра в кусочке - " + frameToShowInPart);
+
+                Integer startFrameOFPart;
+                if(partNumber==0){
+                    startFrameOFPart = 0;
+                } else {
+                    startFrameOFPart = eventFrameNumberList.get(partNumber-1);
+                }
+
+                int frameToShowNumber = startFrameOFPart + frameToShowInPart;
+                System.out.println("Номер кадра, который показываем - " +frameToShowNumber);
                 if (frameInBuffDeque.size() > 0) {
                     if (frameToShowNumber != currentFrameNumber) {
                         if (framesImagesInBuffMap.containsKey(frameToShowNumber) || framesBytesInBuffMap.containsKey(frameToShowNumber)) {

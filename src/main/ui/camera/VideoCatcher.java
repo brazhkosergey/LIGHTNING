@@ -56,7 +56,7 @@ public class VideoCatcher {
                 if (catchVideo) {
                     if (fps != 0) {
                         cameraPanel.getTitle().setTitle(
-                                "FPS = " + fps + ". WHITE: " + whitePercent);
+                                "FPS = " + fps);
                         cameraPanel.repaint();
                         fps = 0;
                         countTimesToHaveNotBytesToRead = 0;

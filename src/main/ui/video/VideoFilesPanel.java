@@ -39,6 +39,7 @@ public class VideoFilesPanel extends JPanel {
     private void buildVideoPanel() {
         mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBackground(Color.LIGHT_GRAY);
         mainScrollPanel = new JScrollPane(mainPanel);
         this.setLayout(new BorderLayout());
 //        this.add(mainScrollPanel,BorderLayout.CENTER);
@@ -164,7 +165,9 @@ public class VideoFilesPanel extends JPanel {
             });
 
             mainVideoPanel = new JPanel(new FlowLayout());
-            mainVideoPanel.setBorder(BorderFactory.createEtchedBorder());
+            mainVideoPanel.setBackground(Color.LIGHT_GRAY);
+            mainVideoPanel.setBorder(BorderFactory.createBevelBorder(0));
+//            mainVideoPanel.setBorder(BorderFactory.createEtchedBorder());
             mainVideoPanel.setMaximumSize(new Dimension(1100, 45));
             mainVideoPanel.add(numberLabel);
             mainVideoPanel.add(Box.createRigidArea(new Dimension(20, 30)));

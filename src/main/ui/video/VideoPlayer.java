@@ -32,6 +32,7 @@ public class VideoPlayer extends JPanel {
     private List<JPanel> sliderPanelsLst;
     private Map<Integer, Boolean> eventPercent = null;
     private List<Integer> eventFrameNumberList = null;
+    private Map<Integer, Integer> tempEventsMapPartSize;
     private List<VideoPlayerPanel> videoPlayerPanelsList;
 
     private JPanel centralPane;
@@ -129,6 +130,22 @@ public class VideoPlayer extends JPanel {
                         }
                     }
                     Collections.sort(eventFrameNumberList);
+
+                    tempEventsMapPartSize = new HashMap<>();
+                    int lastFrame = 0;
+                    for (int k = 0; k < eventFrameNumberList.size(); k++) {
+                        Integer integer = eventFrameNumberList.get(k);
+                        tempEventsMapPartSize.put(k, (integer - lastFrame));
+                        lastFrame = integer;
+
+                        if (k == eventFrameNumberList.size() - 1) {
+                            tempEventsMapPartSize.put(k + 1, (totalCountFrames - lastFrame));
+                        }
+                    }
+
+                    for (Integer o : tempEventsMapPartSize.keySet()) {
+                        System.out.println("Часть номер - " + o + " равна = " + tempEventsMapPartSize.get(o));
+                    }
                 }
             }
 
@@ -173,49 +190,49 @@ public class VideoPlayer extends JPanel {
         this.add(centralPane, BorderLayout.CENTER);
 
         JButton nextImage = new JButton("+1");
-        nextImage.setFont(new Font(null,Font.BOLD,17));
+        nextImage.setFont(new Font(null, Font.BOLD, 17));
         nextImage.setFocusable(false);
         nextImage.addActionListener((e) -> {
             nextFrame();
         });
 
         JButton previousImage = new JButton("-1");
-        previousImage.setFont(new Font(null,Font.BOLD,17));
+        previousImage.setFont(new Font(null, Font.BOLD, 17));
         previousImage.setFocusable(false);
         previousImage.addActionListener((e) -> {
             prewFrame();
         });
 
         JButton slowerButton = new JButton(String.valueOf((char) 9194));//⏪
-        slowerButton.setFont(new Font(null,Font.BOLD,17));
+        slowerButton.setFont(new Font(null, Font.BOLD, 17));
         slowerButton.setFocusable(false);
         slowerButton.addActionListener((e) -> {
             slow();
         });
 
         JButton fasterButton = new JButton(String.valueOf((char) 9193));
-        fasterButton.setFont(new Font(null,Font.BOLD,17));
+        fasterButton.setFont(new Font(null, Font.BOLD, 17));
         fasterButton.setFocusable(false);
         fasterButton.addActionListener((e) -> {
             fast();
         });
 
         playButton = new JButton(String.valueOf((char) 9205));
-        playButton.setFont(new Font(null,Font.BOLD,17));
+        playButton.setFont(new Font(null, Font.BOLD, 17));
         playButton.setFocusable(true);
         playButton.addActionListener(actionEvent -> {
             play();
         });
 
         JButton pauseButton = new JButton(String.valueOf((char) 9208));
-        pauseButton.setFont(new Font(null,Font.BOLD,17));
+        pauseButton.setFont(new Font(null, Font.BOLD, 17));
         pauseButton.setFocusable(false);
         pauseButton.addActionListener((e) -> {
             pause();
         });
 
         JButton stopButton = new JButton(String.valueOf((char) 9209));
-        stopButton.setFont(new Font(null,Font.BOLD,17));
+        stopButton.setFont(new Font(null, Font.BOLD, 17));
         stopButton.setFocusable(false);
         stopButton.addActionListener(actionEvent -> {
             stop();
@@ -376,19 +393,54 @@ public class VideoPlayer extends JPanel {
                 if (frameNumber != currentFrameNumber) {
                     int partNumber = 0;
                     int currentFramePositionPercent = 0;
+
+//                    Map<Integer, Integer> tempEventsMapPartSize = new HashMap<>();
+//                    int lastFrame = 0;
+//                    for (int i = 0; i < eventFrameNumberList.size(); i++) {
+//                        Integer integer = eventFrameNumberList.get(i);
+//                        tempEventsMapPartSize.put(i, (integer - lastFrame));
+//                        lastFrame = integer;
+//
+//                        if (i == eventFrameNumberList.size() - 1) {
+//                            tempEventsMapPartSize.put(i + 1, (totalCountFrames - lastFrame));
+//                        }
+//                    }
                     for (int i = 0; i < eventFrameNumberList.size(); i++) {
                         Integer integer = eventFrameNumberList.get(i);
                         if (integer > frameNumber) {
                             partNumber = i;
-                            currentFramePositionPercent = frameNumber * 100000 / integer;
+                            int frameNumberInPart;
+                            if(i==0){
+                                frameNumberInPart = frameNumber;
+                            } else {
+                                frameNumberInPart = frameNumber - eventFrameNumberList.get(i-1);
+                            }
+
+                            currentFramePositionPercent = frameNumberInPart * 100000 / tempEventsMapPartSize.get(partNumber);
                             break;
                         } else {
                             if (i == (eventFrameNumberList.size() - 1)) {
                                 partNumber = i + 1;
-                                currentFramePositionPercent = frameNumber * 100000 / totalCountFrames;
+                                int frameNumberInPart = frameNumber - eventFrameNumberList.get(i);
+                                currentFramePositionPercent = frameNumberInPart * 100000 / tempEventsMapPartSize.get(partNumber);
                             }
                         }
                     }
+
+
+//                    for (int i = 0; i < eventFrameNumberList.size(); i++) {
+//                        Integer integer = eventFrameNumberList.get(i);
+//                        if (integer > frameNumber) {
+//                            partNumber = i;
+//                            currentFramePositionPercent = frameNumber * 100000 / integer;
+//                            break;
+//                        } else {
+//                            if (i == (eventFrameNumberList.size() - 1)) {
+//                                partNumber = i + 1;
+//                                currentFramePositionPercent = frameNumber * 100000 / totalCountFrames;
+//                            }
+//                        }
+//                    }
 
                     for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
                         if (videoPlayerPanel.isShowVideoNow()) {
@@ -516,7 +568,7 @@ public class VideoPlayer extends JPanel {
         playButton.requestFocus();
         pause();
         frameNumber++;
-        if(frameNumber>totalCountFrames){
+        if (frameNumber > totalCountFrames) {
             stop();
         }
     }
@@ -525,7 +577,7 @@ public class VideoPlayer extends JPanel {
         playButton.requestFocus();
         pause();
         frameNumber--;
-        if(frameNumber<1){
+        if (frameNumber < 1) {
             frameNumber = 1;
         }
     }

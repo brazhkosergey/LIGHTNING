@@ -6,6 +6,7 @@ import com.xuggle.mediatool.ToolFactory;
 import com.xuggle.xuggler.ICodec;
 import entity.sound.SoundSaver;
 import org.apache.log4j.Logger;
+import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
@@ -23,6 +24,7 @@ public class MainVideoCreator {
     private static Date date;
     private static boolean saveVideo;
     private static Thread continueVideoThread;
+    private static Thread startSaveVideoThread;
     private static int secondVideoSave = 1;
 
     public static void startCatchVideo(boolean programingLightCatch) {
@@ -61,8 +63,20 @@ public class MainVideoCreator {
             log.info("Продолжаем событие " + date.toString() + event);
             secondVideoSave = 1;
         }
-        for (Integer creator : MainFrame.creatorMap.keySet()) {
-            MainFrame.creatorMap.get(creator).startSaveVideo(programingLightCatch, date);
+
+        if (startSaveVideoThread == null) {
+            startSaveVideoThread = new Thread(() -> {
+                for (Integer creator : MainFrame.creatorMap.keySet()) {
+                    MainFrame.creatorMap.get(creator).startSaveVideo(programingLightCatch, date);
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                startSaveVideoThread = null;
+            });
+            startSaveVideoThread.start();
         }
     }
 
@@ -316,7 +330,7 @@ public class MainVideoCreator {
                                     }
                                     image = null;
                                     if (count % 2 == 0) {
-                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber")+
+                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber") +
                                                 count++, new Color(23, 114, 26));
                                     } else {
                                         MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber") +
