@@ -393,29 +393,18 @@ public class VideoPlayer extends JPanel {
                 if (frameNumber != currentFrameNumber) {
                     int partNumber = 0;
                     int currentFramePositionPercent = 0;
-
-//                    Map<Integer, Integer> tempEventsMapPartSize = new HashMap<>();
-//                    int lastFrame = 0;
-//                    for (int i = 0; i < eventFrameNumberList.size(); i++) {
-//                        Integer integer = eventFrameNumberList.get(i);
-//                        tempEventsMapPartSize.put(i, (integer - lastFrame));
-//                        lastFrame = integer;
-//
-//                        if (i == eventFrameNumberList.size() - 1) {
-//                            tempEventsMapPartSize.put(i + 1, (totalCountFrames - lastFrame));
-//                        }
-//                    }
+                    System.out.println("==============================================");
+                    System.out.println("Нужно показать кадр номер - " + frameNumber);
                     for (int i = 0; i < eventFrameNumberList.size(); i++) {
                         Integer integer = eventFrameNumberList.get(i);
                         if (integer > frameNumber) {
                             partNumber = i;
                             int frameNumberInPart;
-                            if(i==0){
+                            if (i == 0) {
                                 frameNumberInPart = frameNumber;
                             } else {
-                                frameNumberInPart = frameNumber - eventFrameNumberList.get(i-1);
+                                frameNumberInPart = frameNumber - eventFrameNumberList.get(i - 1);
                             }
-
                             currentFramePositionPercent = frameNumberInPart * 100000 / tempEventsMapPartSize.get(partNumber);
                             break;
                         } else {
@@ -426,6 +415,9 @@ public class VideoPlayer extends JPanel {
                             }
                         }
                     }
+
+                    System.out.println("Часть файла - " + partNumber);
+                    System.out.println("Процент в части - " + currentFramePositionPercent);
 
                     for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
                         if (videoPlayerPanel.isShowVideoNow()) {

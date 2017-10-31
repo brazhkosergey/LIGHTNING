@@ -155,8 +155,8 @@ class VideoPlayerPanel extends JPanel {
                 }
             }
 
-            for(Integer o:tempEventsMapPartSize.keySet()){
-                System.out.println("Часть номер - " + o+" равна = "+tempEventsMapPartSize.get(o));
+            for (Integer o : tempEventsMapPartSize.keySet()) {
+                System.out.println("Часть номер - " + o + " равна = " + tempEventsMapPartSize.get(o));
             }
 
             BufferedImage image = null;
@@ -430,24 +430,23 @@ class VideoPlayerPanel extends JPanel {
     void showFrameNumber(int partNumber, int currentFramePositionPercent) {
         if (showFrameThread == null) {
             showFrameThread = new Thread(() -> {
-
                 System.out.println("Часть номер - " + partNumber);
                 System.out.println("Позиция в части - " + currentFramePositionPercent);
                 Integer sizeOfPart = tempEventsMapPartSize.get(partNumber);
                 double i = (double) currentFramePositionPercent / 100000;
                 int frameToShowInPart = (int) (i * sizeOfPart);
-                System.out.println("Размер части - "+sizeOfPart);
+                System.out.println("Размер части - " + sizeOfPart);
                 System.out.println("Номер кадра в кусочке - " + frameToShowInPart);
 
                 Integer startFrameOFPart;
-                if(partNumber==0){
+                if (partNumber == 0) {
                     startFrameOFPart = 0;
                 } else {
-                    startFrameOFPart = eventFrameNumberList.get(partNumber-1);
+                    startFrameOFPart = eventFrameNumberList.get(partNumber - 1);
                 }
 
                 int frameToShowNumber = startFrameOFPart + frameToShowInPart;
-                System.out.println("Номер кадра, который показываем - " +frameToShowNumber);
+                System.out.println("Номер кадра, который показываем - " + frameToShowNumber);
                 if (frameInBuffDeque.size() > 0) {
                     if (frameToShowNumber != currentFrameNumber) {
                         if (framesImagesInBuffMap.containsKey(frameToShowNumber) || framesBytesInBuffMap.containsKey(frameToShowNumber)) {
@@ -799,7 +798,7 @@ class VideoPlayerPanel extends JPanel {
         public void paint(Graphics g, JComponent c) {
             super.paint(g, c);
             if (bufferedImage != null) {
-                g.drawImage(CameraPanel.animateCircle(VideoCatcher.processImage(bufferedImage, videoPanel.getWidth(), videoPanel.getHeight()), BufferedImage.TYPE_INT_ARGB), 0, 0, null);
+                g.drawImage(CameraPanel.animateCircle(CameraPanel.processImage(bufferedImage, videoPanel.getWidth(), videoPanel.getHeight()), BufferedImage.TYPE_INT_ARGB), 0, 0, null);
                 g.dispose();
             }
         }

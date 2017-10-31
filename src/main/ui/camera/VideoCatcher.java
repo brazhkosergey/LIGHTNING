@@ -65,6 +65,7 @@ public class VideoCatcher {
                             countTimesToHaveNotBytesToRead++;
                             if (countTimesToHaveNotBytesToRead > 10) {
                                 restart = true;
+                                cameraPanel.stopShowVideo();
                                 bufferedInputStream = null;
                                 countTimesToHaveNotBytesToRead = 0;
                                 createInputStream();
@@ -106,7 +107,7 @@ public class VideoCatcher {
                                     ImageIO.setUseCache(false);
                                     BufferedImage image = ImageIO.read(inputStream);
                                     inputStream.close();
-                                    cameraPanel.setBufferedImage(findProgramEvent(processImage(image, cameraPanel.getWidth(),
+                                    cameraPanel.setBufferedImage(findProgramEvent(CameraPanel.processImage(image, cameraPanel.getWidth(),
                                             cameraPanel.getHeight())));
                                     cameraPanel.repaint();
                                 } catch (Exception ignored) {
@@ -260,6 +261,7 @@ public class VideoCatcher {
                 connection = (HttpURLConnection) url.openConnection();
                 inputStream = connection.getInputStream();
                 bufferedInputStream = new BufferedInputStream(inputStream);
+                cameraPanel.startShowVideo();
                 restart = false;
             } catch (Exception e) {
                 try {
@@ -290,53 +292,6 @@ public class VideoCatcher {
         UpdateDataThread.setName("Update Data Thread. Camera " + cameraPanel.getCameraNumber());
         FpsCountThread.setName("FPS CountThread. Camera " + cameraPanel.getCameraNumber());
         MainThread.start();
-    }
-
-    public static BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
-        int width;
-        int height;
-
-        if (maxWidth / 1.77 > maxHeight) {
-            height = maxHeight;
-            width = (int) (height * 1.77);
-        } else {
-
-            width = maxWidth;
-            height = (int) (width / 1.77);
-        }
-
-        BufferedImage bi2 = null;
-        double max;
-        int size;
-        int ww = width - bi.getWidth();
-        int hh = height - bi.getHeight();
-
-        if (ww < 0 || hh < 0) {
-            if (ww < hh) {
-                max = width;
-                size = bi.getWidth();
-            } else {
-                max = height;
-                size = bi.getHeight();
-            }
-
-            if (size > 0 && size > max) {
-                double trans = 1.0 / (size / max);
-                AffineTransform tr = new AffineTransform();
-                tr.scale(trans, trans);
-                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BICUBIC);
-                Double w = bi.getWidth() * trans;
-                Double h = bi.getHeight() * trans;
-                bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
-                op.filter(bi, bi2);
-            }
-        }
-
-        if (bi2 != null) {
-            return bi2;
-        } else {
-            return bi;
-        }
     }
 
     private BufferedImage findProgramEvent(BufferedImage bi2) {

@@ -57,6 +57,52 @@ public class CameraPanel extends JPanel {
         cameraWindowLayer.repaint();
     }
 
+    public static BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {//CORRECT
+        int width;
+        int height;
+
+        if (maxWidth / 1.77 > maxHeight) {
+            height = maxHeight;
+            width = (int) (height * 1.77);
+        } else {
+            width = maxWidth;
+            height = (int) (width / 1.77);
+        }
+
+        BufferedImage bi2 = null;
+        double max;
+        int size;
+        int ww = width - bi.getWidth();
+        int hh = height - bi.getHeight();
+
+        if (ww < 0 || hh < 0) {
+            if (ww < hh) {
+                max = width;
+                size = bi.getWidth();
+            } else {
+                max = height;
+                size = bi.getHeight();
+            }
+
+            if (size > 0 && size > max) {
+                double trans = 1.0 / (size / max);
+                AffineTransform tr = new AffineTransform();
+                tr.scale(trans, trans);
+                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BICUBIC);
+                Double w = bi.getWidth() * trans;
+                Double h = bi.getHeight() * trans;
+                bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
+                op.filter(bi, bi2);
+            }
+        }
+
+        if (bi2 != null) {
+            return bi2;
+        } else {
+            return bi;
+        }
+    }
+
     public static BufferedImage animateCircle(BufferedImage originalImage, int type) {
         BufferedImage resizedImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), type);
         Graphics2D g = resizedImage.createGraphics();
@@ -71,42 +117,10 @@ public class CameraPanel extends JPanel {
         public void paint(Graphics g, JComponent c) {
             super.paint(g, c);
             if (videoCatcher.getVideoCreator().getBufferedImageBack() != null) {
-                g.drawImage(animateCircle(processImage(videoCatcher.getVideoCreator().getBufferedImageBack(), videoCatcher.getCameraPanel().getWidth(), videoCatcher.getCameraPanel().getWidth()), BufferedImage.TYPE_INT_ARGB), 0, 0, null);
+                g.drawImage(animateCircle(processImage(videoCatcher.getVideoCreator().getBufferedImageBack(), videoCatcher.getCameraPanel().getWidth(), videoCatcher.getCameraPanel().getHeight()), BufferedImage.TYPE_INT_ARGB), 0, 0, null);
                 g.dispose();
             }
         }
-    }
-
-    private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
-        BufferedImage bi2 = null;
-        double max;
-        int size;
-        int ww = maxWidth - bi.getWidth();
-        int hh = maxHeight - bi.getHeight();
-
-        if (ww < 0 || hh < 0) {
-            if (ww < hh) {
-                max = maxWidth;
-                size = bi.getWidth();
-            } else {
-                max = maxHeight;
-                size = bi.getHeight();
-            }
-
-            if (size > 0 && size > max) {
-                double trans = 1.0 / (size / max);
-                AffineTransform tr = new AffineTransform();
-                tr.scale(trans, trans);
-                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BILINEAR);
-                Double w = bi.getWidth() * trans;
-                Double h = bi.getHeight() * trans;
-                bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
-                op.filter(bi, bi2);
-            }
-        } else {
-            return bi;
-        }
-        return bi2;
     }
 
     class CameraWindow extends JPanel {

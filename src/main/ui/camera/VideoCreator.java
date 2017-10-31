@@ -143,7 +143,6 @@ public class VideoCreator {
                                         + System.currentTimeMillis() + "-" + countImagesInFile + ".tmp");
                                 if (temporaryFile.renameTo(file)) {
                                     fileDeque.addFirst(file);
-                                    System.out.println("Добавили файл в буфер. Размер буфера: " + fileDeque.size());
                                     buffFilesSizeImagesCount.put(file, countImagesInFile);
                                 }
                             }
@@ -193,16 +192,18 @@ public class VideoCreator {
                                     System.out.println("Размер буфера, на момент начала сохранения - " + size);
                                     if (destFolder.mkdirs()) {
                                         for (int i = 0; i < size; i++) {
-                                            File fileToSave = fileDeque.pollLast();
-                                            if (fileToSave != null) {
-                                                System.out.println("========================================");
-                                                System.out.println("Сохранили файл - " + i + 1);
-                                                System.out.println("Размер буфера - " + fileDeque.size());
-                                                System.out.println("========================================");
-                                                boolean reSave = fileToSave.renameTo(new File(destFolder, fileToSave.getName()));
-                                                Integer remove = buffFilesSizeImagesCount.remove(fileToSave);
-                                                totalCountImages -= remove;
-                                                secondsCount++;
+                                            try {
+                                                File fileToSave = fileDeque.pollLast();
+                                                if (fileToSave != null) {
+                                                    Integer remove = buffFilesSizeImagesCount.remove(fileToSave);
+                                                    totalCountImages -= remove;
+                                                    secondsCount++;
+                                                    boolean reSave = fileToSave.renameTo(new File(destFolder, fileToSave.getName()));
+                                                    if (!reSave) {
+                                                        fileToSave.delete();
+                                                    }
+                                                }
+                                            } catch (Exception ignored) {
                                             }
                                         }
                                     }
@@ -255,6 +256,7 @@ public class VideoCreator {
                                 }
                             }
                         });
+
                         saveFileThread.start();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -289,17 +291,16 @@ public class VideoCreator {
     }
 
     public void startSaveVideo(boolean programSave, Date date) {
-        int imageNumber = totalCountImages;
         boolean work = false;
         for (VideoCatcher catcher : catcherList) {
             work = catcher.isCatchVideo();
-//            work = catcher == videoCatcher;
             if (work) {
                 break;
             }
         }
 
         if (work) {
+            int imageNumber = totalCountImages;
             System.out.println("Сработка. Кадр номер - " + imageNumber);
             eventsFramesNumber.put(imageNumber, programSave);
             if (!startSaveVideo) {

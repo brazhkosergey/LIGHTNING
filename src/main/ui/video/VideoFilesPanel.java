@@ -105,7 +105,7 @@ public class VideoFilesPanel extends JPanel {
 
             int countFiles = filesVideoBytes.size();
             numberLabel = new JLabel(String.valueOf(i + 1));
-            numberLabel.setPreferredSize(new Dimension(20, 30));
+            numberLabel.setPreferredSize(new Dimension(40, 30));
             numberLabel.setFont(new Font(null, Font.BOLD, 15));
             numberLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
