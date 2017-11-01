@@ -393,8 +393,8 @@ public class VideoPlayer extends JPanel {
                 if (frameNumber != currentFrameNumber) {
                     int partNumber = 0;
                     int currentFramePositionPercent = 0;
-                    System.out.println("==============================================");
-                    System.out.println("Нужно показать кадр номер - " + frameNumber);
+//                    System.out.println("==============================================");
+//                    System.out.println("Нужно показать кадр номер - " + frameNumber);
                     for (int i = 0; i < eventFrameNumberList.size(); i++) {
                         Integer integer = eventFrameNumberList.get(i);
                         if (integer > frameNumber) {
@@ -415,9 +415,9 @@ public class VideoPlayer extends JPanel {
                             }
                         }
                     }
-
-                    System.out.println("Часть файла - " + partNumber);
-                    System.out.println("Процент в части - " + currentFramePositionPercent);
+//
+//                    System.out.println("Часть файла - " + partNumber);
+//                    System.out.println("Процент в части - " + currentFramePositionPercent);
 
                     for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
                         if (videoPlayerPanel.isShowVideoNow()) {
@@ -572,11 +572,9 @@ public class VideoPlayer extends JPanel {
     }
 
     private void setSliderPosition(int position) {
-
         if (position > 999) {
             position = 999;
         }
-
         for (int i = 0; i < position - 1; i++) {
             if (eventPercent.containsKey(i)) {
                 if (eventPercent.get(i)) {

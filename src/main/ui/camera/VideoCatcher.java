@@ -1,14 +1,11 @@
 package ui.camera;
 
 import entity.MainVideoCreator;
-import ui.video.VideoPlayer;
 import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -18,17 +15,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VideoCatcher {
     private static Logger log = Logger.getLogger(VideoCatcher.class);
-
-    private int whitePercent = -1;
-    private int percentDiffWhite = 100;
-    private int numberGRB;
-    private boolean programLightCatchWork;
-
     private int fps;
     private int countTimesToHaveNotBytesToRead;
-
-    private int countDoNotShowImages = 1;
-
     private Deque<byte[]> imageDeque;
     private VideoCreator videoCreator;
 
@@ -49,14 +37,19 @@ public class VideoCatcher {
     private Thread MainThread;
     private boolean showImage = true;
 
+    private Set<Integer> set;
+    private Deque<Integer> whiteDeque;
+    int percentWhiteDiff = 0;
+
     public VideoCatcher(CameraPanel cameraPanel, VideoCreator videoCreatorForBouth) {
+        set = MainFrame.getMainFrame().getColorRGBNumberSet();
+        whiteDeque = new ConcurrentLinkedDeque<>();
         log.info("Создаем наблюдатель для камеры номер " + cameraPanel.getCameraNumber());
         FpsCountThread = new Thread(() -> {
             while (true) {
                 if (catchVideo) {
                     if (fps != 0) {
-                        cameraPanel.getTitle().setTitle(
-                                "FPS = " + fps);
+                        cameraPanel.getTitle().setTitle("FPS = " + fps);
                         cameraPanel.repaint();
                         fps = 0;
                         countTimesToHaveNotBytesToRead = 0;
@@ -88,37 +81,26 @@ public class VideoCatcher {
         });
 
         UpdateDataThread = new Thread(() -> {
-            int checkData = 0;
             while (true) {
                 if (catchVideo) {
-                    if (checkData == 10) {
-                        numberGRB = MainFrame.getColorRGBNumber();
-                        percentDiffWhite = MainFrame.getPercentDiffWhite();
-                        programLightCatchWork = MainFrame.isProgramLightCatchWork();
-                        countDoNotShowImages = MainFrame.getShowImagePerSecond();
-                        checkData = 0;
-                    } else {
-                        byte[] bytes;
-                        if (imageDeque.size() > 0 && !VideoPlayer.isShowVideoPlayer()) {
-                            bytes = imageDeque.pollLast();
-                            if (bytes != null) {
-                                ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                                try {
-                                    ImageIO.setUseCache(false);
-                                    BufferedImage image = ImageIO.read(inputStream);
-                                    inputStream.close();
-                                    cameraPanel.setBufferedImage(findProgramEvent(CameraPanel.processImage(image, cameraPanel.getWidth(),
-                                            cameraPanel.getHeight())));
-                                    cameraPanel.repaint();
-                                } catch (Exception ignored) {
-                                }
-                                showImage = true;
+                    byte[] bytes;
+                    if (imageDeque.size() > 0) {
+                        bytes = imageDeque.pollLast();
+                        if (bytes != null) {
+                            ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+                            try {
+                                ImageIO.setUseCache(false);
+                                BufferedImage image = ImageIO.read(inputStream);
+                                inputStream.close();
+                                cameraPanel.setBufferedImage(CameraPanel.processImage(findProgramEvent(image), cameraPanel.getWidth(), cameraPanel.getHeight()));
+                                cameraPanel.repaint();
+                            } catch (Exception ignored) {
                             }
+                            showImage = true;
                         }
-                        checkData++;
                     }
                     try {
-                        Thread.sleep((1000 / countDoNotShowImages));
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -294,40 +276,61 @@ public class VideoCatcher {
         MainThread.start();
     }
 
-    private BufferedImage findProgramEvent(BufferedImage bi2) {
-        if (programLightCatchWork && !cameraPanel.isFullSize()) {
-            int[] rgb1 = bi2.getRGB(0, 0, bi2.getWidth(), bi2.getHeight(), null, 0, 1024);
+    private BufferedImage findProgramEvent(BufferedImage bi) {
+        if (MainFrame.isProgramLightCatchWork()) {
+            long l = System.currentTimeMillis();
+            int[] rgb1 = bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), null, 0, 2048);
             int countWhite = 0;
             int allPixels = rgb1.length;
-            int k = 10;
-            for (int i = 0; i < allPixels; i = i + k) {
-                if (rgb1[i] > numberGRB && rgb1[i] < -1) {
+            for (int i = 0; i < allPixels; i++) {
+                if (set.contains(rgb1[i])) {
                     countWhite++;
                 }
             }
 
-            if (countWhite != 0) {
-                countWhite = countWhite * k;
-            }
+            System.out.println("Времени затрачено на поиск белых пикселей - " + (System.currentTimeMillis() - l));
 
-            double percent = (double) countWhite / allPixels;
-            int percentInt = (int) (percent * 100);
+            whiteDeque.addFirst(countWhite);
+            if (whiteDeque.size() > 10) {
+                int total = 0;
+                for (Integer integer : whiteDeque) {
+                    total += integer;
+                }
+                int average = total / whiteDeque.size();
+                if (countWhite != 0) {
 
-            if (whitePercent != -1) {
-                int differentWhitePercent = Math.abs(percentInt - whitePercent);
-                if (differentWhitePercent > percentDiffWhite) {
-                    MainVideoCreator.startCatchVideo(true);
-                    whitePercent = -1;
+                    int differentWhitePixelsAverage = Math.abs(average - countWhite);
+                    if (differentWhitePixelsAverage != 0) {
+                        if (average != 0) {
+                            int diffPercent = differentWhitePixelsAverage * 100 / average;
+                            int abs = Math.abs(diffPercent);
+                            int percentDiffWhiteFromSetting = MainFrame.getPercentDiffWhite();
+                            if (percentWhiteDiff != percentDiffWhiteFromSetting) {
+                                percentWhiteDiff = percentDiffWhiteFromSetting;
+                            } else {
+                                if (abs > percentWhiteDiff * 50) {
+                                    System.out.println(cameraPanel.getCameraNumber() + " - Белых пикселей - " + countWhite);
+                                    System.out.println("Среднее - " + average);
+                                    System.out.println("Разница пикселей - " + differentWhitePixelsAverage);
+                                    System.out.println("Разница процентов - " + diffPercent);
+                                    System.out.println("Сработка, номер камеры - " + cameraPanel.getCameraNumber());
+                                    System.out.println("=========================================");
+
+                                    MainVideoCreator.startCatchVideo(true);
+                                    whiteDeque.clear();
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    if (percentInt != whitePercent) {
-                        whitePercent = percentInt;
+                    if (average != 0) {
+                        whiteDeque.clear();
                     }
                 }
-            } else {
-                whitePercent = percentInt;
+                whiteDeque.pollLast();
             }
         }
-        return bi2;
+        return bi;
     }
 
     void setBorderColor(Color color) {
@@ -350,5 +353,9 @@ public class VideoCatcher {
 
     CameraPanel getCameraPanel() {
         return cameraPanel;
+    }
+
+    CameraPanel.CameraWindow getCameraPanelWindow() {
+        return cameraPanel.getCameraWindow();
     }
 }

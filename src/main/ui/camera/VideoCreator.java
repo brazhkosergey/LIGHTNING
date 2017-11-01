@@ -189,7 +189,7 @@ public class VideoCreator {
                                     int size = fileDeque.size();
                                     int secondsCount = 0;
 
-                                    System.out.println("Размер буфера, на момент начала сохранения - " + size);
+//                                    System.out.println("Размер буфера, на момент начала сохранения - " + size);
                                     if (destFolder.mkdirs()) {
                                         for (int i = 0; i < size; i++) {
                                             try {
@@ -226,10 +226,10 @@ public class VideoCreator {
                                             "Кадров - " + currentTotalCountImage + ". " +
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
-                                    System.out.println("Сохранили файл. Группа - " + cameraGroupNumber + ". " +
-                                            "Кадров - " + currentTotalCountImage + ". " +
-                                            "Файлов в буфере " + size + ". " +
-                                            "Сохранили секунд " + secondsCount);
+//                                    System.out.println("Сохранили файл. Группа - " + cameraGroupNumber + ". " +
+//                                            "Кадров - " + currentTotalCountImage + ". " +
+//                                            "Файлов в буфере " + size + ". " +
+//                                            "Сохранили секунд " + secondsCount);
                                     startSaveVideo = false;
                                 }
                             } else {
@@ -301,15 +301,23 @@ public class VideoCreator {
 
         if (work) {
             int imageNumber = totalCountImages;
-            System.out.println("Сработка. Кадр номер - " + imageNumber);
+//            System.out.println("Сработка. Кадр номер - " + imageNumber);
             eventsFramesNumber.put(imageNumber, programSave);
-            if (!startSaveVideo) {
-                log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
-                startSaveVideo = true;
-                this.date = date;
+//            if (buffMapImages.size() > 0) {
+            if (dequeImagesTime.size() > 0) {
+                if (!startSaveVideo) {
+                    log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
+//                    System.out.println("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
+                    startSaveVideo = true;
+                    this.date = date;
+                } else {
+                    log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
+//                    System.out.println("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
+                    stopSaveVideoInt = 0;
+                }
             } else {
-                log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
-                stopSaveVideoInt = 0;
+//                startSaveVideo = false;
+//                this.date = null;
             }
         }
     }

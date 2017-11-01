@@ -28,6 +28,12 @@ public class MainVideoCreator {
 
     public static void startCatchVideo(boolean programingLightCatch) {
 
+        System.out.println("===========================================");
+        System.out.println("===========================================");
+        System.out.println("===========================================");
+        System.out.println("===========================================");
+
+
         SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
         if (soundSaver != null) {
             soundSaver.startSaveAudio();
@@ -59,10 +65,9 @@ public class MainVideoCreator {
             });
             continueVideoThread.start();
         } else {
-            log.info("Продолжаем событие " + date.toString() + event);
+            log.info("Еще одна сработка, продолжаем событие " + date.toString() + event);
             secondVideoSave = 1;
         }
-
 
         if (startSaveVideoThread == null) {
             startSaveVideoThread = new Thread(() -> {
@@ -77,11 +82,12 @@ public class MainVideoCreator {
                 startSaveVideoThread = null;
             });
             startSaveVideoThread.start();
+        } else {
+            log.info("С прошлой сработки не прошло 2 секунды.");
         }
     }
 
     public static void stopCatchVideo() {
-
         SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
         if (soundSaver != null) {
             soundSaver.stopSaveAudio();
@@ -251,6 +257,10 @@ public class MainVideoCreator {
                 FileInputStream fileInputStream = null;
                 File[] temporaryFiles = folderWithTempraryFiles.listFiles();
 
+
+                int heightStream = 0;
+                int weightStream = 0;
+
                 for (File file : temporaryFiles) {
                     try {
                         fileInputStream = new FileInputStream(file);
@@ -290,6 +300,9 @@ public class MainVideoCreator {
 
                                 if (image != null) {
                                     if (!addVideoStream) {
+                                        heightStream = image.getHeight();
+                                        weightStream = image.getWidth();
+
                                         writer.addVideoStream(0, 0,
                                                 ICodec.ID.CODEC_ID_MPEG4,
                                                 image.getWidth(), image.getHeight());
@@ -321,16 +334,29 @@ public class MainVideoCreator {
                                         addVideoStream = true;
                                     }
 
-                                    if (connectImage) {
-                                        writer.encodeVideo(0, connectImage(image, imageToConnect, opacity), nextFrameTime,
-                                                TimeUnit.MILLISECONDS);
-                                    } else {
-                                        writer.encodeVideo(0, image, nextFrameTime,
-                                                TimeUnit.MILLISECONDS);
+                                    try {
+                                        if (connectImage) {
+                                            BufferedImage bufferedImage = connectImage(image, imageToConnect, opacity);
+                                            writer.encodeVideo(0, bufferedImage, nextFrameTime, TimeUnit.MILLISECONDS);
+                                        } else {
+                                            writer.encodeVideo(0, image, nextFrameTime,
+                                                    TimeUnit.MILLISECONDS);
+                                        }
+                                    } catch (Exception e) {
+
+                                        count--;
+                                        countImageNotSaved++;
+                                        System.out.println("Размер потока - " + heightStream + " : " + weightStream);
+                                        System.out.println("Размер ИЗОБРАЖЕНИЯ - " + image.getHeight() + " : " + image.getWidth());
+                                        System.out.println("Изображение другого размера ");
+                                        System.out.println("Сохранено - " + count);
+                                        System.out.println("НЕ СОХРАНЕНО " + countImageNotSaved);
                                     }
+
+
                                     image = null;
                                     if (count % 2 == 0) {
-                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber")+
+                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber") +
                                                 count++, new Color(23, 114, 26));
                                     } else {
                                         MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber") +
@@ -436,31 +462,6 @@ public class MainVideoCreator {
                                         writer.addVideoStream(0, 0,
                                                 ICodec.ID.CODEC_ID_MPEG4,
                                                 image.getWidth(), image.getHeight());
-//                            ========================================================
-//                            ========================================================
-//                            ========================================================
-//                            ========================================================
-//                            writer.addAudioStream(ICodec.ID.CODEC_ID_AAC)
-//                            byte[] audioBytes = new byte[line.getBufferSize() / 2]; // best size?
-//                            int numBytesRead = 0;
-//                            numBytesRead = line.read(audioBytes, 0, audioBytes.length);
-//                            // convert to signed shorts representing samples
-//                            int numSamplesRead = numBytesRead / 2;
-//                            short[] audioSamples = new short[numSamplesRead];
-//                            if (format.isBigEndian()) {
-//                                for (int i = 0; i < numSamplesRead; i++) {
-//                                    audioSamples[i] = (short) ((audioBytes[2 * i] << 8) | audioBytes[2 * i + 1]);
-//                                }
-//                            } else {
-//                                for (int i = 0; i < numSamplesRead; i++) {
-//                                    audioSamples[i] = (short) ((audioBytes[2 * i + 1] << 8) | audioBytes[2 * i]);
-//                                }
-//                            }
-//                            writer.encodeAudio(0,audioSamples);?????????/
-//                             use audioSamples in Xuggler etc
-////                            ========================================================
-////                            ========================================================
-////                            ========================================================
                                         addVideoStream = true;
                                     }
 
@@ -504,8 +505,6 @@ public class MainVideoCreator {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
         }
-
-
     }
 
     private static BufferedImage connectImage(BufferedImage sourceImage, BufferedImage imageToConnect, float opacity) {

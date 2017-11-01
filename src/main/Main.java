@@ -32,7 +32,6 @@ public class Main {
         }
 
         log.info("Памяти достаточно.");
-        MainFrame.setMaxMemory((int) maxMemory);
         try {
             MainFrame.getMainFrame();
         } catch (Exception e) {

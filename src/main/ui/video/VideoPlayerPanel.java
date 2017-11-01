@@ -71,7 +71,10 @@ class VideoPlayerPanel extends JPanel {
 
     private int numberVideoPanel;
 
+
     VideoPlayerPanel(File folderWithTemporaryFiles, int numberVideoPanel) {
+
+
         this.numberVideoPanel = numberVideoPanel;
         this.folder = folderWithTemporaryFiles;
         videoPlayerToShowOneVideo = new VideoPlayerToShowOneVideo();
@@ -155,10 +158,6 @@ class VideoPlayerPanel extends JPanel {
                 }
             }
 
-            for (Integer o : tempEventsMapPartSize.keySet()) {
-                System.out.println("Часть номер - " + o + " равна = " + tempEventsMapPartSize.get(o));
-            }
-
             BufferedImage image = null;
             String absolutePathToImage = folderWithTemporaryFiles.getAbsolutePath().replace(".tmp", ".jpg");
             File imageFile = new File(absolutePathToImage);
@@ -186,7 +185,6 @@ class VideoPlayerPanel extends JPanel {
         informLabel.setVerticalAlignment(SwingConstants.CENTER);
 
         videoPanel = new JPanel(new BorderLayout());
-        videoPanel.setBorder(BorderFactory.createEtchedBorder());
         videoPanel.add(informLabel);
 
         JPanel totalExportPanel = new JPanel(new FlowLayout());
@@ -252,9 +250,9 @@ class VideoPlayerPanel extends JPanel {
 
         partExportPanel = new JPanel(new FlowLayout());
         partExportPanel.setBorder(BorderFactory.createLineBorder(Color.lightGray));
-        partExportPanel.setPreferredSize(new Dimension(200, 300));
+        partExportPanel.setPreferredSize(new Dimension(190, 300));
         JLabel partExportLabel = new JLabel(MainFrame.getBundle().getString("partsavelabel"));
-        partExportLabel.setPreferredSize(new Dimension(200, 25));
+        partExportLabel.setPreferredSize(new Dimension(190, 25));
         partExportLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JLabel startPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstframelabel"));
@@ -279,7 +277,7 @@ class VideoPlayerPanel extends JPanel {
 
         JLabel informPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstinformvideoplayerlabel"));
         informPartExportLabel.setFocusable(false);
-        informPartExportLabel.setPreferredSize(new Dimension(200, 50));
+        informPartExportLabel.setPreferredSize(new Dimension(190, 50));
         informPartExportLabel.setHorizontalAlignment(SwingConstants.CENTER);
         informPartExportLabel.setHorizontalTextPosition(SwingConstants.CENTER);
 
@@ -430,13 +428,9 @@ class VideoPlayerPanel extends JPanel {
     void showFrameNumber(int partNumber, int currentFramePositionPercent) {
         if (showFrameThread == null) {
             showFrameThread = new Thread(() -> {
-                System.out.println("Часть номер - " + partNumber);
-                System.out.println("Позиция в части - " + currentFramePositionPercent);
                 Integer sizeOfPart = tempEventsMapPartSize.get(partNumber);
                 double i = (double) currentFramePositionPercent / 100000;
                 int frameToShowInPart = (int) (i * sizeOfPart);
-                System.out.println("Размер части - " + sizeOfPart);
-                System.out.println("Номер кадра в кусочке - " + frameToShowInPart);
 
                 Integer startFrameOFPart;
                 if (partNumber == 0) {
@@ -446,7 +440,6 @@ class VideoPlayerPanel extends JPanel {
                 }
 
                 int frameToShowNumber = startFrameOFPart + frameToShowInPart;
-                System.out.println("Номер кадра, который показываем - " + frameToShowNumber);
                 if (frameInBuffDeque.size() > 0) {
                     if (frameToShowNumber != currentFrameNumber) {
                         if (framesImagesInBuffMap.containsKey(frameToShowNumber) || framesBytesInBuffMap.containsKey(frameToShowNumber)) {
@@ -459,7 +452,7 @@ class VideoPlayerPanel extends JPanel {
                             }
 
                             if (image != null) {
-                                videoPlayerToShowOneVideo.setBufferedImage(processImage(image, videoPanel.getWidth(), videoPanel.getHeight()));
+                                videoPlayerToShowOneVideo.setBufferedImage(CameraPanel.processImage(image, videoPanel.getWidth(), videoPanel.getHeight()));
                                 videoPlayerToShowOneVideo.repaint();
                                 currentFrameNumber = frameToShowNumber;
                                 FPS++;
@@ -716,53 +709,6 @@ class VideoPlayerPanel extends JPanel {
         return bufferedImage;
     }
 
-    private BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {
-        int width;
-        int height;
-
-        if (maxWidth / 1.77 > maxHeight) {
-            height = maxHeight;
-            width = (int) (height * 1.77);
-        } else {
-
-            width = maxWidth;
-            height = (int) (width / 1.77);
-        }
-
-        BufferedImage bi2 = null;
-        double max;
-        int size;
-        int ww = width - bi.getWidth();
-        int hh = height - bi.getHeight();
-
-        if (ww < 0 || hh < 0) {
-            if (ww < hh) {
-                max = width;
-                size = bi.getWidth();
-            } else {
-                max = height;
-                size = bi.getHeight();
-            }
-
-            if (size > 0 && size > max) {
-                double trans = 1.0 / (size / max);
-                AffineTransform tr = new AffineTransform();
-                tr.scale(trans, trans);
-                AffineTransformOp op = new AffineTransformOp(tr, AffineTransformOp.TYPE_BICUBIC);
-                Double w = bi.getWidth() * trans;
-                Double h = bi.getHeight() * trans;
-                bi2 = new BufferedImage(w.intValue(), h.intValue(), bi.getType());
-                op.filter(bi, bi2);
-            }
-        }
-
-        if (bi2 != null) {
-            return bi2;
-        } else {
-            return bi;
-        }
-    }
-
     void showVideo() {
         videoPanel.removeAll();
         videoPanel.add(videoStreamLayer);
@@ -787,6 +733,7 @@ class VideoPlayerPanel extends JPanel {
         return blockHaveVideo;
     }
 
+
     class MyLayer extends LayerUI<JPanel> {
         BufferedImage bufferedImage;
 
@@ -798,11 +745,46 @@ class VideoPlayerPanel extends JPanel {
         public void paint(Graphics g, JComponent c) {
             super.paint(g, c);
             if (bufferedImage != null) {
-                g.drawImage(CameraPanel.animateCircle(CameraPanel.processImage(bufferedImage, videoPanel.getWidth(), videoPanel.getHeight()), BufferedImage.TYPE_INT_ARGB), 0, 0, null);
+
+                BufferedImage image = CameraPanel.animateCircle(CameraPanel.processImage(bufferedImage, videoPanel.getWidth(), videoPanel.getHeight()), BufferedImage.TYPE_INT_ARGB);
+                if (image != null) {
+                    int x = 0;
+                    int imageWidth = image.getWidth();
+                    int panelWidth = videoPanel.getWidth();
+                    if (panelWidth > imageWidth) {
+                        x = (panelWidth - imageWidth) / 2;
+                    }
+                    g.drawImage(image, x, 0, null);
+                }
                 g.dispose();
             }
         }
     }
+
+    class VideoPlayerToShowOneVideo extends JPanel {
+
+        private BufferedImage bufferedImage;
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (bufferedImage != null) {
+                int x = 0;
+
+                int imageWidth = bufferedImage.getWidth();
+                int panelWidth = videoPanel.getWidth();
+                if (panelWidth > imageWidth) {
+                    x = (panelWidth - imageWidth) / 2;
+                }
+                g.drawImage(bufferedImage, x, 0, null);
+            }
+        }
+
+        private void setBufferedImage(BufferedImage bufferedImage) {
+            this.bufferedImage = bufferedImage;
+        }
+    }
+
 
     private void closeStreams() {
         if (fileInputStream != null) {
@@ -843,22 +825,6 @@ class VideoPlayerPanel extends JPanel {
         }
     }
 
-    class VideoPlayerToShowOneVideo extends JPanel {
-
-        private BufferedImage bufferedImage;
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (bufferedImage != null) {
-                g.drawImage(bufferedImage, 0, 0, null);
-            }
-        }
-
-        private void setBufferedImage(BufferedImage bufferedImage) {
-            this.bufferedImage = bufferedImage;
-        }
-    }
 
     void setShowVideoNow(boolean showVideoNow) {
         this.showVideoNow = showVideoNow;

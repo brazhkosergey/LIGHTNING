@@ -11,9 +11,8 @@ public class Setting extends JPanel {
     private JLabel portLabel;
     private JTextField defaultPort;
     private JTextField defaultFolder;
-    private JTextField defaultProfileName;
     private JLabel currentFolder;
-    private JLabel currentProfileName;
+
     public JButton saveButton;
     private JTextField timeTextField;
     private JCheckBox checkBox;
@@ -24,7 +23,6 @@ public class Setting extends JPanel {
     private JTextField passwordTextField;
 
     private Setting() {
-//        this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         this.setPreferredSize(new Dimension(1120, 540));
         buildSetting();
     }
@@ -109,7 +107,6 @@ public class Setting extends JPanel {
             lightSensitivityLabel.setText(MainFrame.getBundle().getString("photosensitivitysettinglabel") + value);
         });
 
-
         JLabel changeWhiteLabel = new JLabel(MainFrame.getBundle().getString("lightening") + MainFrame.getPercentDiffWhite() + " %");
         changeWhiteLabel.setPreferredSize(new Dimension(680, 30));
 
@@ -117,8 +114,8 @@ public class Setting extends JPanel {
         sliderChangeWhite.setPreferredSize(new Dimension(680, 30));
         sliderChangeWhite.setMinorTickSpacing(1);
         sliderChangeWhite.setPaintTicks(true);
-        sliderChangeWhite.setMinimum(5);
-        sliderChangeWhite.setMaximum(20);
+        sliderChangeWhite.setMinimum(2);
+        sliderChangeWhite.setMaximum(9);
         sliderChangeWhite.setValue(MainFrame.getPercentDiffWhite());
         sliderChangeWhite.addChangeListener(e -> {
             changeWhiteLabel.setText(MainFrame.getBundle().getString("lightening") + sliderChangeWhite.getValue() + " %");
@@ -150,16 +147,7 @@ public class Setting extends JPanel {
         otherSetting.add(opacityLabel);
         otherSetting.add(slider);
 
-        JPanel countImageToSHowPanel = new JPanel(new FlowLayout());
-        JLabel countImagesToShowLabel = new JLabel(MainFrame.getBundle().getString("showframescountlabel"));
-
-        JComboBox<Integer> comboBox = new JComboBox<>();
-        comboBox.addItem(1);
-        comboBox.addItem(5);
-        comboBox.addItem(10);
-
-        countImageToSHowPanel.add(countImagesToShowLabel);
-        countImageToSHowPanel.add(comboBox);
+        JPanel countImageToShowPanel = new JPanel(new FlowLayout());
 
         saveButton = new JButton();
         saveButton.setPreferredSize(new Dimension(150, 50));
@@ -172,11 +160,11 @@ public class Setting extends JPanel {
             MainFrame.setPercentDiffWhite(changeWhitePercent);
 
             int lightSensitivity = lightSensitivitySlider.getValue();
-            MainFrame.setColorLightNumber(lightSensitivity);
+            MainFrame.getMainFrame().setColorLightNumber(lightSensitivity);
 
             String text = timeTextField.getText();
             int i = Integer.parseInt(text);
-            MainFrame.getMainFrame().setCountSecondsToSaveVideo(i);
+            MainFrame.setCountSecondsToSaveVideo(i);
 
             int opacity = slider.getValue();
             MainFrame.setOpacitySetting(opacity);
@@ -184,7 +172,7 @@ public class Setting extends JPanel {
             int port = 9999;
             try {
                 port = Integer.valueOf(defaultPort.getText());
-            } catch (Exception ignoge) {
+            } catch (Exception ignored) {
             }
 
             MainFrame.setPort(port);
@@ -204,15 +192,7 @@ public class Setting extends JPanel {
                 currentFolder.setText(path);
                 MainFrame.setPath(path);
             }
-
-            int selectedIndex = (int) comboBox.getSelectedItem();
-            MainFrame.setShowImagePerSecond(selectedIndex);
-
-            String profileName = defaultProfileName.getText();
-            currentProfileName.setText(profileName);
-            MainFrame.setProfileName(profileName);
-
-            MainFrame.addressSaver.saveSetting(i, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, port, path, profileName);
+            MainFrame.addressSaver.saveSetting(i, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, port, path);
             saveButton.setText(MainFrame.getBundle().getString("savedbutton"));
             saveButton.setForeground(new Color(46, 139, 87));
         });
@@ -221,7 +201,7 @@ public class Setting extends JPanel {
         mainSettingPanel.add(programLightCatchSettingPanel);
         mainSettingPanel.add(otherSetting);
         mainSettingPanel.add(Box.createRigidArea(new Dimension(690, 20)));
-        mainSettingPanel.add(countImageToSHowPanel);
+        mainSettingPanel.add(countImageToShowPanel);
         mainSettingPanel.add(Box.createRigidArea(new Dimension(100, 20)));
         mainSettingPanel.add(saveButton);
 
@@ -232,7 +212,7 @@ public class Setting extends JPanel {
 
         portLabel = new JLabel("port - " + MainFrame.getPort());
         portLabel.setPreferredSize(new Dimension(200, 25));
-        defaultPort = new JTextField();//"9999"
+        defaultPort = new JTextField();
         defaultPort.setText(String.valueOf(MainFrame.getPort()));
         defaultPort.setPreferredSize(new Dimension(100, 25));
 
@@ -255,31 +235,10 @@ public class Setting extends JPanel {
         pathPanel.add(currentFolder);
         pathPanel.add(defaultFolder);
 
-        JPanel profileNamePane = new JPanel(new FlowLayout());
-        profileNamePane.setBorder(BorderFactory.createEtchedBorder());
-        profileNamePane.setPreferredSize(new Dimension(375, 110));
-
-        JLabel headProfileNameLabel = new JLabel(MainFrame.getBundle().getString("videoprofilename"));
-        headProfileNameLabel.setFont(new Font(null, Font.BOLD, 15));
-        headProfileNameLabel.setPreferredSize(new Dimension(370, 25));
-        headProfileNameLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        currentProfileName = new JLabel(MainFrame.getProfileName());
-        currentProfileName.setHorizontalAlignment(SwingConstants.CENTER);
-        currentProfileName.setPreferredSize(new Dimension(370, 25));
-
-        defaultProfileName = new JTextField(MainFrame.getProfileName());
-        defaultProfileName.setPreferredSize(new Dimension(370, 25));
-
-        profileNamePane.add(headProfileNameLabel);
-        profileNamePane.add(currentProfileName);
-        profileNamePane.add(defaultProfileName);
-
         folderSettingPanel.add(testModeCheckBox);
         folderSettingPanel.add(portLabel);
         folderSettingPanel.add(defaultPort);
         folderSettingPanel.add(pathPanel);
-        folderSettingPanel.add(profileNamePane);
 
         allSettingPane = new JPanel(new FlowLayout());
         allSettingPane.add(mainSettingPanel);

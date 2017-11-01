@@ -48,10 +48,7 @@ public class MainFrame extends JFrame {
     private static JLabel photosensitivityLabel;
     private static JLabel changeWhiteLabel;
 
-    //    private JLabel usedMemoryLabel;
     private JLabel alarmServerLabel;
-    //    private JLabel maxMemoryLabel;
-    private static int maxMemory;
     private static JLabel informLabel;
 
     private static Map<Integer, CameraPanel> cameras;
@@ -67,17 +64,15 @@ public class MainFrame extends JFrame {
     public static AddressSaver addressSaver;
     private static int opacitySetting;
     private static int timeToSave = 30;
-    private static int percentDiffWhite = 10;
-    private static int colorLightNumber = 200;
-    private static int colorRGBNumber = new Color(200, 200, 200).getRGB();
+    private static int percentDiffWhite = 5;
+    private static int colorLightNumber = 180;
+    private Set<Integer> colorRGBNumberSet;
     private static boolean programLightCatchWork;
     private static int port;
     private static String path = "C:\\LIGHTNING_STABLE\\";
     private static String defaultPath = "C:\\LIGHTNING_STABLE\\";
 
-    private static String profileName;
     private SoundSaver soundSaver;
-    private static int showImagePerSecond = 1;
     private static boolean fullSize = false;
 
     private static ResourceBundle bundle;
@@ -89,6 +84,8 @@ public class MainFrame extends JFrame {
         cameraBlock = new HashMap<>();
         camerasAddress = new HashMap<>();
         creatorMap = new HashMap<>();
+
+        colorRGBNumberSet = new HashSet<>();
 
         this.getContentPane().setLayout(new BorderLayout());
         this.setMinimumSize(new Dimension(1150, 700));
@@ -134,7 +131,6 @@ public class MainFrame extends JFrame {
     }
 
     private void startApplication() {
-
         bundle = ResourceBundle.getBundle("Labels");
         mainLabel = new JLabel(bundle.getString("mainpage"));
         northPanel = new JPanel(new FlowLayout());
@@ -143,7 +139,6 @@ public class MainFrame extends JFrame {
 
         centralPanel = new JPanel();
         centralPanel.setBackground(Color.LIGHT_GRAY);
-//        centralPanel.setBorder(BorderFactory.createEtchedBorder());
 
         southPanel = new JPanel();
         southPanel.setBackground(Color.LIGHT_GRAY);
@@ -165,7 +160,7 @@ public class MainFrame extends JFrame {
         opacityLabel.setHorizontalAlignment(SwingConstants.CENTER);
         opacityLabel.setPreferredSize(new Dimension(150, 30));
 
-        showImagesLabel = new JLabel(bundle.getString("showframescountlabel") + " 1 FPS");
+        showImagesLabel = new JLabel(bundle.getString("showframescountlabel") + " 10 FPS");
         showImagesLabel.setHorizontalAlignment(SwingConstants.CENTER);
         showImagesLabel.setPreferredSize(new Dimension(150, 30));
 
@@ -179,13 +174,6 @@ public class MainFrame extends JFrame {
         photosensitivityLabel.setPreferredSize(new Dimension(180, 30));
         changeWhiteLabel = new JLabel(bundle.getString("lightening") + percentDiffWhite + "%");
         changeWhiteLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-//        usedMemoryLabel = new JLabel();
-//        usedMemoryLabel.setPreferredSize(new Dimension(80, 30));
-//        usedMemoryLabel.setHorizontalTextPosition(SwingConstants.CENTER);
-//        maxMemoryLabel = new JLabel();
-//        maxMemoryLabel.setText("Total:" + maxMemory + " mb");
-//        maxMemoryLabel.setHorizontalTextPosition(SwingConstants.CENTER);
 
         alarmServerLabel = new JLabel();
         alarmServerLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -229,12 +217,9 @@ public class MainFrame extends JFrame {
                     }
                 }
 
-                Runtime.getRuntime().gc();
-                long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
-//                usedMemoryLabel.setText(String.valueOf(usedMemory) + " mb");
-//                usedMemoryLabel.repaint();
-
                 if (writeLogs > 60) {
+                    Runtime.getRuntime().gc();
+                    long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
                     log.info("Используем памяти " + usedMemory + " mb");
                     writeLogs = 0;
                 } else {
@@ -256,15 +241,6 @@ public class MainFrame extends JFrame {
                         e.printStackTrace();
                     }
                 }
-//                List<String> runningThreads = getRunningThreads();
-//
-//                System.out.println("============================================");
-//                System.out.println("Запущено потоков - " + runningThreads.size());
-//                for(String s:runningThreads){
-//                    System.out.println(s);
-//                }
-//                System.out.println("============================================");
-//                System.out.println("Запущено потоков - " + runningThreads.size());
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
@@ -292,6 +268,7 @@ public class MainFrame extends JFrame {
                     MainVideoCreator.startCatchVideo(false);
                     socket.close();
                 } catch (Exception e) {
+                    log.error(e.getLocalizedMessage());
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e1) {
@@ -363,7 +340,6 @@ public class MainFrame extends JFrame {
 
     private void buildNorthPanel() {
         audioPacketCount = new JLabel("AUDIO");
-
         JButton mainWindowButton = new JButton(bundle.getString("mainpage"));
         mainWindowButton.setPreferredSize(new Dimension(120, 30));
         mainWindowButton.addActionListener((e) -> {
@@ -574,9 +550,6 @@ public class MainFrame extends JFrame {
         southPanel.add(photosensitivityLabel);
         southPanel.add(changeWhiteLabel);
         southPanel.add(informLabel);
-//        southPanel.add(new JLabel("Used:"));
-//        southPanel.add(usedMemoryLabel);
-//        southPanel.add(maxMemoryLabel);
     }
 
     public static void removeImageForBlock(int number) {
@@ -612,7 +585,7 @@ public class MainFrame extends JFrame {
                 log.info("Камера - " + addressNumber + " будет запущена.");
                 URL url = null;
                 try {
-                    url = new URL(list.get(0) + "&streamprofile=" + profileName);//TODO fgfvdafxvarfd
+                    url = new URL(list.get(0));
                     Authenticator.setDefault(new Authenticator() {
                         protected PasswordAuthentication getPasswordAuthentication() {
                             return new PasswordAuthentication(list.get(1), list.get(2).toCharArray());
@@ -705,15 +678,35 @@ public class MainFrame extends JFrame {
         return colorLightNumber;
     }
 
-    public static void setColorLightNumber(int colorLightNumber) {
+    public void setColorLightNumber(int colorLightNumber) {
         MainFrame.colorLightNumber = colorLightNumber;
         photosensitivityLabel.setText(bundle.getString("photosensitivity") + colorLightNumber);
         photosensitivityLabel.repaint();
-        MainFrame.colorRGBNumber = new Color(colorLightNumber, colorLightNumber, colorLightNumber).getRGB();
+
+        Thread thread = new Thread(() -> {
+            setColorNumbersSet(colorLightNumber, colorRGBNumberSet);
+        });
+        thread.start();
     }
 
-    public static int getColorRGBNumber() {
-        return colorRGBNumber;
+    private void setColorNumbersSet(int number, Set<Integer> set) {
+        set.clear();
+        for (int i = number; i < 250; i++) {
+            for (int k = number; k < 250; k++) {
+                for (int g = number; g < 250; g++) {//238
+                    if (i == 238 & k == 238 & g == 238) {
+                        continue;
+                    }
+                    Color color = new Color(i, k, g);
+                    int rgb = color.getRGB();
+                    set.add(rgb);
+                }
+            }
+        }
+    }
+
+    public Set<Integer> getColorRGBNumberSet() {
+        return colorRGBNumberSet;
     }
 
     public static boolean isProgramLightCatchWork() {
@@ -746,13 +739,9 @@ public class MainFrame extends JFrame {
         MainFrame.path = path;
     }
 
-    public static void setProfileName(String profileName) {
-        MainFrame.profileName = profileName;
-    }
-
-    public static void setMaxMemory(int maxMemory) {
-        MainFrame.maxMemory = maxMemory;
-    }
+//    public static void setProfileName(String profileName) {
+//        MainFrame.profileName = profileName;
+//    }
 
     public static int getPort() {
         return port;
@@ -760,10 +749,6 @@ public class MainFrame extends JFrame {
 
     public static String getPath() {
         return path;
-    }
-
-    public static String getProfileName() {
-        return profileName;
     }
 
     public static void setTestMode(boolean testMode) {
@@ -778,15 +763,15 @@ public class MainFrame extends JFrame {
         return defaultPath;
     }
 
-    public static int getShowImagePerSecond() {
-        return showImagePerSecond;
-    }
+//    public static int getShowImagePerSecond() {
+//        return showImagePerSecond;
+//    }
 
-    public static void setShowImagePerSecond(int showImagePerSecond) {
-        showImagesLabel.setText(bundle.getString("showframescountlabel") + showImagePerSecond + " FPS");
-        showImagesLabel.repaint();
-        MainFrame.showImagePerSecond = showImagePerSecond;
-    }
+//    public static void setShowImagePerSecond(int showImagePerSecond) {
+//        showImagesLabel.setText(bundle.getString("showframescountlabel") + showImagePerSecond + " FPS");
+//        showImagesLabel.repaint();
+//        MainFrame.showImagePerSecond = showImagePerSecond;
+//    }
 
     public static String getPassword() {
         return password;

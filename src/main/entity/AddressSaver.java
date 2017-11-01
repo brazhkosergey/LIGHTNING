@@ -21,7 +21,7 @@ import java.util.Map;
 @XmlRootElement(name = "address")
 public class AddressSaver {
 
-    private String [] arr = new String[24];
+    private String[] arr = new String[24];
     private String audioAddress;
     private int timeToSave;
     private boolean programWork;
@@ -30,16 +30,15 @@ public class AddressSaver {
     private int opacity;
     private int port;
     private String path;
-    private String profileName;
-    private String password ="";
+    private String password = "";
 
-    public void savePasswords(int numberOfCamera, String ipAddress,String username, String password){
-        if(numberOfCamera==0){
+    public void savePasswords(int numberOfCamera, String ipAddress, String username, String password) {
+        if (numberOfCamera == 0) {
             audioAddress = ipAddress;
         } else {
             int ipAddressInt = numberOfCamera - 1;
-            int userNameInt = numberOfCamera+7;
-            int passwordInt = numberOfCamera+15;
+            int userNameInt = numberOfCamera + 7;
+            int passwordInt = numberOfCamera + 15;
             arr[ipAddressInt] = ipAddress;
             arr[userNameInt] = username;
             arr[passwordInt] = password;
@@ -47,7 +46,7 @@ public class AddressSaver {
         savePasswordSaverToFile();
     }
 
-    public void saveSetting(int i,boolean programWork, int sliderChangeWhite, int lightSensitivity, int opacity,int port, String path,String profileName){
+    public void saveSetting(int i, boolean programWork, int sliderChangeWhite, int lightSensitivity, int opacity, int port, String path) {
         this.changeWhitePercent = sliderChangeWhite;
         this.lightSensitivity = lightSensitivity;
         this.opacity = opacity;
@@ -55,12 +54,11 @@ public class AddressSaver {
         this.programWork = programWork;
         this.port = port;
         this.path = path;
-        this.profileName = profileName;
         savePasswordSaverToFile();
     }
 
-    public void cleanSaver(){
-        for(int i = 0;i<arr.length;i++){
+    public void cleanSaver() {
+        for (int i = 0; i < arr.length; i++) {
             arr[i] = "";
             audioAddress = null;
         }
@@ -107,26 +105,24 @@ public class AddressSaver {
             }
         }
 
-        for(int i=1;i<5;i++){
-            File imageFile = new File("C:\\LIGHTNING_STABLE\\buff\\"+i+".jpg");
-            if(imageFile.exists()){
-                BufferedImage bufferedImage=null;
+        for (int i = 1; i < 5; i++) {
+            File imageFile = new File("C:\\LIGHTNING_STABLE\\buff\\" + i + ".jpg");
+            if (imageFile.exists()) {
+                BufferedImage bufferedImage = null;
                 try {
                     bufferedImage = ImageIO.read(imageFile);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
-                if(bufferedImage!=null){
-                    MainFrame.addImage(bufferedImage,i);
+                if (bufferedImage != null) {
+                    MainFrame.addImage(bufferedImage, i);
                 }
             }
         }
 
-
-
-        if(passwordSaver!= null){
+        if (passwordSaver != null) {
             return passwordSaver;
-        }else {
+        } else {
             passwordSaver = new AddressSaver();
             return passwordSaver;
         }
@@ -134,44 +130,46 @@ public class AddressSaver {
 
     public void setPasswordsToFields() {
         Map<Integer, JTextField> textFieldsIpAddressMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsIpAddressMap();
-        for(Integer integer:textFieldsIpAddressMap.keySet()){
-            if(integer!=null){
-                textFieldsIpAddressMap.get(integer).setText(arr[integer-1]);
+        for (Integer integer : textFieldsIpAddressMap.keySet()) {
+            if (integer != null) {
+                textFieldsIpAddressMap.get(integer).setText(arr[integer - 1]);
             } else {
                 textFieldsIpAddressMap.get(integer).setText(audioAddress);
             }
         }
 
         Map<Integer, JTextField> textFieldsUsernameMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsUsernameMap();
-        for(Integer integer:textFieldsUsernameMap.keySet()){
-            if(integer!=null){
-                textFieldsUsernameMap.get(integer).setText(arr[integer+7]);
+        for (Integer integer : textFieldsUsernameMap.keySet()) {
+            if (integer != null) {
+                textFieldsUsernameMap.get(integer).setText(arr[integer + 7]);
             }
         }
 
         Map<Integer, JTextField> textFieldsPasswordMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsPasswordMap();
-        for(Integer integer:textFieldsPasswordMap.keySet()){
-            if(integer!=null){textFieldsPasswordMap.get(integer).setText(arr[integer+15]);}
+        for (Integer integer : textFieldsPasswordMap.keySet()) {
+            if (integer != null) {
+                textFieldsPasswordMap.get(integer).setText(arr[integer + 15]);
+            }
         }
 
 
-
-        for(Integer integer:MainFrame.imagesForBlock.keySet()){
-            if(integer!=null){CameraAddressSetting.getCameraAddressSetting().setHaveImage(integer);}
+        for (Integer integer : MainFrame.imagesForBlock.keySet()) {
+            if (integer != null) {
+                CameraAddressSetting.getCameraAddressSetting().setHaveImage(integer);
+            }
         }
     }
 
-    public void setSetting(){
+    public void setSetting() {
         MainFrame.setProgramLightCatchWork(programWork);
         MainFrame.setPercentDiffWhite(changeWhitePercent);
-        MainFrame.setColorLightNumber(lightSensitivity);
+        MainFrame.getMainFrame().setColorLightNumber(lightSensitivity);
         MainFrame.setOpacitySetting(opacity);
         MainFrame.setCountSecondsToSaveVideo(timeToSave);
-        if(path!=null){
+        if (path != null) {
             MainFrame.setPath(path);
         }
         MainFrame.setPort(port);
-        MainFrame.setProfileName(profileName);
         MainFrame.setPassword(password);
     }
 }
