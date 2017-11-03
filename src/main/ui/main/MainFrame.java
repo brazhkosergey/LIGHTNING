@@ -76,7 +76,7 @@ public class MainFrame extends JFrame {
     private static boolean fullSize = false;
 
     private static ResourceBundle bundle;
-
+    private static int showFramesPercent = 15;
     private MainFrame() {
         super("LIGHTNING STABLE");
         imagesForBlock = new HashMap<>();
@@ -160,7 +160,7 @@ public class MainFrame extends JFrame {
         opacityLabel.setHorizontalAlignment(SwingConstants.CENTER);
         opacityLabel.setPreferredSize(new Dimension(150, 30));
 
-        showImagesLabel = new JLabel(bundle.getString("showframescountlabel") + " 10 FPS");
+        showImagesLabel = new JLabel(bundle.getString("showframescountlabel") + showFramesPercent);
         showImagesLabel.setHorizontalAlignment(SwingConstants.CENTER);
         showImagesLabel.setPreferredSize(new Dimension(150, 30));
 
@@ -739,10 +739,6 @@ public class MainFrame extends JFrame {
         MainFrame.path = path;
     }
 
-//    public static void setProfileName(String profileName) {
-//        MainFrame.profileName = profileName;
-//    }
-
     public static int getPort() {
         return port;
     }
@@ -763,22 +759,22 @@ public class MainFrame extends JFrame {
         return defaultPath;
     }
 
-//    public static int getShowImagePerSecond() {
-//        return showImagePerSecond;
-//    }
-
-//    public static void setShowImagePerSecond(int showImagePerSecond) {
-//        showImagesLabel.setText(bundle.getString("showframescountlabel") + showImagePerSecond + " FPS");
-//        showImagesLabel.repaint();
-//        MainFrame.showImagePerSecond = showImagePerSecond;
-//    }
-
     public static String getPassword() {
         return password;
     }
 
     public static void setPassword(String password) {
         MainFrame.password = password;
+    }
+
+    public static int getShowFramesPercent(){
+        return showFramesPercent;
+    }
+
+    public static void setShowFramesPercent(int showFramesPercent) {
+        MainFrame.showFramesPercent = showFramesPercent;
+        showImagesLabel.setText(bundle.getString("showframescountlabel") +showFramesPercent);
+        showImagesLabel.repaint();
     }
 }
 

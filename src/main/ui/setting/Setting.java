@@ -129,11 +129,11 @@ public class Setting extends JPanel {
         programLightCatchSettingPanel.add(sliderChangeWhite);
 
         JPanel otherSetting = new JPanel(new FlowLayout());
-        otherSetting.setPreferredSize(new Dimension(690, 100));
+        otherSetting.setPreferredSize(new Dimension(690, 70));
         otherSetting.setBorder(BorderFactory.createEtchedBorder());
 
         JLabel opacityLabel = new JLabel(MainFrame.getBundle().getString("backimageopacitylabel") + MainFrame.getOpacitySetting() + " %");
-        opacityLabel.setPreferredSize(new Dimension(680, 30));
+        opacityLabel.setPreferredSize(new Dimension(680, 25));
         JSlider slider = new JSlider();
         slider.setPreferredSize(new Dimension(680, 30));
         slider.setMinorTickSpacing(2);
@@ -148,12 +148,35 @@ public class Setting extends JPanel {
         otherSetting.add(slider);
 
         JPanel countImageToShowPanel = new JPanel(new FlowLayout());
+        countImageToShowPanel.setPreferredSize(new Dimension(690, 70));
+        countImageToShowPanel.setBorder(BorderFactory.createEtchedBorder());
+        JLabel countShowLabel = new JLabel(MainFrame.getBundle().getString("showframescountlabel") + MainFrame.getShowFramesPercent());
+        countShowLabel.setPreferredSize(new Dimension(680, 25));
+        JSlider countShowSlider = new JSlider();
+        countShowSlider.setPreferredSize(new Dimension(680, 30));
+        countShowSlider.setMinimum(1);
+        countShowSlider.setMaximum(60);
+        countShowSlider.setMinorTickSpacing(2);
+        countShowSlider.setPaintTicks(true);
+        countShowSlider.setValue(MainFrame.getShowFramesPercent());
+        countShowSlider.addChangeListener(e -> {
+            int value = countShowSlider.getValue();
+            countShowLabel.setText(MainFrame.getBundle().getString("showframescountlabel") + value);
+        });
+
+        countImageToShowPanel.add(countShowLabel);
+        countImageToShowPanel.add(countShowSlider);
+
 
         saveButton = new JButton();
         saveButton.setPreferredSize(new Dimension(150, 50));
         saveButton.setFont(new Font(null, Font.BOLD, 20));
         saveButton.addActionListener((e) -> {
             MainFrame.setTestMode(testModeCheckBox.isSelected());
+
+            int value = countShowSlider.getValue();
+            MainFrame.setShowFramesPercent(value);
+
 
             MainFrame.setProgramLightCatchWork(checkBox.isSelected());
             int changeWhitePercent = sliderChangeWhite.getValue();
@@ -200,7 +223,6 @@ public class Setting extends JPanel {
         mainSettingPanel.add(lightWorkPane);
         mainSettingPanel.add(programLightCatchSettingPanel);
         mainSettingPanel.add(otherSetting);
-        mainSettingPanel.add(Box.createRigidArea(new Dimension(690, 20)));
         mainSettingPanel.add(countImageToShowPanel);
         mainSettingPanel.add(Box.createRigidArea(new Dimension(100, 20)));
         mainSettingPanel.add(saveButton);

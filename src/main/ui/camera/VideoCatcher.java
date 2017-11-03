@@ -5,6 +5,9 @@ import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -16,6 +19,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 public class VideoCatcher {
     private static Logger log = Logger.getLogger(VideoCatcher.class);
     private int fps;
+    private int fpsToShow = 0;
     private int countTimesToHaveNotBytesToRead;
     private Deque<byte[]> imageDeque;
     private VideoCreator videoCreator;
@@ -49,9 +53,10 @@ public class VideoCatcher {
             while (true) {
                 if (catchVideo) {
                     if (fps != 0) {
-                        cameraPanel.getTitle().setTitle("FPS = " + fps);
+                        cameraPanel.getTitle().setTitle("FPS = " + fps + " : " + fpsToShow);
                         cameraPanel.repaint();
                         fps = 0;
+                        fpsToShow = 0;
                         countTimesToHaveNotBytesToRead = 0;
                     } else {
                         if (!restart) {
@@ -84,25 +89,36 @@ public class VideoCatcher {
             while (true) {
                 if (catchVideo) {
                     byte[] bytes;
+                    int totalTimeToShowFrame = 0;
                     if (imageDeque.size() > 0) {
                         bytes = imageDeque.pollLast();
                         if (bytes != null) {
                             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
                             try {
+                                long startTime = System.currentTimeMillis();
                                 ImageIO.setUseCache(false);
                                 BufferedImage image = ImageIO.read(inputStream);
                                 inputStream.close();
                                 cameraPanel.setBufferedImage(CameraPanel.processImage(findProgramEvent(image), cameraPanel.getWidth(), cameraPanel.getHeight()));
                                 cameraPanel.repaint();
+                                fpsToShow++;
+                                totalTimeToShowFrame = (int) (System.currentTimeMillis() - startTime);
                             } catch (Exception ignored) {
                             }
                             showImage = true;
                         }
-                    }
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+
+                        int timeToSleep = 1000 / MainFrame.getShowFramesPercent();
+                        int diff = timeToSleep - totalTimeToShowFrame;
+
+                        if (diff > 0) {
+                            System.out.println(" Спим  - " + diff);
+                            try {
+                                Thread.sleep(diff);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
                 } else {
                     cameraPanel.getTitle().setTitle(MainFrame.getBundle().getString("cameradoesnotwork"));
@@ -279,17 +295,34 @@ public class VideoCatcher {
     private BufferedImage findProgramEvent(BufferedImage bi) {
         if (MainFrame.isProgramLightCatchWork()) {
             long l = System.currentTimeMillis();
-            int[] rgb1 = bi.getRGB(0, 0, bi.getWidth(), bi.getHeight(), null, 0, 2048);
+
             int countWhite = 0;
-            int allPixels = rgb1.length;
-            for (int i = 0; i < allPixels; i++) {
-                if (set.contains(rgb1[i])) {
-                    countWhite++;
+            for (int y = 0; y < bi.getHeight(); y +=2) {
+                for (int x = 0; x < bi.getWidth(); x += 2) {
+
+                    if (set.contains(bi.getRGB(x, y))) {
+                        countWhite++;
+                    }
                 }
             }
+            System.out.println("Времени на создание и обработку массива -  " + (System.currentTimeMillis() - l));
+//            int[] rgb1 = bi.getRGB(0,0, bi.getWidth(), bi.getHeight(),
+//                    null, 0,bi.getWidth());
+//            int countWhite = 0;
+//            int allPixels = rgb1.length;
+////            System.out.println("Времени на создание массива -  " +(System.currentTimeMillis()-l));
+//
+//
+//            long l1 = System.currentTimeMillis();
+//            for (int i = 0; i < allPixels; i++) {
+//                if (set.contains(rgb1[i])) {
+//                    countWhite++;
+//                }
+//            }
+////            System.out.println("Времени на обработку массива - "+(System.currentTimeMillis()-l1));
+//            System.out.println("Времени на обработку массива - "+(System.currentTimeMillis()-l));
 
-            System.out.println("Времени затрачено на поиск белых пикселей - " + (System.currentTimeMillis() - l));
-
+//            System.out.println("Белых пикселей -  " + countWhite);
             whiteDeque.addFirst(countWhite);
             if (whiteDeque.size() > 10) {
                 int total = 0;
@@ -309,6 +342,7 @@ public class VideoCatcher {
                                 percentWhiteDiff = percentDiffWhiteFromSetting;
                             } else {
                                 if (abs > percentWhiteDiff * 50) {
+
                                     System.out.println(cameraPanel.getCameraNumber() + " - Белых пикселей - " + countWhite);
                                     System.out.println("Среднее - " + average);
                                     System.out.println("Разница пикселей - " + differentWhitePixelsAverage);
