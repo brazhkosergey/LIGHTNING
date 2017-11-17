@@ -144,14 +144,6 @@ public class VideoBytesSaver {
 
             while (true) {
                 try {
-                    if (creatorWork) {
-                        fpsList.add(totalFPS);
-                        fpsDeque.addFirst(totalFPS);
-                        totalFPS = 0;
-                        oneSecond = true;
-                        secondsToSave = MainFrame.getSecondsToSave();
-                    }
-
                     creatorWork = false;
                     for (VideoCatcher catcher : catcherList) {
                         if (!creatorWork) {
@@ -162,6 +154,18 @@ public class VideoBytesSaver {
                             catcher.setBorderColor(new Color(70, 193, 84));
                         } else {
                             catcher.setBorderColor(Color.RED);
+                        }
+                    }
+
+                    if (creatorWork) {
+                        fpsList.add(totalFPS);
+                        fpsDeque.addFirst(totalFPS);
+                        totalFPS = 0;
+                        oneSecond = true;
+                        secondsToSave = MainFrame.getSecondsToSave();
+
+                        if (enableSaveVideo) {
+                            stopSaveVideoInt++;
                         }
                     }
 
@@ -176,10 +180,7 @@ public class VideoBytesSaver {
                                 log.error(e.getMessage());
                             }
                         }
-                    }
-
-                    if (enableSaveVideo) {
-                        stopSaveVideoInt++;
+                        stopSaveVideoInt = 0;
                     }
 
                     Thread.sleep(1000);
@@ -193,7 +194,8 @@ public class VideoBytesSaver {
         saveBytesThread = new Thread(() -> {
             while (true) {
                 if (oneSecond) {
-                    System.out.println("Группа номер - " + cameraGroupNumber);
+                    System.out.println(" One second " + cameraGroupNumber);
+
                     try {
                         Thread saveFileThread = new Thread(() -> {
                             if (dequeImagesTime.size() > 0) {
@@ -243,9 +245,7 @@ public class VideoBytesSaver {
                             }
 
                             if (enableSaveVideo) {
-                                if (stopSaveVideoInt >= secondsToSave
-                                        && totalCountFrames > 0
-                                        )  {
+                                if (stopSaveVideoInt >= secondsToSave && totalCountFrames > 0) {
                                     stopSaveVideoInt = 0;
                                     MainVideoCreator.stopCatchVideo();
                                     log.info("Сохраняем данные. Группа номер - " + cameraGroupNumber);
@@ -333,6 +333,8 @@ public class VideoBytesSaver {
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
                                     enableSaveVideo = false;
+                                } else {
+                                    System.out.println(" Мало секунд " + stopSaveVideoInt);
                                 }
                             } else {
                                 int i = secondsToSave;
