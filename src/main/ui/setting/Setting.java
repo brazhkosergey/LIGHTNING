@@ -1,5 +1,6 @@
 package ui.setting;
 
+import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 
 import javax.swing.*;
@@ -7,6 +8,8 @@ import java.awt.*;
 import java.io.File;
 
 public class Setting extends JPanel {
+    private static Logger log = Logger.getLogger(Setting.class);
+
     private static Setting setting;
     private JLabel portLabel;
     private JTextField defaultPort;
@@ -172,52 +175,74 @@ public class Setting extends JPanel {
         saveButton.setPreferredSize(new Dimension(150, 50));
         saveButton.setFont(new Font(null, Font.BOLD, 20));
         saveButton.addActionListener((e) -> {
-            MainFrame.setTestMode(testModeCheckBox.isSelected());
 
-            int value = countShowSlider.getValue();
-            MainFrame.setShowFramesPercent(value);
+            try{
+                MainFrame.setTestMode(testModeCheckBox.isSelected());
 
+                int value = countShowSlider.getValue();
+                MainFrame.setShowFramesPercent(value);
 
-            MainFrame.setProgramLightCatchWork(checkBox.isSelected());
-            int changeWhitePercent = sliderChangeWhite.getValue();
-            MainFrame.setPercentDiffWhite(changeWhitePercent);
+                MainFrame.setProgramLightCatchWork(checkBox.isSelected());
+                int changeWhitePercent = sliderChangeWhite.getValue();
+                MainFrame.setPercentDiffWhite(changeWhitePercent);
 
-            int lightSensitivity = lightSensitivitySlider.getValue();
-            MainFrame.getMainFrame().setColorLightNumber(lightSensitivity);
+                int lightSensitivity = lightSensitivitySlider.getValue();
+                MainFrame.getMainFrame().setColorLightNumber(lightSensitivity);
 
-            String text = timeTextField.getText();
-            int i = Integer.parseInt(text);
-            MainFrame.setCountSecondsToSaveVideo(i);
+                String text = timeTextField.getText();
+                int countSecondsToSaveVideo = Integer.parseInt(text);
 
-            int opacity = slider.getValue();
-            MainFrame.setOpacitySetting(opacity);
+                if(countSecondsToSaveVideo<2){
+                    countSecondsToSaveVideo = 2;
+                    timeTextField.setText(String.valueOf(countSecondsToSaveVideo));
+                }
 
-            int port = 9999;
-            try {
-                port = Integer.valueOf(defaultPort.getText());
-            } catch (Exception ignored) {
-            }
+                MainFrame.setCountSecondsToSaveVideo(countSecondsToSaveVideo);
 
-            MainFrame.setPort(port);
-            portLabel.setText("port сервера - " + port);
+                int opacity = slider.getValue();
+                MainFrame.setOpacitySetting(opacity);
 
-            String path = defaultFolder.getText();
-            boolean mkdirs = false;
-            if (path != null && path.length() > 2) {
-                File file = new File(path + "\\bytes\\");
+                int port = 9999;
                 try {
-                    mkdirs = file.mkdirs();
+                    port = Integer.valueOf(defaultPort.getText());
                 } catch (Exception ignored) {
                 }
-            }
 
-            if (mkdirs) {
-                currentFolder.setText(path);
-                MainFrame.setPath(path);
+                MainFrame.setPort(port);
+                portLabel.setText("port сервера - " + port);
+
+                String path = defaultFolder.getText();
+                boolean mkdirs = false;
+                if (path != null && path.length() > 2) {
+                    File file = new File(path + "\\bytes\\");
+                    try {
+                        mkdirs = file.mkdirs();
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                if (mkdirs) {
+                    currentFolder.setText(path);
+                    MainFrame.setPath(path);
+                }
+
+                MainFrame.addressSaver.saveSetting(countSecondsToSaveVideo, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, port, path);
+                log.info("Настройки изменены. Время сохранения: " + countSecondsToSaveVideo +
+                        ", Фиксируем програмные сработки: " + checkBox.isSelected() +
+                        ", процент вспышки на изображении: " + changeWhitePercent +
+                        ", чуствительность камеры: " + lightSensitivity +
+                        ", прозрачность фона: " + opacity +
+                        ", порт для ожидания сиграла аппаратной сработки: " + port +
+                        ", путь к папке для сохранения данных: " + path +
+                        ", тестовый режим: " + testModeCheckBox.isSelected() + ".");
+
+                saveButton.setText(MainFrame.getBundle().getString("savedbutton"));
+                MainFrame.showInformMassage(MainFrame.getBundle().getString("savedbutton"),new Color(46, 139, 87));
+                saveButton.setForeground(new Color(46, 139, 87));
+            } catch (Exception exc){
+                log.error(exc.getMessage());
+                MainFrame.showInformMassage("ERROR",Color.red);
             }
-            MainFrame.addressSaver.saveSetting(i, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, port, path);
-            saveButton.setText(MainFrame.getBundle().getString("savedbutton"));
-            saveButton.setForeground(new Color(46, 139, 87));
         });
 
         mainSettingPanel.add(lightWorkPane);

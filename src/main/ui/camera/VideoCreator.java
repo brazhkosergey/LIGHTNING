@@ -58,7 +58,6 @@ public class VideoCreator {
         eventsFramesNumber = new HashMap<>();
 
         timerThread = new Thread(() -> {
-
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
@@ -87,10 +86,14 @@ public class VideoCreator {
 
                     if (!creatorWork) {
                         while (fileDeque.size() > 0) {
-                            File fileToDel = fileDeque.pollLast();
-                            fileToDel.delete();
-                            Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
-                            totalCountImages -= remove;
+                            try {
+                                File fileToDel = fileDeque.pollLast();
+                                Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
+                                totalCountImages -= remove;//Здесь удаляем все файлы, в случае отключения всех камер.
+                                fileToDel.delete();
+                            } catch (Exception e) {
+                                log.error(e.getMessage());
+                            }
                         }
                     }
 
@@ -120,12 +123,21 @@ public class VideoCreator {
                                         FileOutputStream fileOutputStream = new FileOutputStream(temporaryFile);
                                         for (int i = 0; i < size; i++) {
                                             Integer integer = fpsDeque.pollLast();
-                                            for (int j = 0; j < integer; j++) {
-                                                Long aLong = dequeImagesTime.pollLast();
-                                                byte[] remove = buffMapImages.remove(aLong);
-                                                if (remove != null) {
-                                                    fileOutputStream.write(remove);
-                                                    countImagesInFile++;
+                                            if (integer != null) {
+                                                for (int j = 0; j < integer; j++) {
+                                                    Long aLong = dequeImagesTime.pollLast();
+                                                    if (aLong != null) {
+                                                        byte[] remove = buffMapImages.remove(aLong);
+                                                        if (remove != null) {
+                                                            try {
+                                                                countImagesInFile++;
+                                                                fileOutputStream.write(remove);
+                                                            } catch (Exception e) {
+                                                                log.error(e.getMessage());
+                                                                e.printStackTrace();
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -136,7 +148,8 @@ public class VideoCreator {
                                             e.printStackTrace();
                                         }
                                     }
-                                } catch (IOException e) {
+                                } catch (Exception e) {
+                                    log.error(e.getMessage());
                                     e.printStackTrace();
                                 }
                                 File file = new File(MainFrame.getDefaultPath() + "\\buff\\" + cameraGroupNumber + "\\"
@@ -196,7 +209,7 @@ public class VideoCreator {
                                                 File fileToSave = fileDeque.pollLast();
                                                 if (fileToSave != null) {
                                                     Integer remove = buffFilesSizeImagesCount.remove(fileToSave);
-                                                    totalCountImages -= remove;
+                                                    totalCountImages -= remove;//Не здесь
                                                     secondsCount++;
                                                     boolean reSave = fileToSave.renameTo(new File(destFolder, fileToSave.getName()));
                                                     if (!reSave) {
@@ -226,32 +239,33 @@ public class VideoCreator {
                                             "Кадров - " + currentTotalCountImage + ". " +
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
-//                                    System.out.println("Сохранили файл. Группа - " + cameraGroupNumber + ". " +
-//                                            "Кадров - " + currentTotalCountImage + ". " +
-//                                            "Файлов в буфере " + size + ". " +
-//                                            "Сохранили секунд " + secondsCount);
                                     startSaveVideo = false;
                                 }
                             } else {
                                 int i = timeToSave;
                                 while (fileDeque.size() > i) {
-                                    if (!startSaveVideo) {
-                                        File fileToDel = fileDeque.pollLast();
-                                        if (fileToDel.delete()) {
-                                            Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
-                                            totalCountImages -= remove;
-                                            if (eventsFramesNumber.size() != 0) {
-                                                Map<Integer, Boolean> temporaryMap = new HashMap<>();
-                                                for (Integer integer : eventsFramesNumber.keySet()) {
-                                                    temporaryMap.put(integer - remove, eventsFramesNumber.get(integer));
+                                    try {
+                                        if (!startSaveVideo) {
+                                            File fileToDel = fileDeque.pollLast();
+                                            if (fileToDel != null) {
+                                                Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
+                                                totalCountImages -= remove;
+                                                if (eventsFramesNumber.size() != 0) {
+                                                    Map<Integer, Boolean> temporaryMap = new HashMap<>();
+                                                    for (Integer integer : eventsFramesNumber.keySet()) {
+                                                        temporaryMap.put(integer - remove, eventsFramesNumber.get(integer));
+                                                    }
+                                                    eventsFramesNumber.clear();
+                                                    for (Integer integer : temporaryMap.keySet()) {
+                                                        eventsFramesNumber.put(integer, temporaryMap.get(integer));
+                                                    }
                                                 }
-                                                eventsFramesNumber.clear();
-                                                for (Integer integer : temporaryMap.keySet()) {
-                                                    eventsFramesNumber.put(integer, temporaryMap.get(integer));
-                                                }
+                                                fpsList.remove(0);
+                                                fileToDel.delete();
                                             }
-                                            fpsList.remove(0);
                                         }
+                                    } catch (Exception e) {
+                                        log.error(e.getMessage());
                                     }
                                 }
                             }

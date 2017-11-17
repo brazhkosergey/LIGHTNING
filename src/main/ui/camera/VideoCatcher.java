@@ -112,7 +112,7 @@ public class VideoCatcher {
                         int diff = timeToSleep - totalTimeToShowFrame;
 
                         if (diff > 0) {
-                            System.out.println(" Спим  - " + diff);
+//                            System.out.println(" Спим  - " + diff);
                             try {
                                 Thread.sleep(diff);
                             } catch (InterruptedException e) {
@@ -299,13 +299,12 @@ public class VideoCatcher {
             int countWhite = 0;
             for (int y = 0; y < bi.getHeight(); y +=2) {
                 for (int x = 0; x < bi.getWidth(); x += 2) {
-
                     if (set.contains(bi.getRGB(x, y))) {
                         countWhite++;
                     }
                 }
             }
-            System.out.println("Времени на создание и обработку массива -  " + (System.currentTimeMillis() - l));
+//            System.out.println("Времени на создание и обработку массива -  " + (System.currentTimeMillis() - l));
 //            int[] rgb1 = bi.getRGB(0,0, bi.getWidth(), bi.getHeight(),
 //                    null, 0,bi.getWidth());
 //            int countWhite = 0;

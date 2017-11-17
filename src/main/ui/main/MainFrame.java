@@ -77,6 +77,7 @@ public class MainFrame extends JFrame {
 
     private static ResourceBundle bundle;
     private static int showFramesPercent = 15;
+
     private MainFrame() {
         super("LIGHTNING STABLE");
         imagesForBlock = new HashMap<>();
@@ -566,15 +567,25 @@ public class MainFrame extends JFrame {
         informLabel.repaint();
     }
 
+    /**
+     * @param massage
+     */
     public static void showSecondsAlreadySaved(String massage) {
         recordSecondsLabel.setText(massage);
         recordSecondsLabel.repaint();
     }
 
+    /**
+     * @param image
+     * @param numberGroup
+     */
     public static void addImage(BufferedImage image, int numberGroup) {
         imagesForBlock.put(numberGroup, image);
     }
 
+    /**
+     *
+     */
     public void showAllCameras() {
         for (Integer addressNumber : camerasAddress.keySet()) {
             if (addressNumber == null) {
@@ -767,13 +778,13 @@ public class MainFrame extends JFrame {
         MainFrame.password = password;
     }
 
-    public static int getShowFramesPercent(){
+    public static int getShowFramesPercent() {
         return showFramesPercent;
     }
 
     public static void setShowFramesPercent(int showFramesPercent) {
         MainFrame.showFramesPercent = showFramesPercent;
-        showImagesLabel.setText(bundle.getString("showframescountlabel") +showFramesPercent);
+        showImagesLabel.setText(bundle.getString("showframescountlabel") + showFramesPercent);
         showImagesLabel.repaint();
     }
 }

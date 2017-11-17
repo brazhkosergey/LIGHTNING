@@ -28,12 +28,10 @@ public class MainVideoCreator {
 
     public static void startCatchVideo(boolean programingLightCatch) {
 
-        System.out.println("===========================================");
-        System.out.println("===========================================");
-        System.out.println("===========================================");
-        System.out.println("===========================================");
-
-
+//        System.out.println("===========================================");
+//        System.out.println("===========================================");
+//        System.out.println("===========================================");
+//        System.out.println("===========================================");
         SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
         if (soundSaver != null) {
             soundSaver.startSaveAudio();
@@ -48,7 +46,7 @@ public class MainVideoCreator {
 
         if (!isSaveVideo()) {
             date = new Date(System.currentTimeMillis());
-            log.info("Событие " + date.toString() + event);
+            log.info("Событие " + date.toString() + event + ". Сохраняем секунд - " + MainFrame.getTimeToSave());
             continueVideoThread = new Thread(() -> {
                 MainVideoCreator.setSaveVideo(true);
                 while (saveVideo) {
@@ -306,31 +304,6 @@ public class MainVideoCreator {
                                         writer.addVideoStream(0, 0,
                                                 ICodec.ID.CODEC_ID_MPEG4,
                                                 image.getWidth(), image.getHeight());
-//                            ========================================================
-//                            ========================================================
-//                            ========================================================
-//                            ========================================================
-//                            writer.addAudioStream(ICodec.ID.CODEC_ID_AAC)
-//                            byte[] audioBytes = new byte[line.getBufferSize() / 2]; // best size?
-//                            int numBytesRead = 0;
-//                            numBytesRead = line.read(audioBytes, 0, audioBytes.length);
-//                            // convert to signed shorts representing samples
-//                            int numSamplesRead = numBytesRead / 2;
-//                            short[] audioSamples = new short[numSamplesRead];
-//                            if (format.isBigEndian()) {
-//                                for (int i = 0; i < numSamplesRead; i++) {
-//                                    audioSamples[i] = (short) ((audioBytes[2 * i] << 8) | audioBytes[2 * i + 1]);
-//                                }
-//                            } else {
-//                                for (int i = 0; i < numSamplesRead; i++) {
-//                                    audioSamples[i] = (short) ((audioBytes[2 * i + 1] << 8) | audioBytes[2 * i]);
-//                                }
-//                            }
-//                            writer.encodeAudio(0,audioSamples);?????????/
-//                             use audioSamples in Xuggler etc
-////                            ========================================================
-////                            ========================================================
-////                            ========================================================
                                         addVideoStream = true;
                                     }
 
@@ -473,10 +446,14 @@ public class MainVideoCreator {
                                                 TimeUnit.MILLISECONDS);
                                     }
                                     image = null;
+
+
                                     if (count % 2 == 0) {
-                                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, new Color(23, 114, 26));
+                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber") +
+                                                count++, new Color(23, 114, 26));
                                     } else {
-                                        MainFrame.showInformMassage("Зберігаем кадр - " + count++, new Color(181, 31, 27));
+                                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveframenumber") +
+                                                count++, new Color(181, 31, 27));
                                     }
                                     nextFrameTime += frameRate;
                                 } else {
@@ -492,7 +469,7 @@ public class MainVideoCreator {
 
                 writer.flush();
                 writer.close();
-                MainFrame.showInformMassage("Збережено. Кадрів - " + count, new Color(23, 114, 26));
+                MainFrame.showInformMassage(MainFrame.getBundle().getString("encodingdone") + count, new Color(23, 114, 26));
 
                 log.info("Видеофайл сохранен - " + pathToFileToSave +
                         ". Сохранено кадров - " + count +

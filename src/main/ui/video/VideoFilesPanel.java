@@ -42,8 +42,6 @@ public class VideoFilesPanel extends JPanel {
         mainPanel.setBackground(Color.LIGHT_GRAY);
         mainScrollPanel = new JScrollPane(mainPanel);
         this.setLayout(new BorderLayout());
-//        this.add(mainScrollPanel,BorderLayout.CENTER);
-//        this.setLayout(new FlowLayout());
         this.add(mainScrollPanel);
     }
 
@@ -95,15 +93,23 @@ public class VideoFilesPanel extends JPanel {
         for (int i = listOfFilesNames.size() - 1; i >= 0; i--) {
             Long dataLong = listOfFilesNames.get(i);
             Date date = new Date(dataLong);
-            Map<Integer, File> filesVideoBytes = mapOfFiles.get(dataLong);
+            Map<Integer, File> filesVideoBytesMap = mapOfFiles.get(dataLong);
 
+
+            boolean greenColor = false;
             int videoSize = 0;
-            for (Integer integer : filesVideoBytes.keySet()) {
-                File file1 = filesVideoBytes.get(integer);
+            for (Integer integer : filesVideoBytesMap.keySet()) {
+                File file1 = filesVideoBytesMap.get(integer);
+                String name = file1.getName();
+                int first = name.indexOf("[");
+                int second = name.indexOf("]");
+                String substring = name.substring(first + 1, second);
+                greenColor = substring.contains("(");
                 videoSize = file1.listFiles().length;
+                break;
             }
 
-            int countFiles = filesVideoBytes.size();
+            int countFiles = filesVideoBytesMap.size();
             numberLabel = new JLabel(String.valueOf(i + 1));
             numberLabel.setPreferredSize(new Dimension(40, 30));
             numberLabel.setFont(new Font(null, Font.BOLD, 15));
@@ -119,55 +125,34 @@ public class VideoFilesPanel extends JPanel {
             countFilesLabel = new JLabel(MainFrame.getBundle().getString("filesword") + countFiles);
             countFilesLabel.setPreferredSize(new Dimension(60, 30));
 
-            countTimeLabel = new JLabel(videoSize + MainFrame.getBundle().getString("seconds"));
+            countTimeLabel = new JLabel(videoSize + " " + MainFrame.getBundle().getString("seconds"));
             countTimeLabel.setPreferredSize(new Dimension(150, 30));
 
             showVideoButton = new JButton(String.valueOf((char) 9658));//PLAY
-            showVideoButton.setFont(new Font(null,Font.BOLD,17));
+            showVideoButton.setFont(new Font(null, Font.BOLD, 17));
             int finalI = i + 1;
             showVideoButton.addActionListener((ActionEvent e) -> {
                 VideoPlayer.setShowVideoPlayer(true);
-                VideoPlayer videoPlayer = new VideoPlayer(filesVideoBytes, dateFormat.format(new Date(dataLong)), finalI);
+                VideoPlayer videoPlayer = new VideoPlayer(filesVideoBytesMap, dateFormat.format(new Date(dataLong)), finalI);
                 MainFrame.getMainFrame().setCentralPanel(videoPlayer);
             });
 
             deleteButton = new JButton("<html>&#10006</html>");
-            deleteButton.setFont(new Font(null,Font.BOLD,17));
+            deleteButton.setFont(new Font(null, Font.BOLD, 17));
             deleteButton.addActionListener((e) -> {
-                for (Integer integer : filesVideoBytes.keySet()) {
-                    File folderToDel = filesVideoBytes.get(integer);
-
-                    String absolutePathToImage = folderToDel.getAbsolutePath().replace(".tmp", ".jpg");
-                    File imageFile = new File(absolutePathToImage);
-                    if (imageFile.exists()) {
-                        imageFile.delete();
-                    }
-
-                    String name = folderToDel.getName();
-                    String[] split = name.split("-");
-                    long dateLong = Long.parseLong(split[0]);
-
-                    String audioPath = MainFrame.getPath() + "\\bytes\\" + dateLong + ".wav";
-                    File audioFile = new File(audioPath);
-                    if (audioFile.exists()) {
-                        audioFile.delete();
-                    }
-
-                    File[] filesToDel = folderToDel.listFiles();
-                    if (filesToDel != null) {
-                        for (File f : filesToDel) {
-                            f.delete();
-                        }
-                    }
-                    folderToDel.delete();
-                    showVideos();
-                }
+                new DelFrame(filesVideoBytesMap, date);
             });
 
             mainVideoPanel = new JPanel(new FlowLayout());
-            mainVideoPanel.setBackground(Color.LIGHT_GRAY);
+
+            if (greenColor) {
+                mainVideoPanel.setBackground(new Color(57, 184, 191));
+            } else {
+                mainVideoPanel.setBackground(Color.LIGHT_GRAY);
+            }
+
+
             mainVideoPanel.setBorder(BorderFactory.createBevelBorder(0));
-//            mainVideoPanel.setBorder(BorderFactory.createEtchedBorder());
             mainVideoPanel.setMaximumSize(new Dimension(1100, 45));
             mainVideoPanel.add(numberLabel);
             mainVideoPanel.add(Box.createRigidArea(new Dimension(20, 30)));
@@ -188,5 +173,97 @@ public class VideoFilesPanel extends JPanel {
 
         mainScrollPanel.repaint();
         MainFrame.getMainFrame().setCentralPanel(this);
+    }
+
+    private class DelFrame extends JFrame {
+        private DelFrame(Map<Integer, File> filesVideoBytesMap, Date date) {
+            super();
+            this.setResizable(false);
+            this.setAlwaysOnTop(true);
+            this.setPreferredSize(new Dimension(300, 150));
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            int sizeWidth = 300;
+            int sizeHeight = 150;
+            int locationX = (screenSize.width - sizeWidth) / 2;
+            int locationY = (screenSize.height - sizeHeight) / 2;
+            this.setBounds(locationX, locationY, sizeWidth, sizeHeight);
+            this.setLayout(new BorderLayout());
+            buildDelFrame(filesVideoBytesMap, date);
+            this.setVisible(true);
+            this.pack();
+        }
+
+        private void buildDelFrame(Map<Integer, File> filesVideoBytesMap, Date date) {
+            dateFormat.applyPattern("yyyy.MM.dd HH:mm:ss");
+
+            JLabel label = new JLabel(dateFormat.format(date));
+            label.setFont(new Font(null, Font.BOLD, 20));
+            label.setForeground(new Color(14, 160, 14));
+            label.setHorizontalTextPosition(SwingConstants.CENTER);
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            this.getContentPane().setBackground(Color.LIGHT_GRAY);
+            this.add(label, BorderLayout.NORTH);
+
+            JLabel okLabel = new JLabel("OK");
+            okLabel.setFont(new Font(null, Font.BOLD, 40));
+            okLabel.setForeground(new Color(18, 156, 16));
+            okLabel.setHorizontalTextPosition(SwingConstants.CENTER);
+            okLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            okLabel.setVisible(false);
+
+            JButton delButton = new JButton("<html>&#128465</html>");
+            delButton.setFont(new Font(null, Font.BOLD, 40));
+            delButton.setForeground(new Color(226, 42, 24));
+            delButton.setPreferredSize(new Dimension(150, 50));
+            delButton.addActionListener((e) -> {
+                delButton.setVisible(false);
+                Thread thread = new Thread(() -> {
+                    for (Integer integer : filesVideoBytesMap.keySet()) {
+                        File folderToDel = filesVideoBytesMap.get(integer);
+                        String absolutePathToImage = folderToDel.getAbsolutePath().replace(".tmp", ".jpg");
+                        File imageFile = new File(absolutePathToImage);
+                        if (imageFile.exists()) {
+                            imageFile.delete();
+                        }
+
+                        String name = folderToDel.getName();
+                        String[] split = name.split("-");
+                        long dateLong = Long.parseLong(split[0]);
+
+                        String audioPath = MainFrame.getPath() + "\\bytes\\" + dateLong + ".wav";
+                        File audioFile = new File(audioPath);
+                        if (audioFile.exists()) {
+                            audioFile.delete();
+                        }
+
+                        File[] filesToDel = folderToDel.listFiles();
+                        if (filesToDel != null) {
+                            for (File f : filesToDel) {
+                                f.delete();
+                            }
+                        }
+                        folderToDel.delete();
+                        showVideos();
+                    }
+                    okLabel.setVisible(true);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                    this.dispose();
+                });
+                thread.start();
+            });
+
+            JPanel buttonPanel = new JPanel(new FlowLayout());
+            buttonPanel.setBorder(BorderFactory.createEtchedBorder());
+            buttonPanel.setBackground(Color.LIGHT_GRAY);
+            buttonPanel.setPreferredSize(new Dimension(300, 100));
+            buttonPanel.add(Box.createRigidArea(new Dimension(250, 10)));
+            buttonPanel.add(delButton);
+            buttonPanel.add(okLabel);
+            this.add(buttonPanel);
+        }
     }
 }
