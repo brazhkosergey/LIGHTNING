@@ -10,43 +10,111 @@ import java.io.File;
 import java.util.*;
 import java.util.List;
 
+/**
+ * class to play four videos together, have four video panels (OneVideoPlayerPanel), one for each camera group
+ * VideoPlayer parse the biggest frames count video of four videos, split the video by events frame number
+ * (example - if video have one lightning(event), will be two parts, if two lightnings(events) - 3 parts),
+ * and, depending on it, set the number of frame(percent - 100000%) in part of video,
+ * which each OneVideoPlayerPanel should show during playing (play, stop or set position)/
+ */
 public class VideoPlayer extends JPanel {
 
+    /**
+     * mark when central panel show VideoPlayer
+     */
     private static boolean showVideoPlayer;
-    private boolean PAUSE;
-    private boolean PLAY;
-    private boolean SetPOSITION;
+    /**
+     * show that one of OneVideoPlayerPanels is full size
+     */
     private boolean fullSize;
 
+
+    /**
+     * PLAY, PAUSE
+     */
+    private boolean PAUSE;
+    private boolean PLAY;
+
+    /**
+     * set position to show on slider
+     */
+    private boolean SetPOSITION;
+    /**
+     * position (0-1000)
+     */
     private static int position;
 
+    /**
+     * speed of video
+     */
     private double speed = 1;
 
     public static JLabel informLabel = new JLabel("STOP");
     private JLabel speedLabel;
     private JLabel FPSLabel;
-
     private JLabel sliderLabel;
     private JLabel currentFrameLabel;
-
-    private List<JPanel> sliderPanelsLst;
-    private Map<Integer, Boolean> eventPercent = null;
-    private List<Integer> eventFrameNumberList = null;
-    private Map<Integer, Integer> tempEventsMapPartSize;
-    private List<VideoPlayerPanel> videoPlayerPanelsList;
-
     private JPanel centralPane;
     private JPanel mainVideoPane;
-
-    private int FPS = 0;
-    private int totalCountFrames = 0;
-    private int frameNumber = 0;
-    private int currentFrameNumber = 0;
-    private int currentSliderPosition = 0;
     private JButton playButton;
 
 
-    VideoPlayer(Map<Integer, File> foldersWithTemporaryVideoFiles, String date, int numberInt) {
+    /**
+     * list op panels for slider, timestamp panel
+     */
+    private List<JPanel> sliderPanelsLst;
+
+    /**
+     * collection with number of frame when was lightning as key,
+     * and type on detection(program or sensor) as value
+     */
+    private Map<Integer, Boolean> eventPercent = null;
+    /**
+     * numbers of frame when was lightning
+     */
+    private List<Integer> eventFrameNumberList = null;
+
+    /**
+     * after splitting video by events, save the parts here,
+     * number of video part as key, count frames in part as value
+     */
+    private Map<Integer, Integer> tempEventsMapPartSize;
+
+
+    /**
+     * OneVideoPlayerPanel list
+     */
+    private List<OneVideoPlayerPanel> oneVideoPlayerPanelsList;
+
+
+    /**
+     * fps of the biggest video( by count frames)
+     */
+    private int FPS = 0;
+
+    /**
+     * frames count of the biggest video( by count frames)
+     */
+    private int totalCountFrames = 0;
+    /**
+     * frame number, which all oneVideoPlayerPanels should show
+     */
+    private int frameNumber = 0;
+    /**
+     * frame number, which all oneVideoPlayerPanels should show (to compare)
+     */
+    private int currentFrameNumber = 0;
+    /**
+     * position to jump to
+     */
+    private int currentSliderPosition = 0;
+
+    /**
+     * @param foldersWithTemporaryVideoFiles folder to search files
+     * @param dateToShow                     - date, to show on pane;
+     * @param videoNumberInList              - number to show on panel
+     */
+    VideoPlayer(Map<Integer, File> foldersWithTemporaryVideoFiles, String dateToShow, int videoNumberInList) {
         this.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
         this.setLayout(new BorderLayout());
         centralPane = new JPanel(new BorderLayout());
@@ -71,7 +139,7 @@ public class VideoPlayer extends JPanel {
         Map<Integer, Boolean> eventFrameNumberMap = new HashMap<>();
         eventPercent = new HashMap<>();
         eventFrameNumberList = new ArrayList<>();
-        videoPlayerPanelsList = new ArrayList<>();
+        oneVideoPlayerPanelsList = new ArrayList<>();
 
         for (int j = 1; j < 5; j++) {
             File folder = foldersWithTemporaryVideoFiles.get(j);
@@ -142,14 +210,10 @@ public class VideoPlayer extends JPanel {
                             tempEventsMapPartSize.put(k + 1, (totalCountFrames - lastFrame));
                         }
                     }
-
-                    for (Integer o : tempEventsMapPartSize.keySet()) {
-                        System.out.println("Часть номер - " + o + " равна = " + tempEventsMapPartSize.get(o));
-                    }
                 }
             }
 
-            VideoPlayerPanel videoPlayer = new VideoPlayerPanel(folder, j);
+            OneVideoPlayerPanel videoPlayer = new OneVideoPlayerPanel(folder, j);
             videoPlayer.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -160,8 +224,8 @@ public class VideoPlayer extends JPanel {
                                 fullSize = false;
                             } else {
                                 stop();
-                                for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
-                                    videoPlayerPanel.setShowVideoNow(false);
+                                for (OneVideoPlayerPanel oneVideoPlayerPanel : oneVideoPlayerPanelsList) {
+                                    oneVideoPlayerPanel.setShowVideoNow(false);
                                 }
                                 videoPlayer.setShowVideoNow(true);
                                 videoPlayer.setFullSize(true);
@@ -178,7 +242,7 @@ public class VideoPlayer extends JPanel {
 
             threadList.add(videoPlayer.getShowVideoThread());
             mainVideoPane.add(videoPlayer);
-            videoPlayerPanelsList.add(videoPlayer);
+            oneVideoPlayerPanelsList.add(videoPlayer);
         }
 
         for (Integer integer : eventFrameNumberMap.keySet()) {
@@ -200,7 +264,7 @@ public class VideoPlayer extends JPanel {
         previousImage.setFont(new Font(null, Font.BOLD, 17));
         previousImage.setFocusable(false);
         previousImage.addActionListener((e) -> {
-            prewFrame();
+            previousFrame();
         });
 
         JButton slowerButton = new JButton(String.valueOf((char) 9194));//⏪
@@ -238,12 +302,12 @@ public class VideoPlayer extends JPanel {
             stop();
         });
 
-        JLabel numberLabel = new JLabel(String.valueOf(numberInt));
+        JLabel numberLabel = new JLabel(String.valueOf(videoNumberInList));
         numberLabel.setFont(new Font(null, Font.BOLD, 15));
         numberLabel.setPreferredSize(new Dimension(50, 15));
         numberLabel.setHorizontalTextPosition(SwingConstants.CENTER);
 
-        JLabel dateLabel = new JLabel(date);
+        JLabel dateLabel = new JLabel(dateToShow);
         dateLabel.setHorizontalTextPosition(SwingConstants.CENTER);
         dateLabel.setFont(new Font(null, Font.BOLD, 15));
         dateLabel.setForeground(new Color(46, 139, 87));
@@ -320,7 +384,7 @@ public class VideoPlayer extends JPanel {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == 37) {
-                    prewFrame();
+                    previousFrame();
                 } else if (e.getKeyCode() == 39) {
                     nextFrame();
                 }
@@ -351,8 +415,20 @@ public class VideoPlayer extends JPanel {
         createPlayerThread();
     }
 
+    /**
+     * creating Threads to control all OneVideoPlayerPanels
+     * <p>
+     * 'timer' thread - depend on fps set number of "frameNumber"
+     * <p>
+     * <p>
+     * 'videoShowThread' thread - if "currentFrameNumber" != "frameNumber",
+     * this thread calculate the percent(currentFramePositionPercent) of file part for "frameNumber",
+     * ask all OneVideoPlayerPanels to show this "currentFramePositionPercent",
+     * and set currentFrameNumber = frameNumber
+     */
     private void createPlayerThread() {
         int frameRate = 1000 / FPS;
+
         Thread timer = new Thread(() -> {
             try {
                 Thread.sleep(2000);
@@ -393,8 +469,6 @@ public class VideoPlayer extends JPanel {
                 if (frameNumber != currentFrameNumber) {
                     int partNumber = 0;
                     int currentFramePositionPercent = 0;
-//                    System.out.println("==============================================");
-//                    System.out.println("Нужно показать кадр номер - " + frameNumber);
                     for (int i = 0; i < eventFrameNumberList.size(); i++) {
                         Integer integer = eventFrameNumberList.get(i);
                         if (integer > frameNumber) {
@@ -415,11 +489,8 @@ public class VideoPlayer extends JPanel {
                             }
                         }
                     }
-//
-//                    System.out.println("Часть файла - " + partNumber);
-//                    System.out.println("Процент в части - " + currentFramePositionPercent);
 
-                    for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
+                    for (OneVideoPlayerPanel videoPlayerPanel : oneVideoPlayerPanelsList) {
                         if (videoPlayerPanel.isShowVideoNow()) {
                             videoPlayerPanel.showFrameNumber(partNumber, currentFramePositionPercent);
                         }
@@ -456,12 +527,15 @@ public class VideoPlayer extends JPanel {
         videoShowThread.start();
     }
 
+    /**
+     * used to show four One VideoPlayerPanel again after FULL SIZE mode
+     */
     private void showFourVideo() {
         stop();
         centralPane.removeAll();
         mainVideoPane.removeAll();
         for (int i = 0; i < 4; i++) {
-            VideoPlayerPanel playerPanel = videoPlayerPanelsList.get(i);
+            OneVideoPlayerPanel playerPanel = oneVideoPlayerPanelsList.get(i);
             playerPanel.setShowVideoNow(true);
             playerPanel.setFullSize(false);
             mainVideoPane.add(playerPanel);
@@ -471,11 +545,14 @@ public class VideoPlayer extends JPanel {
         centralPane.repaint();
     }
 
+    /**
+     * used to play video
+     */
     private void play() {
         playButton.requestFocus();
-        for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
-            if (videoPlayerPanel.isBlockHaveVideo()) {
-                videoPlayerPanel.showVideo();
+        for (OneVideoPlayerPanel oneVideoPlayerPanel : oneVideoPlayerPanelsList) {
+            if (oneVideoPlayerPanel.isBlockHaveVideo()) {
+                oneVideoPlayerPanel.showVideo();
             }
         }
         setPLAY(true);
@@ -483,11 +560,14 @@ public class VideoPlayer extends JPanel {
         informLabel.setText("PLAY");
     }
 
+    /**
+     * used to stop video
+     */
     private void stop() {
         playButton.requestFocus();
-        for (VideoPlayerPanel videoPlayerPanel : videoPlayerPanelsList) {
-            if (videoPlayerPanel.isBlockHaveVideo()) {
-                videoPlayerPanel.stopVideo();
+        for (OneVideoPlayerPanel oneVideoPlayerPanel : oneVideoPlayerPanelsList) {
+            if (oneVideoPlayerPanel.isBlockHaveVideo()) {
+                oneVideoPlayerPanel.stopVideo();
             }
         }
         setPLAY(false);
@@ -500,6 +580,9 @@ public class VideoPlayer extends JPanel {
         informLabel.setText("STOP");
     }
 
+    /**
+     * used to pause video
+     */
     private void pause() {
         playButton.requestFocus();
         setPLAY(false);
@@ -507,6 +590,9 @@ public class VideoPlayer extends JPanel {
         informLabel.setText("PAUSE");
     }
 
+    /**
+     * to show video twice faster
+     */
     private void fast() {
         playButton.requestFocus();
         speed *= 0.5;
@@ -524,6 +610,9 @@ public class VideoPlayer extends JPanel {
         speedLabel.setText(s + i + "X");
     }
 
+    /**
+     * to show video twice slower
+     */
     private void slow() {
         playButton.requestFocus();
         speed /= 0.5;
@@ -541,6 +630,9 @@ public class VideoPlayer extends JPanel {
         speedLabel.setText(s + i + "X");
     }
 
+    /**
+     * to set PAUSE and show next frame
+     */
     private void nextFrame() {
         playButton.requestFocus();
         pause();
@@ -550,7 +642,10 @@ public class VideoPlayer extends JPanel {
         }
     }
 
-    private void prewFrame() {
+    /**
+     * to set PAUSE and show previous frame
+     */
+    private void previousFrame() {
         playButton.requestFocus();
         pause();
         frameNumber--;
@@ -559,18 +654,11 @@ public class VideoPlayer extends JPanel {
         }
     }
 
-    private void setSetPOSITION() {
-        SetPOSITION = true;
-    }
-
-    private void setPLAY(boolean PLAY) {
-        this.PLAY = PLAY;
-    }
-
-    private void setPAUSE(boolean PAUSE) {
-        this.PAUSE = PAUSE;
-    }
-
+    /**
+     * to draw slider
+     *
+     * @param position - current position(0-999)
+     */
     private void setSliderPosition(int position) {
         if (position > 999) {
             position = 999;
@@ -602,6 +690,18 @@ public class VideoPlayer extends JPanel {
 
         int i = position / 10;
         sliderLabel.setText(i + "%");
+    }
+
+    private void setSetPOSITION() {
+        SetPOSITION = true;
+    }
+
+    private void setPLAY(boolean PLAY) {
+        this.PLAY = PLAY;
+    }
+
+    private void setPAUSE(boolean PAUSE) {
+        this.PAUSE = PAUSE;
     }
 
     public static boolean isShowVideoPlayer() {

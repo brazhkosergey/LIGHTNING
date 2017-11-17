@@ -10,12 +10,20 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 
+/**
+ * panel with video files list
+ */
 public class VideoFilesPanel extends JPanel {
-
     private SimpleDateFormat dateFormat = new SimpleDateFormat();
-
     private static VideoFilesPanel videoFilesPanel;
+
+    /**
+     * collections with time when lightning was catch as key, and all folders with bytes for each camera group as value -  for each video
+     */
     private static Map<Long, Map<Integer, File>> mapOfFiles;
+    /**
+     * list of time when lightning was catch
+     */
     private static List<Long> listOfFilesNames;
 
     private JPanel mainPanel;
@@ -45,6 +53,11 @@ public class VideoFilesPanel extends JPanel {
         this.add(mainScrollPanel);
     }
 
+    /**
+     * method will search all files with bytes from cameras in default folder,
+     * parse names of files, and add links from each event to collection,
+     * and rebuild panel
+     */
     public void showVideos() {
         mainPanel.removeAll();
         mapOfFiles.clear();
@@ -95,16 +108,11 @@ public class VideoFilesPanel extends JPanel {
             Date date = new Date(dataLong);
             Map<Integer, File> filesVideoBytesMap = mapOfFiles.get(dataLong);
 
-
             boolean greenColor = false;
             int videoSize = 0;
             for (Integer integer : filesVideoBytesMap.keySet()) {
                 File file1 = filesVideoBytesMap.get(integer);
-                String name = file1.getName();
-                int first = name.indexOf("[");
-                int second = name.indexOf("]");
-                String substring = name.substring(first + 1, second);
-                greenColor = substring.contains("(");
+
                 videoSize = file1.listFiles().length;
                 break;
             }
@@ -151,7 +159,6 @@ public class VideoFilesPanel extends JPanel {
                 mainVideoPanel.setBackground(Color.LIGHT_GRAY);
             }
 
-
             mainVideoPanel.setBorder(BorderFactory.createBevelBorder(0));
             mainVideoPanel.setMaximumSize(new Dimension(1100, 45));
             mainVideoPanel.add(numberLabel);
@@ -175,6 +182,9 @@ public class VideoFilesPanel extends JPanel {
         MainFrame.getMainFrame().setCentralPanel(this);
     }
 
+    /**
+     * frame for check one more time before delete files
+     */
     private class DelFrame extends JFrame {
         private DelFrame(Map<Integer, File> filesVideoBytesMap, Date date) {
             super();
@@ -243,8 +253,9 @@ public class VideoFilesPanel extends JPanel {
                             }
                         }
                         folderToDel.delete();
-                        showVideos();
+
                     }
+                    showVideos();
                     okLabel.setVisible(true);
                     try {
                         Thread.sleep(500);

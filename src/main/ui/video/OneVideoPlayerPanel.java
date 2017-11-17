@@ -2,17 +2,12 @@ package ui.video;
 
 import entity.MainVideoCreator;
 import ui.camera.CameraPanel;
-import ui.camera.VideoCatcher;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.plaf.LayerUI;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -20,63 +15,119 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-class VideoPlayerPanel extends JPanel {
+/**
+ * class to show video from one cameras group
+ */
+class OneVideoPlayerPanel extends JPanel {
+    /**
+     * link for folder with bytes files
+     */
     private File folder;
-    private int x = 0;
-    private int t = 0;
+
+
+    /**
+     * interface variables
+     */
     private VideoPlayerToShowOneVideo videoPlayerToShowOneVideo;
     private JLayer<JPanel> videoStreamLayer;
     private JLabel informLabel;
+    private JPanel videoPanel;
+    private JLabel currentFrameLabel;
+    private JPanel partExportPanel;
+    private JLabel currentFPSLabel;
 
+
+    /**
+     * mark contain video files for part or not
+     */
     private boolean blockHaveVideo = true;
+    private int numberVideoPanel;
 
+
+    /**
+     * variables to read bytes files
+     */
+    private int x = 0;
+    private int t = 0;
     private BufferedInputStream bufferedInputStream = null;
     private FileInputStream fileInputStream = null;
     private ByteArrayOutputStream temporaryStream = null;
 
+
+    /**
+     * link to file as key, count frames in each file as value
+     */
     private Map<File, Integer> framesInFiles;
     private List<File> filesList;
 
+    /**
+     * total frames in video
+     */
     private int totalCountFrames;
+    /**
+     * mark to show video now, if other OneVideoPlayer is full size, this one will be not worked
+     */
     private boolean showVideoNow;
 
-    private JPanel videoPanel;
-    private JLabel currentFrameLabel;
-
-    private JPanel partExportPanel;
-
-    private Thread buffBytesThread;
-    private Thread showFrameThread;
-    private Thread FPSThread;
-
+    /**
+     * collections of thread. 10 Items. Each thread will create image from bytes in buffer ("framesBytesInBuffMap" ),
+     * mark number of this frame and save it to image buffer - "framesImagesInBuffMap". After replace oun key to NULL in buffImageThreadMap.
+     * <p>
+     * use this to create some future images before VideoPlayer ask to show them. And when OneVideoPlayer should be draw this image,
+     * it will not spend time to create it.
+     */
     private Map<Integer, Thread> buffImageThreadMap;
-
-    private int FPS = 0;
-    private JLabel currentFPSLabel;
-
-    private List<Integer> eventFrameNumberList;
-    Map<Integer, Integer> tempEventsMapPartSize;
-    private Map<Integer, byte[]> framesBytesInBuffMap;
     private Map<Integer, BufferedImage> framesImagesInBuffMap;
+
+    /**
+     * thread read bytes arrays(Image bytes) and add it to buffer "framesBytesInBuffMap" .
+     * always have in buffer frames number from "current frame number" till  "currentFrameNumber+500"
+     */
+    private Thread buffBytesThread;
+    private Map<Integer, byte[]> framesBytesInBuffMap;
     private Deque<Integer> frameInBuffDeque;
+    private boolean allFilesIsInBuff;
     private int numberOfFrameFromStartVideo = 0;
     private int currentFrameNumber = 0;
 
+
+    /**
+     * this thread will be created and run each time, when it will be null, and VideoPlayer ask this OneVideoPlayerPanel to show frame
+     * it takes a video part number(after splitting by events) and percent number of frame,
+     * find this frame in this video, find the file with this frame, read bytes, create image, draw it to panel
+     * and set "showFrameThread = null" to be possible show next frame
+     */
+    private Thread showFrameThread;
+    /**
+     * update real time FPS for video, start buffering images for future showing,
+     * clean framesImagesInBuffMap, delete images from buffer, which already was showed
+     */
+    private Thread FPSThread;
+
+    /**
+     * realTime FPS, how many images program was showed by one second
+     */
+    private int FPS = 0;
+
+    /**
+     * number of frames, when was lightning
+     */
+    private List<Integer> eventFrameNumberList;
+    /**
+     * class will split video by frame count and numbers of "eventFrameNumberList". After splitting will save
+     * parts number as key, and count of frames in part as value it "tempEventsMapPartSize"
+     */
+    private Map<Integer, Integer> tempEventsMapPartSize;
+
     private boolean setPosition;
-    private boolean allFilesIsInBuff;
     private int startFrame;
     private int startFileNumber = 0;
 
     private boolean fullSize;
 
-    private int numberVideoPanel;
-
-
-    VideoPlayerPanel(File folderWithTemporaryFiles, int numberVideoPanel) {
-
-
+    OneVideoPlayerPanel(File folderWithFilesBytesToShowVideo, int numberVideoPanel) {
         this.numberVideoPanel = numberVideoPanel;
-        this.folder = folderWithTemporaryFiles;
+        this.folder = folderWithFilesBytesToShowVideo;
         videoPlayerToShowOneVideo = new VideoPlayerToShowOneVideo();
         eventFrameNumberList = new ArrayList<>();
         buffImageThreadMap = new HashMap<>();
@@ -91,7 +142,7 @@ class VideoPlayerPanel extends JPanel {
         filesList = new ArrayList<>();
 
         int totalFPSForFile = 0;
-        if (folderWithTemporaryFiles != null) {
+        if (folderWithFilesBytesToShowVideo != null) {
             setShowVideoNow(true);
             String name = folder.getName();
             int first = name.indexOf("[");
@@ -126,7 +177,6 @@ class VideoPlayerPanel extends JPanel {
             String totalFpsString = fpsSplit[0].substring(2, i1);
             totalFPSForFile = Integer.parseInt(totalFpsString);
 
-
             File[] files = folder.listFiles();
             if (files != null) {
                 for (File file : files) {
@@ -159,7 +209,7 @@ class VideoPlayerPanel extends JPanel {
             }
 
             BufferedImage image = null;
-            String absolutePathToImage = folderWithTemporaryFiles.getAbsolutePath().replace(".tmp", ".jpg");
+            String absolutePathToImage = folderWithFilesBytesToShowVideo.getAbsolutePath().replace(".tmp", ".jpg");
             File imageFile = new File(absolutePathToImage);
             if (imageFile.exists()) {
                 try {
@@ -171,7 +221,7 @@ class VideoPlayerPanel extends JPanel {
                 }
             }
 
-            LayerUI<JPanel> layerUI = new VideoPlayerPanel.MyLayer(image);
+            LayerUI<JPanel> layerUI = new OneVideoPlayerPanel.MyLayer(image);
             videoStreamLayer = new JLayer<JPanel>(videoPlayerToShowOneVideo, layerUI);
             videoStreamLayer.setAlignmentX(CENTER_ALIGNMENT);
 
@@ -261,19 +311,9 @@ class VideoPlayerPanel extends JPanel {
         endPartExportLabel.setPreferredSize(new Dimension(100, 25));
 
         JTextField startPartExportTextField = new JTextField();
-        startPartExportTextField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == 37 || e.getKeyCode() == 39) {
-
-                }
-            }
-        });
-
         startPartExportTextField.setPreferredSize(new Dimension(70, 25));
         JTextField endPartExportTextField = new JTextField();
         endPartExportTextField.setPreferredSize(new Dimension(70, 25));
-
 
         JLabel informPartExportLabel = new JLabel(MainFrame.getBundle().getString("firstinformvideoplayerlabel"));
         informPartExportLabel.setFocusable(false);
@@ -425,6 +465,12 @@ class VideoPlayerPanel extends JPanel {
         createThread();
     }
 
+    /**
+     * draw frame to video panel
+     *
+     * @param partNumber                  - part of video, after splitting by events count
+     * @param currentFramePositionPercent - frame position in this part
+     */
     void showFrameNumber(int partNumber, int currentFramePositionPercent) {
         if (showFrameThread == null) {
             showFrameThread = new Thread(() -> {
@@ -485,7 +531,6 @@ class VideoPlayerPanel extends JPanel {
     }
 
     private void createThread() {
-
         FPSThread = new Thread(() -> {
             int countTen = 0;
             while (VideoPlayer.isShowVideoPlayer()) {
@@ -508,10 +553,8 @@ class VideoPlayerPanel extends JPanel {
                         for (Integer integer : list) {
                             framesImagesInBuffMap.remove(integer);
                         }
-//                        System.out.println(framesBytesInBuffMap.size() + " - буфер "+numberVideoPanel+" - " + framesImagesInBuffMap.size());
                     } else {
                         ++countTen;
-
                         if (fullSize) {
                             buffImage(countTen);
                         }
@@ -532,7 +575,6 @@ class VideoPlayerPanel extends JPanel {
             }
         });
         FPSThread.setName("FPS Thread VIDEO PLAYER for video panel " + numberVideoPanel);
-
 
         if (blockHaveVideo) {
             buffBytesThread = new Thread(() -> {
@@ -587,9 +629,7 @@ class VideoPlayerPanel extends JPanel {
                                     temporaryStream = new ByteArrayOutputStream(65535);
                                     while (VideoPlayer.isShowVideoPlayer()) {
                                         if (frameInBuffDeque.size() < 1000) {
-                                            long startReadByteTime = System.currentTimeMillis();
                                             readBytesImageToBuff();
-//                                        System.out.println("Время на считывание массива байт номер - " + numberOfFrameFromStartVideo + ". Равно - " + (System.currentTimeMillis() - startReadByteTime));
                                         } else {
                                             try {
                                                 Thread.sleep(1);
@@ -625,14 +665,16 @@ class VideoPlayerPanel extends JPanel {
         }
     }
 
+    /**
+     * method to create images for future showing and save it to Image buffer
+     *
+     * @param number - from 1 till 10
+     */
     private void buffImage(int number) {
         if (frameInBuffDeque.size() > 0) {
             int frameNumberFromBuff;
-
             frameNumberFromBuff = currentFrameNumber + 10;
-
             int count = 0;
-
             for (int i = frameNumberFromBuff; ; i += number) {
                 if (framesBytesInBuffMap.containsKey(i)) {
                     if (!framesImagesInBuffMap.containsKey(i)) {
@@ -640,11 +682,9 @@ class VideoPlayerPanel extends JPanel {
                             if (buffImageThreadMap.get(integer) == null) {
                                 int finalK = i;
                                 Thread thread = new Thread(() -> {
-                                    long startThread = System.currentTimeMillis();
                                     framesImagesInBuffMap.put(finalK, readImage(framesBytesInBuffMap.get(finalK)));
                                     framesBytesInBuffMap.remove(finalK);
                                     buffImageThreadMap.put(integer, null);
-//                                    System.out.println("Работа потока буферизатора - " + (System.currentTimeMillis() - startThread));
                                 });
                                 buffImageThreadMap.put(integer, thread);
                                 thread.setName(" Image Buff Thread . VIDEO PLAYER  Panel number" + numberVideoPanel + ". Frame number - " + finalK);
@@ -667,6 +707,9 @@ class VideoPlayerPanel extends JPanel {
         }
     }
 
+    /**
+     * read bytes for one image from files, and save it to buffer
+     */
     private void readBytesImageToBuff() {
         while (!setPosition && VideoPlayer.isShowVideoPlayer()) {
             t = x;
@@ -692,8 +735,13 @@ class VideoPlayerPanel extends JPanel {
         }
     }
 
+    /**
+     * create image from byte array
+     *
+     * @param imageBytes - array of bytes
+     * @return - buffered image
+     */
     private BufferedImage readImage(byte[] imageBytes) {
-        long start = System.currentTimeMillis();
         BufferedImage bufferedImage = null;
         if (imageBytes != null) {
             try {
@@ -705,7 +753,6 @@ class VideoPlayerPanel extends JPanel {
                 System.out.println("Битая картинка");
             }
         }
-//        System.out.println("Создаем изображение - " + (System.currentTimeMillis() - start));
         return bufferedImage;
     }
 
@@ -725,6 +772,11 @@ class VideoPlayerPanel extends JPanel {
         videoPanel.repaint();
     }
 
+    /**
+     * write a current frame number on panel
+     *
+     * @param currentFrameLabelText - current frame number
+     */
     private void setCurrentFrameNumber(int currentFrameLabelText) {
         currentFrameLabel.setText(MainFrame.getBundle().getString("framenumberlabel") + currentFrameLabelText);
     }
@@ -733,7 +785,9 @@ class VideoPlayerPanel extends JPanel {
         return blockHaveVideo;
     }
 
-
+    /**
+     * use it to set background image
+     */
     class MyLayer extends LayerUI<JPanel> {
         BufferedImage bufferedImage;
 
@@ -760,8 +814,10 @@ class VideoPlayerPanel extends JPanel {
         }
     }
 
+    /**
+     * use it to draw image here
+     */
     class VideoPlayerToShowOneVideo extends JPanel {
-
         private BufferedImage bufferedImage;
 
         @Override
@@ -783,7 +839,6 @@ class VideoPlayerPanel extends JPanel {
             this.bufferedImage = bufferedImage;
         }
     }
-
 
     private void closeStreams() {
         if (fileInputStream != null) {
@@ -823,7 +878,6 @@ class VideoPlayerPanel extends JPanel {
             return null;
         }
     }
-
 
     void setShowVideoNow(boolean showVideoNow) {
         this.showVideoNow = showVideoNow;

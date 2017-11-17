@@ -19,34 +19,6 @@ public class RTPpacket {
 	private int payload_size;
 	private byte[] payload;
 
-//	public RTPpacket(int PType, int Framenb, int Time, byte[] data,
-//                     int data_length) {
-//
-//		Version = 2;
-//		Padding = 0;
-//		Extension = 0;
-//		CC = 0;
-//		Marker = 0;
-//		Ssrc = 0;
-//
-//		SequenceNumber = Framenb;
-//		TimeStamp = Time;
-//		PayloadType = PType;
-//		header = new byte[HEADER_SIZE];
-//		header[1] = (byte) ((Marker << 7) | PayloadType);
-//		header[2] = (byte) (SequenceNumber >> 8);
-//		header[3] = (byte) (SequenceNumber);
-//		for (int i = 0; i < 4; i++){
-//			header[7 - i] = (byte) (TimeStamp >> (8 * i));
-//		}
-//		for (int i = 0; i < 4; i++){
-//			header[11 - i] = (byte) (Ssrc >> (8 * i));
-//		}
-//		payload_size = data_length;
-//		payload = new byte[data_length];
-//		payload = data;
-//	}
-
 	RTPpacket(byte[] packet, int packet_size) {
 		Version = 2;
 		Padding = 0;

@@ -12,6 +12,9 @@ import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+/**
+ * to save sound from audio module using rtsp
+ */
 public class SoundSaver extends Thread {
     private DatagramSocket RTPsocket; //socket to be used to send and receive UDP packets
     private static int RTP_RCV_PORT = 25002; //port where the client will receive the RTP packets 25000
@@ -36,8 +39,6 @@ public class SoundSaver extends Thread {
     private int audioFPS = 0;
 
     private boolean hearSound;
-    private boolean playSound;
-
     private int sizeAudioSecond;
     private SourceDataLine clipSDL = null;
     private boolean stopSaveAudio;
@@ -92,7 +93,6 @@ public class SoundSaver extends Thread {
                             deque.addFirst(l);
                             map.put(l, bytes);
                         } catch (InterruptedIOException iioe) {
-//                            countHaveNotDataToRead++;
                         } catch (IOException ioe) {
                             ioe.printStackTrace();
                             System.out.println("Exception caught: " + ioe);
