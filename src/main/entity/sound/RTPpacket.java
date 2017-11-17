@@ -2,87 +2,62 @@ package entity.sound;
 
 public class RTPpacket {
 	// size of the RTP header:
-	static int HEADER_SIZE = 12;//72
+	private static int HEADER_SIZE = 12;
 
-	// Fields that compose the RTP header
-	public int Version;
-	public int Padding;
-	public int Extension;
-	public int CC;
-	public int Marker;
-	public int PayloadType;
-	public int SequenceNumber;
-	public int TimeStamp;
-	public int Ssrc;
+	private int Version;
+	private int Padding;
+	private int Extension;
+	private int CC;
+	private int Marker;
+	private int PayloadType;
+	private int SequenceNumber;
+	private int TimeStamp;
+	private int Ssrc;
 
-	// Bitstream of the RTP header
-	public byte[] header;
+	private byte[] header;
 
-	// size of the RTP payload
-	public int payload_size;
-	// Bitstream of the RTP payload
-	public byte[] payload;
+	private int payload_size;
+	private byte[] payload;
 
-	// --------------------------
-	// Constructor of an RTPpacket object from header fields and payload
-	// bitstream
-	// --------------------------
-	public RTPpacket(int PType, int Framenb, int Time, byte[] data,
-                     int data_length) {
+//	public RTPpacket(int PType, int Framenb, int Time, byte[] data,
+//                     int data_length) {
+//
+//		Version = 2;
+//		Padding = 0;
+//		Extension = 0;
+//		CC = 0;
+//		Marker = 0;
+//		Ssrc = 0;
+//
+//		SequenceNumber = Framenb;
+//		TimeStamp = Time;
+//		PayloadType = PType;
+//		header = new byte[HEADER_SIZE];
+//		header[1] = (byte) ((Marker << 7) | PayloadType);
+//		header[2] = (byte) (SequenceNumber >> 8);
+//		header[3] = (byte) (SequenceNumber);
+//		for (int i = 0; i < 4; i++){
+//			header[7 - i] = (byte) (TimeStamp >> (8 * i));
+//		}
+//		for (int i = 0; i < 4; i++){
+//			header[11 - i] = (byte) (Ssrc >> (8 * i));
+//		}
+//		payload_size = data_length;
+//		payload = new byte[data_length];
+//		payload = data;
+//	}
 
+	RTPpacket(byte[] packet, int packet_size) {
 		Version = 2;
 		Padding = 0;
 		Extension = 0;
 		CC = 0;
 		Marker = 0;
 		Ssrc = 0;
-
-		// fill changing header fields:
-		SequenceNumber = Framenb;
-		TimeStamp = Time;
-		PayloadType = PType;
-
-		// build the header bistream:
-		// --------------------------
-		header = new byte[HEADER_SIZE];
-
-		header[1] = (byte) ((Marker << 7) | PayloadType);
-
-		header[2] = (byte) (SequenceNumber >> 8);
-		header[3] = (byte) (SequenceNumber);
-
-		for (int i = 0; i < 4; i++){
-			header[7 - i] = (byte) (TimeStamp >> (8 * i));
-		}
-
-		for (int i = 0; i < 4; i++){
-			header[11 - i] = (byte) (Ssrc >> (8 * i));
-		}
-		payload_size = data_length;
-		payload = new byte[data_length];
-		payload = data;
-	}
-
-	// --------------------------
-	// Constructor of an RTPpacket object from the packet bistream
-	// --------------------------
-	public RTPpacket(byte[] packet, int packet_size) {
-		// fill default fields:
-		Version = 2;
-		Padding = 0;
-		Extension = 0;
-		CC = 0;
-		Marker = 0;
-		Ssrc = 0;
-
-		// check if total packet size is lower than the header size
 		if (packet_size >= HEADER_SIZE) {
-			// get the header bitsream:
 			header = new byte[HEADER_SIZE];
 			for (int i = 0; i < HEADER_SIZE; i++)
 				header[i] = packet[i];
-
-			// get the payload bitstream:
 			payload_size = packet_size - HEADER_SIZE;
 			payload = new byte[payload_size];
 			for (int i = HEADER_SIZE; i < packet_size; i++){
@@ -99,15 +74,12 @@ public class RTPpacket {
 		}
 	}
 
-	// --------------------------
-	// getpayload: return the payload bistream of the RTPpacket and its size
-	// --------------------------
-	public int getpayload(byte[] data) {
-
-		for (int i = 0; i < payload_size; i++)
-			data[i] = payload[i];
-
-		return (payload_size);
+	/**
+	 * getpayload: return the payload bistream of the RTPpacket and its size
+	 * @param data
+	 */
+	void getpayload(byte[] data) {
+		System.arraycopy(payload, 0, data, 0, payload_size);
 	}
 
 	// --------------------------

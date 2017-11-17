@@ -86,7 +86,6 @@ public class SoundSaver extends Thread {
                             RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
                             byte[] bytes = new byte[rtp_packet.getpayload_length()];
                             rtp_packet.getpayload(bytes);
-//                            clipSDL.write(bytes,0,bytes.length);
 
                             audioFPS++;
                             long l = System.currentTimeMillis();
@@ -115,11 +114,8 @@ public class SoundSaver extends Thread {
 
                         MainFrame.audioPacketCount.setText(audioFPS + " : " + FPSDeque.size());
                         FPSDeque.addFirst(audioFPS);
-//                        if (audioFPS != 0) {
-//                            fpsNotZero = audioFPS;
-//                        }
                         if (!startSaveAudio) {
-                            sizeAudioSecond = MainFrame.getTimeToSave();
+                            sizeAudioSecond = MainFrame.getSecondsToSave();
                             while (FPSDeque.size() > sizeAudioSecond) {
                                 Integer integer = FPSDeque.pollLast();
                                 for (int j = 0; j < integer; j++) {
@@ -127,17 +123,6 @@ public class SoundSaver extends Thread {
                                     map.remove(aLong);
                                 }
                             }
-//                            delBytes = deque.size() > sizeAudioSecond * fpsNotZero;
-//                            if (sizeAudioSecond != MainFrame.getTimeToSave()) {
-//
-//                                while (true) {
-//                                    if (deque.size() > sizeAudioSecond * fpsNotZero) {
-//                                        map.remove(deque.pollLast());
-//                                    } else {
-//                                        break;
-//                                    }
-//                                }
-//                            }
                         } else {
                             if (stopSaveAudio) {
                                 int size = FPSDeque.size();

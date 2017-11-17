@@ -14,41 +14,113 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-public class VideoCreator {
-    private static Logger log = Logger.getLogger(VideoCreator.class);
-
+/**
+ * class for saving bytes from camera group (two cameras)
+ */
+public class VideoBytesSaver {
+    private static Logger log = Logger.getLogger(VideoBytesSaver.class);
+    /**
+     * camera group number from 1 to 4
+     */
     private int cameraGroupNumber;
-    private BufferedImage bufferedImageBack;
+
+    /**
+     * background for both cameras
+     */
+    private BufferedImage backGroundImage;
+
+    /**
+     * list with links to video catchers
+     */
     private List<VideoCatcher> catcherList;
 
+    /**
+     * deque to save time, when image bytes was read to RAM
+     */
     private Deque<Long> dequeImagesTime;
-    private Deque<File> fileDeque;
-    private Deque<Integer> fpsDeque;
-    private List<Integer> fpsList;
 
+    /**
+     * map to save byte array and time, when it was read to RAM
+     */
     private Map<Long, byte[]> buffMapImages;
-    private Map<File, Integer> buffFilesSizeImagesCount;
 
+
+    /**
+     * deque of links to temporary files with bytes from cameras on disk
+     */
+    private Deque<File> fileDeque;
+
+    /**
+     * counts of frames, in each temporary file
+     */
+    private Map<File, Integer> countsOfFramesInEachFile;
+
+    /**
+     * total FPS from both cameras
+     */
     private int totalFPS = 0;
 
-    private boolean oneSecond = false;
+    /**
+     * deque with total fps count for as many last second as program should save
+     */
+    private Deque<Integer> fpsDeque;
 
-    private int totalCountImages;
-    private int timeToSave;
+    /**
+     * list with total fps count for as many last second as program should save
+     */
+    private List<Integer> fpsList;
+
+    /**
+     * mark one second gone
+     */
+    private boolean oneSecond = false;
+    /**
+     * total count of frames in temporary files and RAM
+     */
+    private int totalCountFrames;
+    /**
+     * seconds to save
+     */
+    private int secondsToSave;
+
+    /**
+     * map with number of frame, when was lightning, and type of event (program - true or sensor - false)
+     */
     private Map<Integer, Boolean> eventsFramesNumber;
 
-    private boolean startSaveVideo;
+    /**
+     * mark that bytes from camera should be saved
+     */
+    private boolean enableSaveVideo;
+    /**
+     * mark count of already saved second after lightning
+     */
     private int stopSaveVideoInt;
 
+    /**
+     * Thread to mark one second, and update data from setting
+     */
     private Thread timerThread;
+
+    /**
+     * Thread to save image bytes to files
+     */
+    private Thread saveBytesThread;
+
+    /**
+     * date when lightning was
+     */
     private Date date;
 
-    public VideoCreator(int cameraGroupNumber) {
+    /**
+     * @param cameraGroupNumber - number of camera group (1-4)
+     */
+    public VideoBytesSaver(int cameraGroupNumber) {
         catcherList = new ArrayList<>();
         this.cameraGroupNumber = cameraGroupNumber;
 
         fileDeque = new ConcurrentLinkedDeque<>();
-        buffFilesSizeImagesCount = new HashMap<>();
+        countsOfFramesInEachFile = new HashMap<>();
         fpsDeque = new ConcurrentLinkedDeque<>();
 
         fpsList = new ArrayList<>();
@@ -70,14 +142,14 @@ public class VideoCreator {
                     fpsDeque.addFirst(totalFPS);
                     totalFPS = 0;
                     oneSecond = true;
-                    timeToSave = MainFrame.getTimeToSave();
+                    secondsToSave = MainFrame.getSecondsToSave();
                     boolean creatorWork = false;
                     for (VideoCatcher catcher : catcherList) {
                         if (!creatorWork) {
                             creatorWork = catcher.isCatchVideo();
                         }
 
-                        if (fileDeque.size() >= timeToSave) {
+                        if (fileDeque.size() >= secondsToSave) {
                             catcher.setBorderColor(new Color(70, 193, 84));
                         } else {
                             catcher.setBorderColor(Color.RED);
@@ -88,8 +160,8 @@ public class VideoCreator {
                         while (fileDeque.size() > 0) {
                             try {
                                 File fileToDel = fileDeque.pollLast();
-                                Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
-                                totalCountImages -= remove;//Здесь удаляем все файлы, в случае отключения всех камер.
+                                Integer remove = countsOfFramesInEachFile.remove(fileToDel);
+                                totalCountFrames -= remove;
                                 fileToDel.delete();
                             } catch (Exception e) {
                                 log.error(e.getMessage());
@@ -97,7 +169,7 @@ public class VideoCreator {
                         }
                     }
 
-                    if (startSaveVideo) {
+                    if (enableSaveVideo) {
                         stopSaveVideoInt++;
                     }
 
@@ -109,7 +181,7 @@ public class VideoCreator {
         });
         timerThread.setName("VideoCreatorTimer Thread " + cameraGroupNumber);
 
-        Thread saveBytesThread = new Thread(() -> {
+        saveBytesThread = new Thread(() -> {
             while (true) {
                 if (oneSecond) {
                     try {
@@ -156,19 +228,19 @@ public class VideoCreator {
                                         + System.currentTimeMillis() + "-" + countImagesInFile + ".tmp");
                                 if (temporaryFile.renameTo(file)) {
                                     fileDeque.addFirst(file);
-                                    buffFilesSizeImagesCount.put(file, countImagesInFile);
+                                    countsOfFramesInEachFile.put(file, countImagesInFile);
                                 }
                             }
 
-                            if (startSaveVideo) {
-                                if (stopSaveVideoInt >= timeToSave && totalCountImages > 0) {
+                            if (enableSaveVideo) {
+                                if (stopSaveVideoInt >= secondsToSave && totalCountFrames > 0) {
                                     stopSaveVideoInt = 0;
                                     MainVideoCreator.stopCatchVideo();
                                     log.info("Сохраняем данные. Группа номер - " + cameraGroupNumber);
                                     StringBuilder stringBuilder = new StringBuilder();
                                     stringBuilder.append("[");
                                     int iCount = 0;
-                                    int currentTotalCountImage = totalCountImages;
+                                    int currentTotalCountImage = totalCountFrames;
 
                                     for (Integer integer : eventsFramesNumber.keySet()) {
                                         iCount++;
@@ -196,20 +268,19 @@ public class VideoCreator {
                                     String eventPercent = stringBuilder.toString();
                                     String path = MainFrame.getPath() + "\\bytes\\" + date.getTime() +
                                             "-" + cameraGroupNumber + "(" + totalFPSForFile + ")"
-                                            + eventPercent + ".tmp";//"\\";
+                                            + eventPercent + ".tmp";
 
                                     File destFolder = new File(path);
                                     int size = fileDeque.size();
                                     int secondsCount = 0;
 
-//                                    System.out.println("Размер буфера, на момент начала сохранения - " + size);
                                     if (destFolder.mkdirs()) {
                                         for (int i = 0; i < size; i++) {
                                             try {
                                                 File fileToSave = fileDeque.pollLast();
                                                 if (fileToSave != null) {
-                                                    Integer remove = buffFilesSizeImagesCount.remove(fileToSave);
-                                                    totalCountImages -= remove;//Не здесь
+                                                    Integer remove = countsOfFramesInEachFile.remove(fileToSave);
+                                                    totalCountFrames -= remove;//Не здесь
                                                     secondsCount++;
                                                     boolean reSave = fileToSave.renameTo(new File(destFolder, fileToSave.getName()));
                                                     if (!reSave) {
@@ -239,17 +310,17 @@ public class VideoCreator {
                                             "Кадров - " + currentTotalCountImage + ". " +
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
-                                    startSaveVideo = false;
+                                    enableSaveVideo = false;
                                 }
                             } else {
-                                int i = timeToSave;
+                                int i = secondsToSave;
                                 while (fileDeque.size() > i) {
                                     try {
-                                        if (!startSaveVideo) {
+                                        if (!enableSaveVideo) {
                                             File fileToDel = fileDeque.pollLast();
                                             if (fileToDel != null) {
-                                                Integer remove = buffFilesSizeImagesCount.remove(fileToDel);
-                                                totalCountImages -= remove;
+                                                Integer remove = countsOfFramesInEachFile.remove(fileToDel);
+                                                totalCountFrames -= remove;
                                                 if (eventsFramesNumber.size() != 0) {
                                                     Map<Integer, Boolean> temporaryMap = new HashMap<>();
                                                     for (Integer integer : eventsFramesNumber.keySet()) {
@@ -286,25 +357,33 @@ public class VideoCreator {
             }
         });
         saveBytesThread.setName("Video Creator SaveBytesThread " + cameraGroupNumber);
-        saveBytesThread.start();
     }
 
+    /**
+     * add bytes array from both cameras to common collection
+     *
+     * @param time = time, when image was saved to RAM (milliseconds)
+     * @param bytes = image bytes array
+     */
     void addImageBytes(long time, byte[] bytes) {
         while (dequeImagesTime.contains(time)) {
             time++;
         }
-
         if (!dequeImagesTime.contains(time)) {
             dequeImagesTime.addFirst(time);
             buffMapImages.put(time, bytes);
             totalFPS++;
-            totalCountImages++;
-        } else {
-            System.out.println("Однаковое время");
+            totalCountFrames++;
         }
     }
 
-    public void startSaveVideo(boolean programSave, Date date) {
+    /**
+     * method to start event (save video)
+     *
+     * @param programEventDetection = type of detection (program - true, sensor - false)
+     * @param date = date, when was event (lightning)
+     */
+    public void startSaveVideo(boolean programEventDetection, Date date) {
         boolean work = false;
         for (VideoCatcher catcher : catcherList) {
             work = catcher.isCatchVideo();
@@ -314,40 +393,39 @@ public class VideoCreator {
         }
 
         if (work) {
-            int imageNumber = totalCountImages;
-//            System.out.println("Сработка. Кадр номер - " + imageNumber);
-            eventsFramesNumber.put(imageNumber, programSave);
-//            if (buffMapImages.size() > 0) {
+            int imageNumber = totalCountFrames;
+            eventsFramesNumber.put(imageNumber, programEventDetection);
             if (dequeImagesTime.size() > 0) {
-                if (!startSaveVideo) {
+                if (!enableSaveVideo) {
                     log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
-//                    System.out.println("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
-                    startSaveVideo = true;
+                    enableSaveVideo = true;
                     this.date = date;
                 } else {
                     log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
-//                    System.out.println("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
                     stopSaveVideoInt = 0;
                 }
-            } else {
-//                startSaveVideo = false;
-//                this.date = null;
             }
         }
     }
 
-    BufferedImage getBufferedImageBack() {
-        return bufferedImageBack;
-    }
-
+    /**
+     * add ip camera to saver
+     *
+     * @param videoCatcher - video catcher
+     */
     void addVideoCatcher(VideoCatcher videoCatcher) {
         if (!timerThread.isAlive()) {
             timerThread.start();
+            saveBytesThread.start();
         }
         catcherList.add(videoCatcher);
     }
 
-    public void setBufferedImageBack(BufferedImage bufferedImageBack) {
-        this.bufferedImageBack = bufferedImageBack;
+    BufferedImage getBackGroundImage() {
+        return backGroundImage;
+    }
+
+    public void setBackGroundImage(BufferedImage backGroundImage) {
+        this.backGroundImage = backGroundImage;
     }
 }

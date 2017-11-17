@@ -5,9 +5,6 @@ import org.apache.log4j.Logger;
 import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -16,56 +13,109 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+/**
+ * class to read bytes from camera
+ */
 public class VideoCatcher {
     private static Logger log = Logger.getLogger(VideoCatcher.class);
-    private int fps;
-    private int fpsToShow = 0;
-    private int countTimesToHaveNotBytesToRead;
-    private Deque<byte[]> imageDeque;
-    private VideoCreator videoCreator;
 
+    /**
+     * for counting fps from camera
+     */
+    private int fps;
+    /**
+     * for counting fps of showed images to camera panel
+     */
+    private int fpsShow = 0;
+    /**
+     * used for check connections to camera, and reconnect
+     */
+    private int countSecondsToHaveNotImage;
+
+    /**
+     * deque whit bytes from camera
+     */
+    private Deque<byte[]> bytesForImagesToShowDeque;
+    /**
+     * save bytes from two or one camera to temporary files
+     */
+    private VideoBytesSaver videoBytesSaver;
+
+    /**
+     * camera url
+     */
     private URL url;
     private HttpURLConnection connection = null;
     private BufferedInputStream bufferedInputStream;
     private InputStream inputStream;
     private ByteArrayOutputStream temporaryStream = null;
 
+    /**
+     * panel to show images
+     */
     private CameraPanel cameraPanel;
 
     private boolean restart;
     private boolean catchVideo;
     private boolean changeURL;
 
-    private Thread FpsCountThread;
-    private Thread UpdateDataThread;
-    private Thread MainThread;
+    /**
+     * Thread to calculate FPS and show it to camera panel title, once in second
+     */
+    private Thread fpsCountThread;
+    /**
+     * Thread to scan images for white count, and showing it to camera panel
+     */
+    private Thread showImageToCameraPanelThread;
+    /**
+     * thread to read bytes from camera and send it video creator
+     */
+    private Thread readBytesThread;
+
+    /**
+     * mark that program finish to scan and showing image,
+     * and possible to start to scan next image, after it main thread will add one image to "bytesForImagesToShowDeque"
+     */
     private boolean showImage = true;
 
-    private Set<Integer> set;
+    /**
+     * used for checking the count of white pixels of image
+     */
+    private Set<Integer> setOfColorsRGBNumbers;
+    /**
+     * counts of white percent of last 10 images
+     */
     private Deque<Integer> whiteDeque;
-    int percentWhiteDiff = 0;
+    /**
+     * used for programming catch lightning
+     */
+    private int percentWhiteDiff = 0;
 
-    public VideoCatcher(CameraPanel cameraPanel, VideoCreator videoCreatorForBouth) {
-        set = MainFrame.getMainFrame().getColorRGBNumberSet();
+    /**
+     * @param cameraPanel         - camera panel for show video form this catcher camera
+     * @param videoBytesSaverForBoth - video creator for saving bytes from this cather camera
+     */
+    public VideoCatcher(CameraPanel cameraPanel, VideoBytesSaver videoBytesSaverForBoth) {
+        setOfColorsRGBNumbers = MainFrame.getMainFrame().getColorRGBNumberSet();
         whiteDeque = new ConcurrentLinkedDeque<>();
         log.info("Создаем наблюдатель для камеры номер " + cameraPanel.getCameraNumber());
-        FpsCountThread = new Thread(() -> {
+        fpsCountThread = new Thread(() -> {
             while (true) {
                 if (catchVideo) {
                     if (fps != 0) {
-                        cameraPanel.getTitle().setTitle("FPS = " + fps + " : " + fpsToShow);
+                        cameraPanel.getTitle().setTitle("FPS = " + fps + " : " + fpsShow);
                         cameraPanel.repaint();
                         fps = 0;
-                        fpsToShow = 0;
-                        countTimesToHaveNotBytesToRead = 0;
+                        fpsShow = 0;
+                        countSecondsToHaveNotImage = 0;
                     } else {
                         if (!restart) {
-                            countTimesToHaveNotBytesToRead++;
-                            if (countTimesToHaveNotBytesToRead > 10) {
+                            countSecondsToHaveNotImage++;
+                            if (countSecondsToHaveNotImage > 10) {
                                 restart = true;
                                 cameraPanel.stopShowVideo();
                                 bufferedInputStream = null;
-                                countTimesToHaveNotBytesToRead = 0;
+                                countSecondsToHaveNotImage = 0;
                                 createInputStream();
                             }
                         }
@@ -85,13 +135,13 @@ public class VideoCatcher {
             }
         });
 
-        UpdateDataThread = new Thread(() -> {
+        showImageToCameraPanelThread = new Thread(() -> {
             while (true) {
                 if (catchVideo) {
                     byte[] bytes;
-                    int totalTimeToShowFrame = 0;
-                    if (imageDeque.size() > 0) {
-                        bytes = imageDeque.pollLast();
+                    int totalMillisecondsToShowFrame = 0;
+                    if (bytesForImagesToShowDeque.size() > 0) {
+                        bytes = bytesForImagesToShowDeque.pollLast();
                         if (bytes != null) {
                             ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
                             try {
@@ -99,20 +149,18 @@ public class VideoCatcher {
                                 ImageIO.setUseCache(false);
                                 BufferedImage image = ImageIO.read(inputStream);
                                 inputStream.close();
-                                cameraPanel.setBufferedImage(CameraPanel.processImage(findProgramEvent(image), cameraPanel.getWidth(), cameraPanel.getHeight()));
+                                cameraPanel.setBufferedImage(CameraPanel.processImage(scanCountOfWhitePixelsPercent(image), cameraPanel.getWidth(), cameraPanel.getHeight()));
                                 cameraPanel.repaint();
-                                fpsToShow++;
-                                totalTimeToShowFrame = (int) (System.currentTimeMillis() - startTime);
+                                fpsShow++;
+                                totalMillisecondsToShowFrame = (int) (System.currentTimeMillis() - startTime);
                             } catch (Exception ignored) {
                             }
                             showImage = true;
                         }
 
                         int timeToSleep = 1000 / MainFrame.getShowFramesPercent();
-                        int diff = timeToSleep - totalTimeToShowFrame;
-
+                        int diff = timeToSleep - totalMillisecondsToShowFrame;
                         if (diff > 0) {
-//                            System.out.println(" Спим  - " + diff);
                             try {
                                 Thread.sleep(diff);
                             } catch (InterruptedException e) {
@@ -130,12 +178,11 @@ public class VideoCatcher {
                 }
             }
         });
+        showImageToCameraPanelThread.setPriority(Thread.MIN_PRIORITY);
 
-        UpdateDataThread.setPriority(Thread.MIN_PRIORITY);
-
-        MainThread = new Thread(() -> {
-            UpdateDataThread.start();
-            FpsCountThread.start();
+        readBytesThread = new Thread(() -> {
+            showImageToCameraPanelThread.start();
+            fpsCountThread.start();
             log.info("Запускаем наблюдатель для камеры номер " + cameraPanel.getCameraNumber());
 
             int x = 0;
@@ -168,11 +215,11 @@ public class VideoCatcher {
                                 byte[] bytes = temporaryStream.toByteArray();
 
                                 if (showImage) {
-                                    imageDeque.addFirst(bytes);
+                                    bytesForImagesToShowDeque.addFirst(bytes);
                                     showImage = false;
                                 }
 
-                                videoCreator.addImageBytes(l, bytes);
+                                videoBytesSaver.addImageBytes(l, bytes);
                                 fps++;
                             }
                         }
@@ -222,14 +269,19 @@ public class VideoCatcher {
                 }
             }
         });
-        MainThread.setPriority(Thread.MAX_PRIORITY);
-        imageDeque = new ConcurrentLinkedDeque<>();
+        readBytesThread.setPriority(Thread.MAX_PRIORITY);
+        bytesForImagesToShowDeque = new ConcurrentLinkedDeque<>();
         this.cameraPanel = cameraPanel;
         cameraPanel.repaint();
-        this.videoCreator = videoCreatorForBouth;
-        videoCreator.addVideoCatcher(this);
+        this.videoBytesSaver = videoBytesSaverForBoth;
+        videoBytesSaver.addVideoCatcher(this);
     }
 
+    /**
+     * used when the ip address was set for this number of camera
+     *
+     * @param urlMainStream = url
+     */
     public void startCatchVideo(URL urlMainStream) {
         if (urlMainStream != null) {
             if (this.url != null) {
@@ -285,43 +337,33 @@ public class VideoCatcher {
         }
     }
 
+    /**
+     * used when program was started
+     */
     public void start() {
-        MainThread.setName("Save Stream Thread. Camera " + cameraPanel.getCameraNumber());
-        UpdateDataThread.setName("Update Data Thread. Camera " + cameraPanel.getCameraNumber());
-        FpsCountThread.setName("FPS CountThread. Camera " + cameraPanel.getCameraNumber());
-        MainThread.start();
+        readBytesThread.setName("Save Stream Thread. Camera " + cameraPanel.getCameraNumber());
+        showImageToCameraPanelThread.setName("Update Data Thread. Camera " + cameraPanel.getCameraNumber());
+        fpsCountThread.setName("FPS CountThread. Camera " + cameraPanel.getCameraNumber());
+        readBytesThread.start();
     }
 
-    private BufferedImage findProgramEvent(BufferedImage bi) {
-        if (MainFrame.isProgramLightCatchWork()) {
-            long l = System.currentTimeMillis();
 
+    /**
+     * scan count of white and catch lightning if it is
+     *
+     * @param bi - frame
+     * @return - the save frame after scanning
+     */
+    private BufferedImage scanCountOfWhitePixelsPercent(BufferedImage bi) {
+        if (MainFrame.isProgramLightCatchEnable()) {
             int countWhite = 0;
-            for (int y = 0; y < bi.getHeight(); y +=2) {
+            for (int y = 0; y < bi.getHeight(); y += 2) {
                 for (int x = 0; x < bi.getWidth(); x += 2) {
-                    if (set.contains(bi.getRGB(x, y))) {
+                    if (setOfColorsRGBNumbers.contains(bi.getRGB(x, y))) {
                         countWhite++;
                     }
                 }
             }
-//            System.out.println("Времени на создание и обработку массива -  " + (System.currentTimeMillis() - l));
-//            int[] rgb1 = bi.getRGB(0,0, bi.getWidth(), bi.getHeight(),
-//                    null, 0,bi.getWidth());
-//            int countWhite = 0;
-//            int allPixels = rgb1.length;
-////            System.out.println("Времени на создание массива -  " +(System.currentTimeMillis()-l));
-//
-//
-//            long l1 = System.currentTimeMillis();
-//            for (int i = 0; i < allPixels; i++) {
-//                if (set.contains(rgb1[i])) {
-//                    countWhite++;
-//                }
-//            }
-////            System.out.println("Времени на обработку массива - "+(System.currentTimeMillis()-l1));
-//            System.out.println("Времени на обработку массива - "+(System.currentTimeMillis()-l));
-
-//            System.out.println("Белых пикселей -  " + countWhite);
             whiteDeque.addFirst(countWhite);
             if (whiteDeque.size() > 10) {
                 int total = 0;
@@ -341,14 +383,6 @@ public class VideoCatcher {
                                 percentWhiteDiff = percentDiffWhiteFromSetting;
                             } else {
                                 if (abs > percentWhiteDiff * 50) {
-
-                                    System.out.println(cameraPanel.getCameraNumber() + " - Белых пикселей - " + countWhite);
-                                    System.out.println("Среднее - " + average);
-                                    System.out.println("Разница пикселей - " + differentWhitePixelsAverage);
-                                    System.out.println("Разница процентов - " + diffPercent);
-                                    System.out.println("Сработка, номер камеры - " + cameraPanel.getCameraNumber());
-                                    System.out.println("=========================================");
-
                                     MainVideoCreator.startCatchVideo(true);
                                     whiteDeque.clear();
                                 }
@@ -366,12 +400,16 @@ public class VideoCatcher {
         return bi;
     }
 
+    /**
+     * used green color when have saved as many second as set in setting, use red color when already not saved enough
+     * @param color = color
+     */
     void setBorderColor(Color color) {
         cameraPanel.getTitle().setTitleColor(color);
     }
 
-    VideoCreator getVideoCreator() {
-        return videoCreator;
+    VideoBytesSaver getVideoBytesSaver() {
+        return videoBytesSaver;
     }
 
     public void stopCatchVideo() {

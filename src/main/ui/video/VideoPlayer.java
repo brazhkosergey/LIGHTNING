@@ -62,7 +62,7 @@ public class VideoPlayer extends JPanel {
                 fullSize = false;
             } else {
                 stop();
-                MainFrame.getMainFrame().showVideosWindow();
+                MainFrame.getMainFrame().showVideoFilesPanel();
             }
         });
 
@@ -330,7 +330,7 @@ public class VideoPlayer extends JPanel {
         setSliderPosition(0);
         Thread stopPlayingWhileRecordingThread = new Thread(() -> {
             while (VideoPlayer.isShowVideoPlayer()) {
-                if (MainVideoCreator.isSaveVideo()) {
+                if (MainVideoCreator.isSaveVideoEnable()) {
                     stop();
                 } else {
                     try {

@@ -18,20 +18,38 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * class for start/stop save bytes from cameras, creating video files and save it to disk
+ */
 public class MainVideoCreator {
     private static Logger log = Logger.getLogger(MainVideoCreator.class);
+    /**
+     * date for saving time, when lightning was
+     */
     private static Date date;
-    private static boolean saveVideo;
-    private static Thread continueVideoThread;
-    private static Thread startSaveVideoThread;
-    private static int secondVideoSave = 1;
 
+    /**
+     * this boolean mark saving video now
+     */
+    private static boolean saveVideoEnable;
+    /**
+     * Thread run the starting video from cameras
+     */
+    private static Thread startSaveVideoForAllCreatorsThread;
+    /**
+     * Thread start work when have one more lightning during saving video, mark it,
+     * and block marking lightnings more then one for one second.
+     */
+    private static Thread continueSaveVideoThread;
+    /**
+     * int to show on inform panel, how many seconds already saved
+     */
+    private static int secondVideoAlreadySave = 1;
+
+    /**
+     * @param programingLightCatch - program or sensor catch lightning
+     */
     public static void startCatchVideo(boolean programingLightCatch) {
-
-//        System.out.println("===========================================");
-//        System.out.println("===========================================");
-//        System.out.println("===========================================");
-//        System.out.println("===========================================");
         SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
         if (soundSaver != null) {
             soundSaver.startSaveAudio();
@@ -44,56 +62,62 @@ public class MainVideoCreator {
             event = ". Сработка - аппаратная.";
         }
 
-        if (!isSaveVideo()) {
+        if (!isSaveVideoEnable()) {
             date = new Date(System.currentTimeMillis());
-            log.info("Событие " + date.toString() + event + ". Сохраняем секунд - " + MainFrame.getTimeToSave());
-            continueVideoThread = new Thread(() -> {
-                MainVideoCreator.setSaveVideo(true);
-                while (saveVideo) {
+            log.info("Событие " + date.toString() + event + ". Сохраняем секунд - " + MainFrame.getSecondsToSave());
+            startSaveVideoForAllCreatorsThread = new Thread(() -> {
+                MainVideoCreator.setSaveVideo();
+                while (saveVideoEnable) {
                     MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("savedword") +
-                            (secondVideoSave++) + MainFrame.getBundle().getString("seconds"));
+                            (secondVideoAlreadySave++) + MainFrame.getBundle().getString("seconds"));
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                secondVideoSave = 1;
-                continueVideoThread = null;
+                secondVideoAlreadySave = 1;
+                startSaveVideoForAllCreatorsThread = null;
             });
-            continueVideoThread.start();
+            startSaveVideoForAllCreatorsThread.start();
         } else {
             log.info("Еще одна сработка, продолжаем событие " + date.toString() + event);
-            secondVideoSave = 1;
+            secondVideoAlreadySave = 1;
         }
 
-        if (startSaveVideoThread == null) {
-            startSaveVideoThread = new Thread(() -> {
-                for (Integer creator : MainFrame.creatorMap.keySet()) {
-                    MainFrame.creatorMap.get(creator).startSaveVideo(programingLightCatch, date);
+        if (continueSaveVideoThread == null) {
+            continueSaveVideoThread = new Thread(() -> {
+                for (Integer creator : MainFrame.videoSaversMap.keySet()) {
+                    MainFrame.videoSaversMap.get(creator).startSaveVideo(programingLightCatch, date);
                 }
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                startSaveVideoThread = null;
+                continueSaveVideoThread = null;
             });
-            startSaveVideoThread.start();
+            continueSaveVideoThread.start();
         } else {
             log.info("С прошлой сработки не прошло 2 секунды.");
         }
     }
 
+    /**
+     * stop catch bytes from cameras
+     */
     public static void stopCatchVideo() {
         SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
         if (soundSaver != null) {
             soundSaver.stopSaveAudio();
         }
         MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsaving"));
-        saveVideo = false;
+        saveVideoEnable = false;
     }
 
+    /**
+     * @param map -map with bytes from rtp packets from audio module and time, when it was saved to RAM
+     */
     public static void saveAudioBytes(Map<Long, byte[]> map) {
         int size = 0;
         List<Long> longList = new ArrayList<>();
@@ -122,10 +146,10 @@ public class MainVideoCreator {
         final AudioFormat audioFormat = new AudioFormat(
                 AudioFormat.Encoding.ULAW,
                 8000f, // sample rate - you didn't specify, 44.1k is typical
-                8,      // how many bits per sample, i.e. per value in your byte array
-                1,      // you want two channels (stereo)
+                8, // how many bits per sample, i.e. per value in your byte array
+                1,       // you want two channels (stereo)
                 1,      // number of bytes per frame (frame == a sample for each channel)
-                8000f, // frame rate
+                8000f,  // frame rate
                 true);  // byte order
 
         final int numberOfFrames = size;
@@ -133,43 +157,22 @@ public class MainVideoCreator {
         final AudioInputStream audioStream = new AudioInputStream(interleavedStream, audioFormat, numberOfFrames);
 
         try {
-            if (audioFile.createNewFile()) {//TODO vkjnguygyfgiyhfgnykhfgiykj
+            if (audioFile.createNewFile()) {
                 AudioSystem.write(audioStream, AudioFileFormat.Type.WAVE, audioFile);
             }
         } catch (IOException e1) {
             e1.printStackTrace();
             log.error(e1.getLocalizedMessage());
         }
-//        String path = MainFrame.getPath()+"\\buff\\bytes\\" + date.getTime() + ".sound";
-//        File file = new File(path);
-//        try {
-//            if (file.createNewFile()) {
-//                FileOutputStream fileOutputStream = new FileOutputStream(file);
-//                for (long l : map.keySet()) {
-//                    byte[] bytes = map.get(l);
-//                    try {
-//                        if (bytes != null) {
-//                            fileOutputStream.write(bytes);
-//                        }
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//                try {
-//                    fileOutputStream.flush();
-//                    fileOutputStream.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
-    public static void encodeVideoXuggle(File folderWithTempraryFiles) {
-
-        String name = folderWithTempraryFiles.getName();
+    /**
+     * encoding and saving video file to from bytes
+     *
+     * @param folderWithTemporaryFiles - link to folder with bytes
+     */
+    public static void encodeVideoXuggle(File folderWithTemporaryFiles) {
+        String name = folderWithTemporaryFiles.getName();
         String[] split = name.split("-");
         long dateLong = Long.parseLong(split[0]);
 
@@ -224,7 +227,7 @@ public class MainVideoCreator {
         boolean connectImage = false;
 
 
-        String absolutePathToImage = folderWithTempraryFiles.getAbsolutePath().replace(".tmp", ".jpg");
+        String absolutePathToImage = folderWithTemporaryFiles.getAbsolutePath().replace(".tmp", ".jpg");
         File imageFile = new File(absolutePathToImage);
         if (imageFile.exists()) {
             try {
@@ -253,7 +256,7 @@ public class MainVideoCreator {
                 int countImageNotSaved = 0;
 
                 FileInputStream fileInputStream = null;
-                File[] temporaryFiles = folderWithTempraryFiles.listFiles();
+                File[] temporaryFiles = folderWithTemporaryFiles.listFiles();
 
 
                 int heightStream = 0;
@@ -368,16 +371,22 @@ public class MainVideoCreator {
         }
     }
 
-    public static void savePartOfVideoFile(String pathToFileToSave, List<File> filesToEncodeToVideo, int totalFPS, BufferedImage imageToConnect) {
-
+    /**
+     * * encoding and saving part of video file to disk from bytes
+     *
+     * @param pathToFileToSave  - path to file, to save data to
+     * @param filesListToEncode - links for files with bytes from camera
+     * @param totalFPS          - FPS for video file
+     * @param backgroundImage   - image for connecting background for video (if exist)
+     */
+    public static void savePartOfVideoFile(String pathToFileToSave, List<File> filesListToEncode, int totalFPS, BufferedImage backgroundImage) {
         File videoFile = new File(pathToFileToSave);
         if (videoFile.exists()) {
             videoFile.delete();
         }
-
         boolean connectImage = false;
         float opacity = 0;
-        if (imageToConnect != null) {
+        if (backgroundImage != null) {
             connectImage = true;
             opacity = CameraPanel.getOpacity();
         }
@@ -393,7 +402,7 @@ public class MainVideoCreator {
 
                 FileInputStream fileInputStream = null;
 
-                for (File file : filesToEncodeToVideo) {
+                for (File file : filesListToEncode) {
                     try {
                         fileInputStream = new FileInputStream(file);
                     } catch (Exception e) {
@@ -439,7 +448,7 @@ public class MainVideoCreator {
                                     }
 
                                     if (connectImage) {
-                                        writer.encodeVideo(0, connectImage(image, imageToConnect, opacity), nextFrameTime,
+                                        writer.encodeVideo(0, connectImage(image, backgroundImage, opacity), nextFrameTime,
                                                 TimeUnit.MILLISECONDS);
                                     } else {
                                         writer.encodeVideo(0, image, nextFrameTime,
@@ -484,6 +493,14 @@ public class MainVideoCreator {
         }
     }
 
+    /**
+     * connecting image
+     *
+     * @param sourceImage    - source image
+     * @param imageToConnect - image to connect
+     * @param opacity        - opacity of image to connect
+     * @return - image, which was created from two images
+     */
     private static BufferedImage connectImage(BufferedImage sourceImage, BufferedImage imageToConnect, float opacity) {
         BufferedImage image = new BufferedImage(sourceImage.getWidth(), sourceImage.getHeight(), sourceImage.getType());
         Graphics2D graphics = image.createGraphics();
@@ -495,11 +512,11 @@ public class MainVideoCreator {
         return image;
     }
 
-    public static boolean isSaveVideo() {
-        return saveVideo;
+    public static boolean isSaveVideoEnable() {
+        return saveVideoEnable;
     }
 
-    private static void setSaveVideo(boolean saveVideo) {
-        MainVideoCreator.saveVideo = saveVideo;
+    private static void setSaveVideo() {
+        MainVideoCreator.saveVideoEnable = true;
     }
 }

@@ -4,7 +4,6 @@ import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -14,22 +13,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * panel with camera ipAddress, user names and passwords setting
+ */
 public class CameraAddressSetting extends JPanel {
     private static CameraAddressSetting cameraAddressSetting;
     private JPanel mainCameraSettingPanel;
+
+    /**
+     * collections for each camera - number of camera(1-8) as key, and text field as value
+     */
     private Map<Integer, JTextField> textFieldsIpAddressMap;
     private Map<Integer, JTextField> textFieldsUsernameMap;
     private Map<Integer, JTextField> textFieldsPasswordMap;
     private Map<Integer, JLabel> labelMap;
 
     private CameraAddressSetting() {
-//        this.setPreferredSize(new Dimension(1110, 540));
         textFieldsIpAddressMap = new HashMap<>();
         textFieldsUsernameMap = new HashMap<>();
         textFieldsPasswordMap = new HashMap<>();
         labelMap = new HashMap<>();
         buildCameraSetting();
-//        this.setLayout(new BorderLayout());
         this.setLayout(new FlowLayout());
         this.setBackground(Color.LIGHT_GRAY);
         this.add(mainCameraSettingPanel, BorderLayout.CENTER);
@@ -50,10 +54,9 @@ public class CameraAddressSetting extends JPanel {
         saveButton.addActionListener((e) -> {
             MainFrame.addressSaver.cleanSaver();
             saveAddressToMap();
-            MainFrame.getMainFrame().showAllCameras();
+            MainFrame.getMainFrame().startAllCameras();
         });
         mainCameraSettingPanel = new JPanel();
-//        mainCameraSettingPanel.setPreferredSize(new Dimension(1110,530));
         mainCameraSettingPanel.setBorder(BorderFactory.createEtchedBorder());
         mainCameraSettingPanel.setLayout(new BoxLayout(mainCameraSettingPanel, BoxLayout.Y_AXIS));
         for (int i = 1; i < 5; i++) {
@@ -159,8 +162,8 @@ public class CameraAddressSetting extends JPanel {
                     }
 
                     if (bufferedImage != null) {
-                        MainFrame.addImage(bufferedImage, number);
-                        MainFrame.creatorMap.get(number).setBufferedImageBack(bufferedImage);
+                        MainFrame.addBackgroundForBlock(bufferedImage, number);
+                        MainFrame.videoSaversMap.get(number).setBackGroundImage(bufferedImage);
                     }
 
                     addImageLabel.setText(MainFrame.getBundle().getString("imagehadadded"));
@@ -169,13 +172,13 @@ public class CameraAddressSetting extends JPanel {
                 }
             });
 
-            JButton removeButton = new JButton(MainFrame.getBundle().getString("deleteimagefilebutton"));//
+            JButton removeButton = new JButton(MainFrame.getBundle().getString("deleteimagefilebutton"));
             removeButton.addActionListener((e) -> {
                 File imageFile = new File("C:\\LIGHTNING_STABLE\\buff\\" + number + ".jpg");
                 if (imageFile.exists()) {
                     imageFile.delete();
                 }
-                MainFrame.removeImageForBlock(number);
+                MainFrame.removeBackgroundForBlock(number);
                 addImageLabel.setText(MainFrame.getBundle().getString("selectimage"));
                 addImageLabel.setForeground(Color.BLACK);
             });
@@ -230,6 +233,9 @@ public class CameraAddressSetting extends JPanel {
         }
     }
 
+    /**
+     * save data from text fields
+     */
     public void saveAddressToMap() {
         for (Integer textFieldNumber : textFieldsIpAddressMap.keySet()) {
             if (textFieldNumber != null) {
@@ -241,7 +247,7 @@ public class CameraAddressSetting extends JPanel {
                     list.add(ipAddress);
                     list.add(userName);
                     list.add(password);
-                    MainFrame.addressSaver.savePasswords(textFieldNumber, ipAddress, userName, password);
+                    MainFrame.addressSaver.saveCameraData(textFieldNumber, ipAddress, userName, password);
                     MainFrame.camerasAddress.put(textFieldNumber, list);
                 } else {
                     MainFrame.camerasAddress.put(textFieldNumber, null);
@@ -253,7 +259,7 @@ public class CameraAddressSetting extends JPanel {
                         List<String> list = new ArrayList<>();
                         list.add(ipAddress);
                         MainFrame.camerasAddress.put(null, list);
-                        MainFrame.addressSaver.savePasswords(0, ipAddress, null, null);
+                        MainFrame.addressSaver.saveCameraData(0, ipAddress, null, null);
                     } else {
                         MainFrame.camerasAddress.put(null, new ArrayList<>());
                     }

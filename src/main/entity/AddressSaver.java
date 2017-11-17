@@ -17,22 +17,67 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Class save data from setting to .txt file. xml format
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(name = "address")
 public class AddressSaver {
 
+    /**
+     * all data will save in array
+     */
     private String[] arr = new String[24];
-    private String audioAddress;
-    private int timeToSave;
-    private boolean programWork;
-    private int changeWhitePercent;
-    private int lightSensitivity;
-    private int opacity;
-    private int port;
-    private String path;
-    private String password = "";
 
-    public void savePasswords(int numberOfCamera, String ipAddress, String username, String password) {
+    /**
+     * audio module address
+     */
+    private String audioAddress;
+    /**
+     * count, how many seconds video program will save
+     */
+    private int timeToSave;
+    /**
+     * enable program light catch
+     */
+    private boolean programLightCatchEnable;
+
+    /**
+     * set how many percent should change the percent of white on image to
+     * switch on the starting saving video, used for setting of program lightning catch
+     */
+    private int changeWhitePercent;
+    /**
+     * sec
+     */
+    private int lightSensitivity;
+    /**
+     * opacity of background
+     */
+    private int opacity;
+    /**
+     * port for program server, for waiting signal to start save video
+     */
+    private int port;
+    /**
+     * path to folder, to save video bytes, and files
+     */
+    private String path;
+
+    /**
+     * password to enter setting, will be changed manual
+     */
+    private String password = "PASS";
+
+    /**
+     * save data from camera setting
+     *
+     * @param numberOfCamera - numberOfCamera
+     * @param ipAddress      - ipAddress
+     * @param username       - username
+     * @param password       - password
+     */
+    public void saveCameraData(int numberOfCamera, String ipAddress, String username, String password) {
         if (numberOfCamera == 0) {
             audioAddress = ipAddress;
         } else {
@@ -46,17 +91,34 @@ public class AddressSaver {
         savePasswordSaverToFile();
     }
 
-    public void saveSetting(int i, boolean programWork, int sliderChangeWhite, int lightSensitivity, int opacity, int port, String path) {
-        this.changeWhitePercent = sliderChangeWhite;
+    /**
+     * save data from common setting
+     *
+     * @param timeToSave              -
+     * @param programLightCatchEnable - programLightCatchEnable
+     * @param changeWhitePercent      - changeWhitePercent
+     * @param lightSensitivity        - lightSensitivity
+     * @param opacity                 - opacity
+     * @param port                    - port
+     * @param path                    - path
+     */
+
+    public void saveSetting(int timeToSave, boolean programLightCatchEnable, int changeWhitePercent,
+                            int lightSensitivity, int opacity, int port, String path) {
+        this.changeWhitePercent = changeWhitePercent;
         this.lightSensitivity = lightSensitivity;
         this.opacity = opacity;
-        timeToSave = i;
-        this.programWork = programWork;
+        this.timeToSave = timeToSave;
+        this.programLightCatchEnable = programLightCatchEnable;
         this.port = port;
         this.path = path;
+
         savePasswordSaverToFile();
     }
 
+    /**
+     * remove all data from saver
+     */
     public void cleanSaver() {
         for (int i = 0; i < arr.length; i++) {
             arr[i] = "";
@@ -64,6 +126,9 @@ public class AddressSaver {
         }
     }
 
+    /**
+     * save data to file
+     */
     private void savePasswordSaverToFile() {
         String pathFile = "C:\\LIGHTNING_STABLE\\data\\address.txt";
         File file = new File(pathFile);
@@ -83,6 +148,9 @@ public class AddressSaver {
         }
     }
 
+    /**
+     * @return - the address saver, restored from file
+     */
     public static AddressSaver restorePasswords() {
         String pathFile = "C:\\LIGHTNING_STABLE\\data\\address.txt";
         File file = new File(pathFile);
@@ -115,7 +183,7 @@ public class AddressSaver {
                     ex.printStackTrace();
                 }
                 if (bufferedImage != null) {
-                    MainFrame.addImage(bufferedImage, i);
+                    MainFrame.addBackgroundForBlock(bufferedImage, i);
                 }
             }
         }
@@ -127,6 +195,10 @@ public class AddressSaver {
             return passwordSaver;
         }
     }
+
+    /**
+     * set all data about common setting and camera setting to fields in each panels
+     */
 
     public void setPasswordsToFields() {
         Map<Integer, JTextField> textFieldsIpAddressMap = CameraAddressSetting.getCameraAddressSetting().getTextFieldsIpAddressMap();
@@ -160,8 +232,11 @@ public class AddressSaver {
         }
     }
 
+    /**
+     * set all setting to program
+     */
     public void setSetting() {
-        MainFrame.setProgramLightCatchWork(programWork);
+        MainFrame.setProgramLightCatchEnable(programLightCatchEnable);
         MainFrame.setPercentDiffWhite(changeWhitePercent);
         MainFrame.getMainFrame().setColorLightNumber(lightSensitivity);
         MainFrame.setOpacitySetting(opacity);

@@ -1,6 +1,6 @@
 package ui.camera;
 
-import entity.MainVideoCreator;
+
 import ui.main.MainFrame;
 
 import javax.swing.*;
@@ -11,55 +11,129 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 
+
+/**
+ * panel to show images from camera
+ */
 public class CameraPanel extends JPanel {
 
+    /**
+     * opacity of background
+     */
     private static float opacity = 0.3F;
-
+    /**
+     * camera number
+     */
     private int cameraNumber = 0;
+    /**
+     * image, which will show on panel
+     */
     private BufferedImage bufferedImage;
+    /**
+     * will read bytes from camera
+     */
     private VideoCatcher videoCatcher;
+    /**
+     * will show data about FPS
+     */
     private TitledBorder title;
-
     private JLayer<JPanel> cameraWindowLayer;
-    private JLabel informLabel;
-    private boolean fullSize = false;
-
+    private JLabel cameraDoesNotWorkLabel;
+    private boolean fullSizeEnable = false;
     private CameraWindow cameraWindow;
 
-    public CameraPanel(VideoCreator videoCreator, int cameraNumber) {
+    /**
+     * constructor
+     *
+     * @param videoBytesSaver - creator for this panel
+     * @param cameraNumber - number of camera
+     */
+    public CameraPanel(VideoBytesSaver videoBytesSaver, int cameraNumber) {
         this.setLayout(new BorderLayout());
         this.cameraNumber = cameraNumber;
-
-        informLabel = new JLabel(MainFrame.getBundle().getString("cameradoesnotwork"));
-        informLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        informLabel.setVerticalAlignment(SwingConstants.CENTER);
+        cameraDoesNotWorkLabel = new JLabel(MainFrame.getBundle().getString("cameradoesnotwork"));
+        cameraDoesNotWorkLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        cameraDoesNotWorkLabel.setVerticalAlignment(SwingConstants.CENTER);
         cameraWindow = new CameraWindow();
-
-        LayerUI<JPanel> layerUI = new MyLayer();
+        LayerUI<JPanel> layerUI = new BackgroundLayer();
         cameraWindowLayer = new JLayer<>(cameraWindow, layerUI);
         cameraWindowLayer.setAlignmentX(CENTER_ALIGNMENT);
         cameraWindowLayer.setAlignmentY(CENTER_ALIGNMENT);
-
 
         title = BorderFactory.createTitledBorder("FPS = 0");
         title.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         title.setTitleJustification(TitledBorder.CENTER);
         title.setTitleFont((new Font(null, Font.BOLD, 10)));
         title.setTitleColor(new Color(46, 139, 87));
-
         this.setBorder(title);
-        videoCatcher = new VideoCatcher(this, videoCreator);
+        videoCatcher = new VideoCatcher(this, videoBytesSaver);
         videoCatcher.start();
     }
 
-    public void repaintCameraWindow() {
-        videoCatcher.getVideoCreator().setBufferedImageBack(null);
+    /**
+     * class panel, for showing images
+     */
+    class CameraWindow extends JPanel {
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (bufferedImage != null) {
+                int x = 0;
+                int imageWidth = bufferedImage.getWidth();
+                int panelWidth = this.getWidth();
+                if (panelWidth > imageWidth) {
+                    x = (panelWidth - imageWidth) / 2;
+                }
+                g.drawImage(bufferedImage, x, 0, null);
+            }
+        }
     }
 
-    public void showCopyImage() {
-        cameraWindowLayer.repaint();
+    /**
+     * used for connect background to camera window
+     */
+    class BackgroundLayer extends LayerUI<JPanel> {
+        @Override
+        public void paint(Graphics g, JComponent c) {
+            super.paint(g, c);
+            if (videoCatcher.getVideoBytesSaver().getBackGroundImage() != null) {
+                BufferedImage bufferedImage = changeOpacity(processImage(videoCatcher.getVideoBytesSaver().getBackGroundImage(), videoCatcher.getCameraPanel().getWidth(), videoCatcher.getCameraPanel().getHeight()));
+                if (bufferedImage != null) {
+                    int x = 0;
+                    int imageWidth = bufferedImage.getWidth();
+                    int panelWidth = videoCatcher.getCameraPanelWindow().getWidth();
+                    if (panelWidth > imageWidth) {
+                        x = (panelWidth - imageWidth) / 2;
+                    }
+                    g.drawImage(bufferedImage, x, 0, null);
+                }
+                g.dispose();
+            }
+        }
     }
 
+    void startShowVideo() {
+        this.removeAll();
+        this.add(cameraWindowLayer);
+        this.validate();
+        this.repaint();
+    }
+
+    void stopShowVideo() {
+        this.removeAll();
+        this.add(cameraDoesNotWorkLabel);
+        this.validate();
+        this.repaint();
+    }
+
+    /**
+     * changing image size, to make smaller
+     *
+     * @param bi        - image to change size
+     * @param maxWidth  - max Width
+     * @param maxHeight - maxHeight
+     * @return - small image
+     */
     public static BufferedImage processImage(BufferedImage bi, int maxWidth, int maxHeight) {//CORRECT
         int width;
         int height;
@@ -105,8 +179,15 @@ public class CameraPanel extends JPanel {
         }
     }
 
-    public static BufferedImage animateCircle(BufferedImage originalImage, int type) {
-        BufferedImage resizedImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), type);
+
+    /**
+     * change opacity of image
+     *
+     * @param originalImage - image to change opacity
+     * @return - image
+     */
+    public static BufferedImage changeOpacity(BufferedImage originalImage) {
+        BufferedImage resizedImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = resizedImage.createGraphics();
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
         g.drawImage(originalImage, 0, 0, originalImage.getWidth(), originalImage.getHeight(), null);
@@ -114,45 +195,22 @@ public class CameraPanel extends JPanel {
         return resizedImage;
     }
 
-    class MyLayer extends LayerUI<JPanel> {
-        @Override
-        public void paint(Graphics g, JComponent c) {
-            super.paint(g, c);
-            if (videoCatcher.getVideoCreator().getBufferedImageBack() != null) {
 
-                BufferedImage bufferedImage = animateCircle(processImage(videoCatcher.getVideoCreator().getBufferedImageBack(), videoCatcher.getCameraPanel().getWidth(), videoCatcher.getCameraPanel().getHeight()), BufferedImage.TYPE_INT_ARGB);
-                if (bufferedImage != null) {
-                    int x = 0;
-                    int imageWidth = bufferedImage.getWidth();
-                    int panelWidth = videoCatcher.getCameraPanelWindow().getWidth();
-                    if (panelWidth > imageWidth) {
-
-                        x = (panelWidth - imageWidth) / 2;
-                    }
-                    g.drawImage(bufferedImage, x, 0, null);
-                }
-                g.dispose();
-            }
-        }
+    /**
+     * used when delete background
+     */
+    public void repaintCameraWindow() {
+        videoCatcher.getVideoBytesSaver().setBackGroundImage(null);
     }
 
-    class CameraWindow extends JPanel {
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (bufferedImage != null) {
-                int x = 0;
-                int imageWidth = bufferedImage.getWidth();
-                int panelWidth = this.getWidth();
-                if (panelWidth > imageWidth) {
-                    x = (panelWidth - imageWidth) / 2;
-                }
-                g.drawImage(bufferedImage, x, 0, null);
-            }
-        }
+    /**
+     * used when change opacity setting
+     */
+    public void showCopyImage() {
+        cameraWindowLayer.repaint();
     }
 
-    public CameraWindow getCameraWindow() {
+    CameraWindow getCameraWindow() {
         return cameraWindow;
     }
 
@@ -168,20 +226,6 @@ public class CameraPanel extends JPanel {
         return title;
     }
 
-    void startShowVideo() {
-        this.removeAll();
-        this.add(cameraWindowLayer);
-        this.validate();
-        this.repaint();
-    }
-
-    void stopShowVideo() {
-        this.removeAll();
-        this.add(informLabel);
-        this.validate();
-        this.repaint();
-    }
-
     int getCameraNumber() {
         return cameraNumber;
     }
@@ -194,12 +238,12 @@ public class CameraPanel extends JPanel {
         CameraPanel.opacity = opacity;
     }
 
-    public boolean isFullSize() {
-        return fullSize;
+    public boolean isFullSizeEnable() {
+        return fullSizeEnable;
     }
 
-    public void setFullSize(boolean fullSize) {
-        if (fullSize) {
+    public void setFullSizeEnable(boolean fullSizeEnable) {
+        if (fullSizeEnable) {
             this.setBackground(Color.LIGHT_GRAY);
             this.cameraWindow.setBackground(Color.LIGHT_GRAY);
         } else {
@@ -207,6 +251,6 @@ public class CameraPanel extends JPanel {
             this.setBackground(color);
             this.cameraWindow.setBackground(color);
         }
-        this.fullSize = fullSize;
+        this.fullSizeEnable = fullSizeEnable;
     }
 }

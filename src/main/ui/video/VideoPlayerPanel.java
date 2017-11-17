@@ -745,8 +745,7 @@ class VideoPlayerPanel extends JPanel {
         public void paint(Graphics g, JComponent c) {
             super.paint(g, c);
             if (bufferedImage != null) {
-
-                BufferedImage image = CameraPanel.animateCircle(CameraPanel.processImage(bufferedImage, videoPanel.getWidth(), videoPanel.getHeight()), BufferedImage.TYPE_INT_ARGB);
+                BufferedImage image = CameraPanel.changeOpacity(CameraPanel.processImage(bufferedImage, videoPanel.getWidth(), videoPanel.getHeight()));
                 if (image != null) {
                     int x = 0;
                     int imageWidth = image.getWidth();

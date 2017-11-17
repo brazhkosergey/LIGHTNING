@@ -7,10 +7,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 
+/**
+ * setting panel
+ */
 public class Setting extends JPanel {
     private static Logger log = Logger.getLogger(Setting.class);
 
     private static Setting setting;
+
     private JLabel portLabel;
     private JTextField defaultPort;
     private JTextField defaultFolder;
@@ -18,7 +22,7 @@ public class Setting extends JPanel {
 
     public JButton saveButton;
     private JTextField timeTextField;
-    private JCheckBox checkBox;
+    private JCheckBox programmCatchEnableCheckBox;
 
     private JPanel allSettingPane;
     private JPanel passwordPane;
@@ -54,15 +58,15 @@ public class Setting extends JPanel {
         lightWorkPane.setPreferredSize(new Dimension(690, 70));
 
         JPanel checkBoxPane = new JPanel(new FlowLayout());
-        checkBox = new JCheckBox();
-        checkBox.setSelected(MainFrame.isProgramLightCatchWork());
+        programmCatchEnableCheckBox = new JCheckBox();
+        programmCatchEnableCheckBox.setSelected(MainFrame.isProgramLightCatchEnable());
         JLabel checkBoxLabel = new JLabel(MainFrame.getBundle().getString("programcatchcheckboxlabel"));
-        checkBoxPane.add(checkBox);
+        checkBoxPane.add(programmCatchEnableCheckBox);
         checkBoxPane.add(checkBoxLabel);
 
         JPanel timePane = new JPanel(new FlowLayout());
         timeTextField = new JTextField();
-        timeTextField.setText(String.valueOf(MainFrame.getTimeToSave()));
+        timeTextField.setText(String.valueOf(MainFrame.getSecondsToSave()));
         timeTextField.setPreferredSize(new Dimension(40, 25));
         JLabel textLabel = new JLabel(MainFrame.getBundle().getString("timetosavevideolabel"));
         timePane.add(timeTextField);
@@ -170,19 +174,17 @@ public class Setting extends JPanel {
         countImageToShowPanel.add(countShowLabel);
         countImageToShowPanel.add(countShowSlider);
 
-
         saveButton = new JButton();
         saveButton.setPreferredSize(new Dimension(150, 50));
         saveButton.setFont(new Font(null, Font.BOLD, 20));
         saveButton.addActionListener((e) -> {
-
-            try{
+            try {
                 MainFrame.setTestMode(testModeCheckBox.isSelected());
 
                 int value = countShowSlider.getValue();
                 MainFrame.setShowFramesPercent(value);
 
-                MainFrame.setProgramLightCatchWork(checkBox.isSelected());
+                MainFrame.setProgramLightCatchEnable(programmCatchEnableCheckBox.isSelected());
                 int changeWhitePercent = sliderChangeWhite.getValue();
                 MainFrame.setPercentDiffWhite(changeWhitePercent);
 
@@ -192,7 +194,7 @@ public class Setting extends JPanel {
                 String text = timeTextField.getText();
                 int countSecondsToSaveVideo = Integer.parseInt(text);
 
-                if(countSecondsToSaveVideo<2){
+                if (countSecondsToSaveVideo < 2) {
                     countSecondsToSaveVideo = 2;
                     timeTextField.setText(String.valueOf(countSecondsToSaveVideo));
                 }
@@ -226,9 +228,9 @@ public class Setting extends JPanel {
                     MainFrame.setPath(path);
                 }
 
-                MainFrame.addressSaver.saveSetting(countSecondsToSaveVideo, checkBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, port, path);
+                MainFrame.addressSaver.saveSetting(countSecondsToSaveVideo, programmCatchEnableCheckBox.isSelected(), changeWhitePercent, lightSensitivity, opacity, port, path);
                 log.info("Настройки изменены. Время сохранения: " + countSecondsToSaveVideo +
-                        ", Фиксируем програмные сработки: " + checkBox.isSelected() +
+                        ", Фиксируем програмные сработки: " + programmCatchEnableCheckBox.isSelected() +
                         ", процент вспышки на изображении: " + changeWhitePercent +
                         ", чуствительность камеры: " + lightSensitivity +
                         ", прозрачность фона: " + opacity +
@@ -237,11 +239,11 @@ public class Setting extends JPanel {
                         ", тестовый режим: " + testModeCheckBox.isSelected() + ".");
 
                 saveButton.setText(MainFrame.getBundle().getString("savedbutton"));
-                MainFrame.showInformMassage(MainFrame.getBundle().getString("savedbutton"),new Color(46, 139, 87));
+                MainFrame.showInformMassage(MainFrame.getBundle().getString("savedbutton"), new Color(46, 139, 87));
                 saveButton.setForeground(new Color(46, 139, 87));
-            } catch (Exception exc){
+            } catch (Exception exc) {
                 log.error(exc.getMessage());
-                MainFrame.showInformMassage("ERROR",Color.red);
+                MainFrame.showInformMassage("ERROR", Color.red);
             }
         });
 
@@ -327,6 +329,9 @@ public class Setting extends JPanel {
         this.add(allSettingPane);
     }
 
+    /**
+     * set password panel every time to trying open setting
+     */
     public void reSetPassword() {
         passwordTextField.setText("");
         allSettingPane.setVisible(false);
