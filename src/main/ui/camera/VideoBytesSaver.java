@@ -70,6 +70,12 @@ public class VideoBytesSaver {
      */
     private List<Integer> fpsList;
 
+
+    /**
+     * mark if almost one of catchers is worked
+     */
+    private boolean creatorWork;
+
     /**
      * mark one second gone
      */
@@ -138,12 +144,15 @@ public class VideoBytesSaver {
 
             while (true) {
                 try {
-                    fpsList.add(totalFPS);
-                    fpsDeque.addFirst(totalFPS);
-                    totalFPS = 0;
-                    oneSecond = true;
-                    secondsToSave = MainFrame.getSecondsToSave();
-                    boolean creatorWork = false;
+                    if (creatorWork) {
+                        fpsList.add(totalFPS);
+                        fpsDeque.addFirst(totalFPS);
+                        totalFPS = 0;
+                        oneSecond = true;
+                        secondsToSave = MainFrame.getSecondsToSave();
+                    }
+
+                    creatorWork = false;
                     for (VideoCatcher catcher : catcherList) {
                         if (!creatorWork) {
                             creatorWork = catcher.isCatchVideo();
@@ -184,6 +193,7 @@ public class VideoBytesSaver {
         saveBytesThread = new Thread(() -> {
             while (true) {
                 if (oneSecond) {
+                    System.out.println("Группа номер - " + cameraGroupNumber);
                     try {
                         Thread saveFileThread = new Thread(() -> {
                             if (dequeImagesTime.size() > 0) {
@@ -233,7 +243,9 @@ public class VideoBytesSaver {
                             }
 
                             if (enableSaveVideo) {
-                                if (stopSaveVideoInt >= secondsToSave && totalCountFrames > 0) {
+                                if (stopSaveVideoInt >= secondsToSave
+                                        && totalCountFrames > 0
+                                        )  {
                                     stopSaveVideoInt = 0;
                                     MainVideoCreator.stopCatchVideo();
                                     log.info("Сохраняем данные. Группа номер - " + cameraGroupNumber);
@@ -259,11 +271,21 @@ public class VideoBytesSaver {
 
                                     int totalFPSForFile = 0;
                                     int sizeFps = fpsList.size();
+                                    System.out.println(" Размер листа " + fpsList.size());
                                     for (int i = 0; i < sizeFps; i++) {
-                                        totalFPSForFile += fpsList.get(i);
+                                        Integer integer = fpsList.get(i);
+                                        System.out.println("Добавляем - " + integer);
+                                        totalFPSForFile += integer;
                                     }
 
-                                    totalFPSForFile = totalFPSForFile / sizeFps;
+                                    for (int i = 0; i < sizeFps; i++) {
+                                        fpsList.remove(0);
+                                    }
+                                    double d = (double) totalFPSForFile / sizeFps;
+                                    System.out.println(" DOUBLE + " + d);
+                                    totalFPSForFile = (int) (d + 0.5);
+
+                                    System.out.println("В итоге среднее получилось  - " + totalFPSForFile);
 
                                     String eventPercent = stringBuilder.toString();
                                     String path = MainFrame.getPath() + "\\bytes\\" + date.getTime() +
@@ -362,7 +384,7 @@ public class VideoBytesSaver {
     /**
      * add bytes array from both cameras to common collection
      *
-     * @param time = time, when image was saved to RAM (milliseconds)
+     * @param time  = time, when image was saved to RAM (milliseconds)
      * @param bytes = image bytes array
      */
     void addImageBytes(long time, byte[] bytes) {
@@ -381,7 +403,7 @@ public class VideoBytesSaver {
      * method to start event (save video)
      *
      * @param programEventDetection = type of detection (program - true, sensor - false)
-     * @param date = date, when was event (lightning)
+     * @param date                  = date, when was event (lightning)
      */
     public void startSaveVideo(boolean programEventDetection, Date date) {
         boolean work = false;

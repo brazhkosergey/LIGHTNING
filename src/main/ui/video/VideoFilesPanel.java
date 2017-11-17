@@ -148,6 +148,7 @@ public class VideoFilesPanel extends JPanel {
             deleteButton = new JButton("<html>&#10006</html>");
             deleteButton.setFont(new Font(null, Font.BOLD, 17));
             deleteButton.addActionListener((e) -> {
+                MainFrame.getMainFrame().setEnabled(false);
                 new DelFrame(filesVideoBytesMap, date);
             });
 
@@ -263,6 +264,8 @@ public class VideoFilesPanel extends JPanel {
                         e1.printStackTrace();
                     }
                     this.dispose();
+
+                    MainFrame.getMainFrame().setEnabled(true);
                 });
                 thread.start();
             });
