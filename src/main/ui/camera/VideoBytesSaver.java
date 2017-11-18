@@ -176,6 +176,7 @@ public class VideoBytesSaver {
                                 Integer remove = countsOfFramesInEachFile.remove(fileToDel);
                                 totalCountFrames -= remove;
                                 fileToDel.delete();
+                                fpsList.remove(0);
                             } catch (Exception e) {
                                 log.error(e.getMessage());
                             }
@@ -194,7 +195,7 @@ public class VideoBytesSaver {
         saveBytesThread = new Thread(() -> {
             while (true) {
                 if (oneSecond) {
-                    System.out.println(" One second " + cameraGroupNumber);
+//                    System.out.println(" One second " + cameraGroupNumber);
 
                     try {
                         Thread saveFileThread = new Thread(() -> {
@@ -271,7 +272,7 @@ public class VideoBytesSaver {
 
                                     int totalFPSForFile = 0;
                                     int sizeFps = fpsList.size();
-                                    System.out.println(" Размер листа " + fpsList.size());
+                                    System.out.println(cameraGroupNumber + " Размер листа " + fpsList.size());
                                     for (int i = 0; i < sizeFps; i++) {
                                         Integer integer = fpsList.get(i);
                                         System.out.println("Добавляем - " + integer);
@@ -285,7 +286,7 @@ public class VideoBytesSaver {
                                     System.out.println(" DOUBLE + " + d);
                                     totalFPSForFile = (int) (d + 0.5);
 
-                                    System.out.println("В итоге среднее получилось  - " + totalFPSForFile);
+                                    System.out.println(cameraGroupNumber +" В итоге среднее получилось  - " + totalFPSForFile);
 
                                     String eventPercent = stringBuilder.toString();
                                     String path = MainFrame.getPath() + "\\bytes\\" + date.getTime() +

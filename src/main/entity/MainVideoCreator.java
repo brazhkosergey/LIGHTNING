@@ -1,5 +1,6 @@
 package entity;
 
+import javafx.scene.Camera;
 import ui.camera.CameraPanel;
 import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
@@ -50,56 +51,69 @@ public class MainVideoCreator {
      * @param programingLightCatch - program or sensor catch lightning
      */
     public static void startCatchVideo(boolean programingLightCatch) {
-        SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
-        if (soundSaver != null) {
-            soundSaver.startSaveAudio();
+        boolean anyCameraEnable = false;
+
+        Map<Integer, CameraPanel> cameras = MainFrame.getCameras();
+        for (Integer integer : cameras.keySet()) {
+            CameraPanel cameraPanel = cameras.get(integer);
+            anyCameraEnable = cameraPanel.getVideoCatcher().isCatchVideo();
+            if (anyCameraEnable) {
+                break;
+            }
         }
 
-        String event;
-        if (programingLightCatch) {
-            event = ". Сработка - програмная.";
-        } else {
-            event = ". Сработка - аппаратная.";
-        }
+        if (anyCameraEnable) {
+            SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
+            if (soundSaver != null) {
+                soundSaver.startSaveAudio();
+            }
 
-        if (!isSaveVideoEnable()) {
-            date = new Date(System.currentTimeMillis());
-            log.info("Событие " + date.toString() + event + ". Сохраняем секунд - " + MainFrame.getSecondsToSave());
-            startSaveVideoForAllCreatorsThread = new Thread(() -> {
-                MainVideoCreator.setSaveVideo();
-                while (saveVideoEnable) {
-                    MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("savedword") +
-                            (secondVideoAlreadySave++) + MainFrame.getBundle().getString("seconds"));
+            String event;
+            if (programingLightCatch) {
+                event = ". Сработка - програмная.";
+            } else {
+                event = ". Сработка - аппаратная.";
+            }
+
+            if (!isSaveVideoEnable()) {
+                date = new Date(System.currentTimeMillis());
+                log.info("Событие " + date.toString() + event + ". Сохраняем секунд - " + MainFrame.getSecondsToSave());
+                startSaveVideoForAllCreatorsThread = new Thread(() -> {
+                    MainVideoCreator.setSaveVideo();
+                    while (saveVideoEnable) {
+                        MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("savedword") +
+                                (secondVideoAlreadySave++) + MainFrame.getBundle().getString("seconds"));
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    secondVideoAlreadySave = 1;
+                    startSaveVideoForAllCreatorsThread = null;
+                });
+                startSaveVideoForAllCreatorsThread.start();
+            } else {
+                log.info("Еще одна сработка, продолжаем событие " + date.toString() + event);
+                secondVideoAlreadySave = 1;
+            }
+
+            if (continueSaveVideoThread == null) {
+                continueSaveVideoThread = new Thread(() -> {
+                    for (Integer creator : MainFrame.videoSaversMap.keySet()) {
+                        MainFrame.videoSaversMap.get(creator).startSaveVideo(programingLightCatch, date);
+                    }
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                }
-                secondVideoAlreadySave = 1;
-                startSaveVideoForAllCreatorsThread = null;
-            });
-            startSaveVideoForAllCreatorsThread.start();
-        } else {
-            log.info("Еще одна сработка, продолжаем событие " + date.toString() + event);
-            secondVideoAlreadySave = 1;
-        }
-
-        if (continueSaveVideoThread == null) {
-            continueSaveVideoThread = new Thread(() -> {
-                for (Integer creator : MainFrame.videoSaversMap.keySet()) {
-                    MainFrame.videoSaversMap.get(creator).startSaveVideo(programingLightCatch, date);
-                }
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                continueSaveVideoThread = null;
-            });
-            continueSaveVideoThread.start();
-        } else {
-            log.info("С прошлой сработки не прошло 2 секунды.");
+                    continueSaveVideoThread = null;
+                });
+                continueSaveVideoThread.start();
+            } else {
+                log.info("С прошлой сработки не прошло 2 секунды.");
+            }
         }
     }
 

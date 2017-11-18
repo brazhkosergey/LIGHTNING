@@ -850,6 +850,10 @@ public class MainFrame extends JFrame {
         showImagesLabel.setText(bundle.getString("showframescountlabel") + showFramesPercent);
         showImagesLabel.repaint();
     }
+
+    public static Map<Integer, CameraPanel> getCameras() {
+        return cameras;
+    }
 }
 
 
