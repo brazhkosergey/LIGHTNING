@@ -246,7 +246,8 @@ public class VideoPlayer extends JPanel {
         }
 
         for (Integer integer : eventFrameNumberMap.keySet()) {
-            int percent = integer * 1000 / totalCountFrames;
+//            int percent = integer * 1000 / totalCountFrames;
+            int percent = integer * 500 / totalCountFrames;
             eventPercent.put(percent, eventFrameNumberMap.get(integer));
         }
 
@@ -350,14 +351,16 @@ public class VideoPlayer extends JPanel {
         sliderForVideo.setLayout(layout);
         sliderPanelsLst = new ArrayList<>();
 
-        for (int i = 1; i < 1000; i++) {
+//        for (int i = 1; i < 1000; i++) {
+        for (int i = 1; i < 500; i++) {
             JPanel panel = new JPanel();
             int finalI = i;
             panel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     position = finalI;
-                    double percent = (double) position / 1000;
+//                    double percent = (double) position / 1000;
+                    double percent = (double) position / 500;
                     frameNumber = (int) (totalCountFrames * percent);
                     setSetPOSITION();
                 }
@@ -495,8 +498,8 @@ public class VideoPlayer extends JPanel {
                             videoPlayerPanel.showFrameNumber(partNumber, currentFramePositionPercent);
                         }
                     }
+                    int sliderPosition = (frameNumber+(FPS/10)) * 500 / totalCountFrames;
 
-                    int sliderPosition = frameNumber * 1000 / totalCountFrames;
                     if (currentSliderPosition != sliderPosition) {
                         currentSliderPosition = sliderPosition;
                         setSliderPosition(currentSliderPosition);
@@ -660,9 +663,12 @@ public class VideoPlayer extends JPanel {
      * @param position - current position(0-999)
      */
     private void setSliderPosition(int position) {
-        if (position > 999) {
-            position = 999;
+
+
+        if (position > 499) {
+            position = 499;
         }
+
         for (int i = 0; i < position - 1; i++) {
             if (eventPercent.containsKey(i)) {
                 if (eventPercent.get(i)) {

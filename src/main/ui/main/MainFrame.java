@@ -443,6 +443,7 @@ public class MainFrame extends JFrame {
         JButton videoButton = new JButton(bundle.getString("videospage"));
         videoButton.setPreferredSize(new Dimension(120, 30));
         videoButton.addActionListener((e) -> {
+            MainFrame.showSecondsAlreadySaved("");
             showVideoFilesPanel();
         });
 
@@ -468,6 +469,7 @@ public class MainFrame extends JFrame {
         informPane.add(mainLabel);
         informPane.add(recordLabel);
         recordSecondsLabel = new JLabel();
+        recordSecondsLabel.setFont(new Font(null,Font.BOLD,19));
         recordSecondsLabel.setPreferredSize(new Dimension(150, 30));
         recordSecondsLabel.setHorizontalAlignment(SwingConstants.CENTER);
 

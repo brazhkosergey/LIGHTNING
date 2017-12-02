@@ -195,8 +195,6 @@ public class VideoBytesSaver {
         saveBytesThread = new Thread(() -> {
             while (true) {
                 if (oneSecond) {
-//                    System.out.println(" One second " + cameraGroupNumber);
-
                     try {
                         Thread saveFileThread = new Thread(() -> {
                             if (dequeImagesTime.size() > 0) {
@@ -286,7 +284,7 @@ public class VideoBytesSaver {
                                     System.out.println(" DOUBLE + " + d);
                                     totalFPSForFile = (int) (d + 0.5);
 
-                                    System.out.println(cameraGroupNumber +" В итоге среднее получилось  - " + totalFPSForFile);
+                                    System.out.println(cameraGroupNumber + " В итоге среднее получилось  - " + totalFPSForFile);
 
                                     String eventPercent = stringBuilder.toString();
                                     String path = MainFrame.getPath() + "\\bytes\\" + date.getTime() +
@@ -333,6 +331,15 @@ public class VideoBytesSaver {
                                             "Кадров - " + currentTotalCountImage + ". " +
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
+
+
+                                    System.out.println("Сохранили файл. Группа - " + cameraGroupNumber + ". " +
+                                            "Кадров - " + currentTotalCountImage + ". " +
+                                            "Файлов в буфере " + size + ". " +
+                                            "Сохранили секунд " + secondsCount);
+                                    System.out.println("Путь к файлу - " + path);
+
+
                                     enableSaveVideo = false;
                                 } else {
                                     System.out.println(" Мало секунд " + stopSaveVideoInt);
@@ -346,6 +353,14 @@ public class VideoBytesSaver {
                                             if (fileToDel != null) {
                                                 Integer remove = countsOfFramesInEachFile.remove(fileToDel);
                                                 totalCountFrames -= remove;
+                                                int framesBeforeCalculating = totalCountFrames;
+                                                int b = 0;
+                                                for (File file : countsOfFramesInEachFile.keySet()) {
+                                                    b += countsOfFramesInEachFile.get(file);
+                                                }
+
+                                                System.out.println("На данный момент:"+totalCountFrames+",до просчета кадров:"+framesBeforeCalculating + ". По файлам - " + b);
+
                                                 if (eventsFramesNumber.size() != 0) {
                                                     Map<Integer, Boolean> temporaryMap = new HashMap<>();
                                                     for (Integer integer : eventsFramesNumber.keySet()) {
@@ -409,6 +424,7 @@ public class VideoBytesSaver {
      * @param date                  = date, when was event (lightning)
      */
     public void startSaveVideo(boolean programEventDetection, Date date) {
+        int imageNumber = totalCountFrames;
         boolean work = false;
         for (VideoCatcher catcher : catcherList) {
             work = catcher.isCatchVideo();
@@ -418,18 +434,19 @@ public class VideoBytesSaver {
         }
 
         if (work) {
-            int imageNumber = totalCountFrames;
             eventsFramesNumber.put(imageNumber, programEventDetection);
             if (dequeImagesTime.size() > 0) {
                 if (!enableSaveVideo) {
-                    log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
+                    log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
                     enableSaveVideo = true;
                     this.date = date;
                 } else {
-                    log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber);
+                    log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
                     stopSaveVideoInt = 0;
                 }
             }
+
+            System.out.println(cameraGroupNumber + " - Начинаем сохранять, Время - " + System.currentTimeMillis() + ". Кадр номер - " + imageNumber);
         }
     }
 

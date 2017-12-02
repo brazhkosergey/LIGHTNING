@@ -113,6 +113,12 @@ public class VideoFilesPanel extends JPanel {
             for (Integer integer : filesVideoBytesMap.keySet()) {
                 File file1 = filesVideoBytesMap.get(integer);
 
+                String name = file1.getName();
+                int first = name.indexOf("[");
+                int second = name.indexOf("]");
+                String substring = name.substring(first + 1, second);
+                greenColor = substring.contains("(");
+
                 videoSize = file1.listFiles().length;
                 break;
             }
@@ -148,7 +154,6 @@ public class VideoFilesPanel extends JPanel {
             deleteButton = new JButton("<html>&#10006</html>");
             deleteButton.setFont(new Font(null, Font.BOLD, 17));
             deleteButton.addActionListener((e) -> {
-                MainFrame.getMainFrame().setEnabled(false);
                 new DelFrame(filesVideoBytesMap, date);
             });
 
@@ -254,7 +259,6 @@ public class VideoFilesPanel extends JPanel {
                             }
                         }
                         folderToDel.delete();
-
                     }
                     showVideos();
                     okLabel.setVisible(true);
@@ -264,8 +268,6 @@ public class VideoFilesPanel extends JPanel {
                         e1.printStackTrace();
                     }
                     this.dispose();
-
-                    MainFrame.getMainFrame().setEnabled(true);
                 });
                 thread.start();
             });

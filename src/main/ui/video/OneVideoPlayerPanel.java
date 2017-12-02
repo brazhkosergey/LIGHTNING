@@ -269,8 +269,9 @@ class OneVideoPlayerPanel extends JPanel {
                 int i = currentFrameNumber;
                 BufferedImage image = readImage(framesBytesInBuffMap.get(i));
                 if (image != null) {
-                    String path = MainFrame.getPath() + System.currentTimeMillis() + "-" + numberVideoPanel + ".jpg";
+                    String path = MainFrame.getPath() +"\\"+ System.currentTimeMillis() + "-" + numberVideoPanel + ".jpg";
                     File file = new File(path);
+                    System.out.println("Путь к файлу - " + path);
                     try {
                         if (file.createNewFile()) {
                             ImageIO.write(image, "jpg", file);
