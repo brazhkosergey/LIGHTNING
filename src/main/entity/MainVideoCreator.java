@@ -515,7 +515,7 @@ public class MainVideoCreator {
      * @param opacity        - opacity of image to connect
      * @return - image, which was created from two images
      */
-    private static BufferedImage connectImage(BufferedImage sourceImage, BufferedImage imageToConnect, float opacity) {
+    public static BufferedImage connectImage(BufferedImage sourceImage, BufferedImage imageToConnect, float opacity) {
         BufferedImage image = new BufferedImage(sourceImage.getWidth(), sourceImage.getHeight(), sourceImage.getType());
         Graphics2D graphics = image.createGraphics();
         graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC, 1.0f));

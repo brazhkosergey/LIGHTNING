@@ -70,10 +70,10 @@ class OneVideoPlayerPanel extends JPanel {
     private boolean showVideoNow;
 
     /**
-     * collections of thread. 10 Items. Each thread will create image from bytes in buffer ("framesBytesInBuffMap" ),
-     * mark number of this frame and save it to image buffer - "framesImagesInBuffMap". After replace oun key to NULL in buffImageThreadMap.
+     * collections of thread. 10 Items. Each thread will create backGround from bytes in buffer ("framesBytesInBuffMap" ),
+     * mark number of this frame and save it to backGround buffer - "framesImagesInBuffMap". After replace oun key to NULL in buffImageThreadMap.
      * <p>
-     * use this to create some future images before VideoPlayer ask to show them. And when OneVideoPlayer should be draw this image,
+     * use this to create some future images before VideoPlayer ask to show them. And when OneVideoPlayer should be draw this backGround,
      * it will not spend time to create it.
      */
     private Map<Integer, Thread> buffImageThreadMap;
@@ -94,7 +94,7 @@ class OneVideoPlayerPanel extends JPanel {
     /**
      * this thread will be created and run each time, when it will be null, and VideoPlayer ask this OneVideoPlayerPanel to show frame
      * it takes a video part number(after splitting by events) and percent number of frame,
-     * find this frame in this video, find the file with this frame, read bytes, create image, draw it to panel
+     * find this frame in this video, find the file with this frame, read bytes, create backGround, draw it to panel
      * and set "showFrameThread = null" to be possible show next frame
      */
     private Thread showFrameThread;
@@ -118,6 +118,9 @@ class OneVideoPlayerPanel extends JPanel {
      * parts number as key, and count of frames in part as value it "tempEventsMapPartSize"
      */
     private Map<Integer, Integer> tempEventsMapPartSize;
+
+
+    private BufferedImage backGround = null;
 
     private boolean setPosition;
     private int startFrame;
@@ -208,20 +211,19 @@ class OneVideoPlayerPanel extends JPanel {
                 }
             }
 
-            BufferedImage image = null;
             String absolutePathToImage = folderWithFilesBytesToShowVideo.getAbsolutePath().replace(".tmp", ".jpg");
             File imageFile = new File(absolutePathToImage);
             if (imageFile.exists()) {
                 try {
                     FileInputStream fileInputStream = new FileInputStream(imageFile);
-                    image = ImageIO.read(fileInputStream);
+                    backGround = ImageIO.read(fileInputStream);
                     fileInputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
 
-            LayerUI<JPanel> layerUI = new OneVideoPlayerPanel.MyLayer(image);
+            LayerUI<JPanel> layerUI = new OneVideoPlayerPanel.MyLayer(backGround);
             videoStreamLayer = new JLayer<JPanel>(videoPlayerToShowOneVideo, layerUI);
             videoStreamLayer.setAlignmentX(CENTER_ALIGNMENT);
 
@@ -250,7 +252,7 @@ class OneVideoPlayerPanel extends JPanel {
         label.setHorizontalAlignment(SwingConstants.CENTER);
         JButton exportButton = new JButton(MainFrame.getBundle().getString("savevideobutton"));
         exportButton.setFocusable(false);
-        exportButton.setPreferredSize(new Dimension(120, 50));
+        exportButton.setPreferredSize(new Dimension(178, 50));
         exportButton.addActionListener((e) -> {
             if (folder != null) {
                 Thread thread = new Thread(() -> {
@@ -263,29 +265,15 @@ class OneVideoPlayerPanel extends JPanel {
 
         JButton imageButton = new JButton(MainFrame.getBundle().getString("saveframebutton"));
         imageButton.setFocusable(false);
-        imageButton.setPreferredSize(new Dimension(120, 50));
+        imageButton.setPreferredSize(new Dimension(87, 50));
         imageButton.addActionListener((e) -> {
-            Thread thread = new Thread(() -> {
-                int i = currentFrameNumber;
-                BufferedImage image = readImage(framesBytesInBuffMap.get(i));
-                if (image != null) {
-                    String path = MainFrame.getPath() +"\\"+ System.currentTimeMillis() + "-" + numberVideoPanel + ".jpg";
-                    File file = new File(path);
-                    System.out.println("Путь к файлу - " + path);
-                    try {
-                        if (file.createNewFile()) {
-                            ImageIO.write(image, "jpg", file);
-                        }
-                        MainFrame.showInformMassage(MainFrame.getBundle().getString("saveoneframenumber") + i, Color.DARK_GRAY);
-                    } catch (Exception xe) {
-                        MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
-                        xe.printStackTrace();
-                    }
-                } else {
-                    MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
-                }
-            });
-            thread.start();
+            saveImage(false);
+        });
+
+        JButton imageBackGroundButton = new JButton(MainFrame.getBundle().getString("saveframebutton") + " +");
+        imageBackGroundButton.setPreferredSize(new Dimension(87, 50));
+        imageBackGroundButton.addActionListener((e) -> {
+            saveImage(true);
         });
 
         currentFrameLabel = new JLabel(MainFrame.getBundle().getString("framenumberlabel"));
@@ -445,6 +433,7 @@ class OneVideoPlayerPanel extends JPanel {
         exportPanel.add(label);
         exportPanel.add(exportButton);
         exportPanel.add(imageButton);
+        exportPanel.add(imageBackGroundButton);
         exportPanel.add(currentFrameLabel);
         exportPanel.add(currentFPSLabel);
         exportPanel.add(totalFrameLabel);
@@ -464,6 +453,36 @@ class OneVideoPlayerPanel extends JPanel {
 
         this.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         createThread();
+    }
+
+
+    private void saveImage(boolean saveBackGround) {
+        Thread thread = new Thread(() -> {
+            int i = currentFrameNumber;
+            BufferedImage image = readImage(framesBytesInBuffMap.get(i));
+            if (image != null) {
+                String path = MainFrame.getPath() + "\\" + System.currentTimeMillis() + "-" + numberVideoPanel + ".jpg";
+                File file = new File(path);
+                System.out.println("Путь к файлу - " + path);
+                try {
+                    if (file.createNewFile()) {
+                        if (backGround == null || !saveBackGround) {
+                            ImageIO.write(image, "jpg", file);
+                        } else {
+                            BufferedImage connectedImage = MainVideoCreator.connectImage(image, backGround, CameraPanel.getOpacity());
+                            ImageIO.write(connectedImage, "jpg", file);
+                        }
+                    }
+                    MainFrame.showInformMassage(MainFrame.getBundle().getString("saveoneframenumber") + i, Color.DARK_GRAY);
+                } catch (Exception xe) {
+                    MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
+                    xe.printStackTrace();
+                }
+            } else {
+                MainFrame.showInformMassage(MainFrame.getBundle().getString("cannotsaveinform"), new Color(171, 40, 33));
+            }
+        });
+        thread.start();
     }
 
     /**
@@ -709,7 +728,7 @@ class OneVideoPlayerPanel extends JPanel {
     }
 
     /**
-     * read bytes for one image from files, and save it to buffer
+     * read bytes for one backGround from files, and save it to buffer
      */
     private void readBytesImageToBuff() {
         while (!setPosition && VideoPlayer.isShowVideoPlayer()) {
@@ -737,10 +756,10 @@ class OneVideoPlayerPanel extends JPanel {
     }
 
     /**
-     * create image from byte array
+     * create backGround from byte array
      *
      * @param imageBytes - array of bytes
-     * @return - buffered image
+     * @return - buffered backGround
      */
     private BufferedImage readImage(byte[] imageBytes) {
         BufferedImage bufferedImage = null;
@@ -787,7 +806,7 @@ class OneVideoPlayerPanel extends JPanel {
     }
 
     /**
-     * use it to set background image
+     * use it to set background backGround
      */
     class MyLayer extends LayerUI<JPanel> {
         BufferedImage bufferedImage;
@@ -816,7 +835,7 @@ class OneVideoPlayerPanel extends JPanel {
     }
 
     /**
-     * use it to draw image here
+     * use it to draw backGround here
      */
     class VideoPlayerToShowOneVideo extends JPanel {
         private BufferedImage bufferedImage;
