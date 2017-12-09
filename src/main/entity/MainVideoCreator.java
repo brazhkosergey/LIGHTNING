@@ -47,6 +47,9 @@ public class MainVideoCreator {
      */
     private static int secondVideoAlreadySave = 1;
 
+
+    private static boolean showInformMessage = false;
+
     /**
      * @param programingLightCatch - program or sensor catch lightning
      */
@@ -126,13 +129,21 @@ public class MainVideoCreator {
             soundSaver.stopSaveAudio();
         }
 
-        if(programCatchLightning){
+        if (!showInformMessage) {
+            showInformMessage = programCatchLightning;
+        }
+
+        if (showInformMessage) {
             MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsaving"));
         } else {
             MainFrame.showSecondsAlreadySaved(" ");
         }
 
         saveVideoEnable = false;
+    }
+
+    public static void setShowInformMessage(boolean showInformMessage) {
+        MainVideoCreator.showInformMessage = showInformMessage;
     }
 
     /**
@@ -348,7 +359,6 @@ public class MainVideoCreator {
                                         System.out.println("Сохранено - " + count);
                                         System.out.println("НЕ СОХРАНЕНО " + countImageNotSaved);
                                     }
-
 
                                     image = null;
                                     if (count % 2 == 0) {
