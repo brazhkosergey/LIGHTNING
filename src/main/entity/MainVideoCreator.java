@@ -120,12 +120,18 @@ public class MainVideoCreator {
     /**
      * stop catch bytes from cameras
      */
-    public static void stopCatchVideo() {
+    public static void stopCatchVideo(boolean programCatchLightning) {
         SoundSaver soundSaver = MainFrame.getMainFrame().getSoundSaver();
         if (soundSaver != null) {
             soundSaver.stopSaveAudio();
         }
-        MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsaving"));
+
+        if(programCatchLightning){
+            MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsaving"));
+        } else {
+            MainFrame.showSecondsAlreadySaved(" ");
+        }
+
         saveVideoEnable = false;
     }
 

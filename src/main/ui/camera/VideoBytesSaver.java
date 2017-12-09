@@ -118,6 +118,8 @@ public class VideoBytesSaver {
      */
     private Date date;
 
+    private boolean containProgramCatchLightning;
+
     /**
      * @param cameraGroupNumber - number of camera group (1-4)
      */
@@ -246,7 +248,10 @@ public class VideoBytesSaver {
                             if (enableSaveVideo) {
                                 if (stopSaveVideoInt >= secondsToSave && totalCountFrames > 0) {
                                     stopSaveVideoInt = 0;
-                                    MainVideoCreator.stopCatchVideo();
+                                    MainVideoCreator.stopCatchVideo(containProgramCatchLightning);
+
+                                    containProgramCatchLightning = false;
+
                                     log.info("Сохраняем данные. Группа номер - " + cameraGroupNumber);
                                     StringBuilder stringBuilder = new StringBuilder();
                                     stringBuilder.append("[");
@@ -359,7 +364,7 @@ public class VideoBytesSaver {
                                                     b += countsOfFramesInEachFile.get(file);
                                                 }
 
-                                                System.out.println("На данный момент:"+totalCountFrames+",до просчета кадров:"+framesBeforeCalculating + ". По файлам - " + b);
+                                                System.out.println("На данный момент:" + totalCountFrames + ",до просчета кадров:" + framesBeforeCalculating + ". По файлам - " + b);
 
                                                 if (eventsFramesNumber.size() != 0) {
                                                     Map<Integer, Boolean> temporaryMap = new HashMap<>();
@@ -424,6 +429,11 @@ public class VideoBytesSaver {
      * @param date                  = date, when was event (lightning)
      */
     public void startSaveVideo(boolean programEventDetection, Date date) {
+
+        if (!containProgramCatchLightning) {
+            containProgramCatchLightning = programEventDetection;
+        }
+
         int imageNumber = totalCountFrames;
         boolean work = false;
         for (VideoCatcher catcher : catcherList) {
