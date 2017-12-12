@@ -11,6 +11,7 @@ import ui.main.MainFrame;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -49,6 +50,9 @@ public class MainVideoCreator {
 
 
     private static boolean showInformMessage = false;
+
+
+    private static boolean informFrameNewVideo = false;
 
     /**
      * @param programingLightCatch - program or sensor catch lightning
@@ -135,11 +139,19 @@ public class MainVideoCreator {
 
         if (showInformMessage) {
             MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsaving"));
+            if (!informFrameNewVideo) {
+                new NewVideoInformFrame();
+                informFrameNewVideo = true;
+            }
         } else {
             MainFrame.showSecondsAlreadySaved(" ");
         }
 
         saveVideoEnable = false;
+    }
+
+    public static void setInformFrameNewVideo(boolean informFrameNewVideo) {
+        MainVideoCreator.informFrameNewVideo = informFrameNewVideo;
     }
 
     public static void setShowInformMessage(boolean showInformMessage) {

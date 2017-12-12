@@ -275,10 +275,8 @@ public class VideoBytesSaver {
 
                                     int totalFPSForFile = 0;
                                     int sizeFps = fpsList.size();
-                                    System.out.println(cameraGroupNumber + " Размер листа " + fpsList.size());
                                     for (int i = 0; i < sizeFps; i++) {
                                         Integer integer = fpsList.get(i);
-                                        System.out.println("Добавляем - " + integer);
                                         totalFPSForFile += integer;
                                     }
 
@@ -286,10 +284,7 @@ public class VideoBytesSaver {
                                         fpsList.remove(0);
                                     }
                                     double d = (double) totalFPSForFile / sizeFps;
-                                    System.out.println(" DOUBLE + " + d);
                                     totalFPSForFile = (int) (d + 0.5);
-
-                                    System.out.println(cameraGroupNumber + " В итоге среднее получилось  - " + totalFPSForFile);
 
                                     String eventPercent = stringBuilder.toString();
                                     String path = MainFrame.getPath() + "\\bytes\\" + date.getTime() +
@@ -350,6 +345,7 @@ public class VideoBytesSaver {
                                     System.out.println(" Мало секунд " + stopSaveVideoInt);
                                 }
                             } else {
+                                System.out.println("Банально сохраняем секунду");
                                 int i = secondsToSave;
                                 while (fileDeque.size() > i) {
                                     try {
@@ -363,8 +359,6 @@ public class VideoBytesSaver {
                                                 for (File file : countsOfFramesInEachFile.keySet()) {
                                                     b += countsOfFramesInEachFile.get(file);
                                                 }
-
-                                                System.out.println("На данный момент:" + totalCountFrames + ",до просчета кадров:" + framesBeforeCalculating + ". По файлам - " + b);
 
                                                 if (eventsFramesNumber.size() != 0) {
                                                     Map<Integer, Boolean> temporaryMap = new HashMap<>();
@@ -429,11 +423,9 @@ public class VideoBytesSaver {
      * @param date                  = date, when was event (lightning)
      */
     public void startSaveVideo(boolean programEventDetection, Date date) {
-
         if (!containProgramCatchLightning) {
             containProgramCatchLightning = programEventDetection;
         }
-
         int imageNumber = totalCountFrames;
         boolean work = false;
         for (VideoCatcher catcher : catcherList) {
@@ -445,7 +437,7 @@ public class VideoBytesSaver {
 
         if (work) {
             eventsFramesNumber.put(imageNumber, programEventDetection);
-            if (dequeImagesTime.size() > 0) {
+//            if (dequeImagesTime.size() > 0) {
                 if (!enableSaveVideo) {
                     log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
                     enableSaveVideo = true;
@@ -454,8 +446,7 @@ public class VideoBytesSaver {
                     log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
                     stopSaveVideoInt = 0;
                 }
-            }
-
+//            }
             System.out.println(cameraGroupNumber + " - Начинаем сохранять, Время - " + System.currentTimeMillis() + ". Кадр номер - " + imageNumber);
         }
     }
