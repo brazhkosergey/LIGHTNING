@@ -341,11 +341,8 @@ public class VideoBytesSaver {
 
 
                                     enableSaveVideo = false;
-                                } else {
-                                    System.out.println(" Мало секунд " + stopSaveVideoInt);
                                 }
                             } else {
-                                System.out.println("Банально сохраняем секунду");
                                 int i = secondsToSave;
                                 while (fileDeque.size() > i) {
                                     try {
@@ -380,13 +377,14 @@ public class VideoBytesSaver {
                                 }
                             }
                         });
-
                         saveFileThread.start();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                     oneSecond = false;
                 } else {
+
+                    MainVideoCreator.isSaveVideoEnable();
                     try {
                         Thread.sleep(1);
                     } catch (InterruptedException e) {
@@ -438,14 +436,14 @@ public class VideoBytesSaver {
         if (work) {
             eventsFramesNumber.put(imageNumber, programEventDetection);
 //            if (dequeImagesTime.size() > 0) {
-                if (!enableSaveVideo) {
-                    log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
-                    enableSaveVideo = true;
-                    this.date = date;
-                } else {
-                    log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
-                    stopSaveVideoInt = 0;
-                }
+            if (!enableSaveVideo) {
+                log.info("Начинаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
+                enableSaveVideo = true;
+                this.date = date;
+            } else {
+                log.info("Продлжаем запись. Группа " + cameraGroupNumber + ". Кадр номер - " + imageNumber + ". Время - " + System.currentTimeMillis());
+                stopSaveVideoInt = 0;
+            }
 //            }
             System.out.println(cameraGroupNumber + " - Начинаем сохранять, Время - " + System.currentTimeMillis() + ". Кадр номер - " + imageNumber);
         }

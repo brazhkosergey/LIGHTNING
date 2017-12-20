@@ -86,7 +86,7 @@ public class MainVideoCreator {
                 date = new Date(System.currentTimeMillis());
                 log.info("Событие " + date.toString() + event + ". Сохраняем секунд - " + MainFrame.getSecondsToSave());
                 startSaveVideoForAllCreatorsThread = new Thread(() -> {
-                    MainVideoCreator.setSaveVideo();
+                    setSaveVideo();
                     while (saveVideoEnable) {
                         MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("savedword") +
                                 (secondVideoAlreadySave++) + MainFrame.getBundle().getString("seconds"));
@@ -107,9 +107,15 @@ public class MainVideoCreator {
 
             if (continueSaveVideoThread == null) {
                 continueSaveVideoThread = new Thread(() -> {
+
+
+
+
                     for (Integer creator : MainFrame.videoSaversMap.keySet()) {
                         MainFrame.videoSaversMap.get(creator).startSaveVideo(programingLightCatch, date);
                     }
+
+
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -138,7 +144,7 @@ public class MainVideoCreator {
         }
 
         if (showInformMessage) {
-            MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsaving"));
+            MainFrame.showSecondsAlreadySaved(MainFrame.getBundle().getString("endofsavinglabel"));
             if (!informFrameNewVideo) {
                 new NewVideoInformFrame();
                 informFrameNewVideo = true;
