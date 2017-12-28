@@ -92,7 +92,7 @@ public class VideoCatcher {
     private int percentWhiteDiff = 0;
 
     /**
-     * @param cameraPanel         - camera panel for show video form this catcher camera
+     * @param cameraPanel            - camera panel for show video form this catcher camera
      * @param videoBytesSaverForBoth - video creator for saving bytes from this cather camera
      */
     public VideoCatcher(CameraPanel cameraPanel, VideoBytesSaver videoBytesSaverForBoth) {
@@ -218,8 +218,9 @@ public class VideoCatcher {
                                     bytesForImagesToShowDeque.addFirst(bytes);
                                     showImage = false;
                                 }
-
-                                videoBytesSaver.addImageBytes(l, bytes);
+                                if (bytes != null) {
+                                    videoBytesSaver.addImageBytes(l, bytes);
+                                }
                                 fps++;
                             }
                         }
@@ -402,6 +403,7 @@ public class VideoCatcher {
 
     /**
      * used green color when have saved as many second as set in setting, use red color when already not saved enough
+     *
      * @param color = color
      */
     void setBorderColor(Color color) {

@@ -164,6 +164,7 @@ public class VideoBytesSaver {
                         fpsDeque.addFirst(totalFPS);
                         totalFPS = 0;
                         oneSecond = true;
+                        System.out.println(cameraGroupNumber + " Одна секунда - время: " + System.currentTimeMillis());
                         secondsToSave = MainFrame.getSecondsToSave();
 
                         if (enableSaveVideo) {
@@ -176,7 +177,7 @@ public class VideoBytesSaver {
                             try {
                                 File fileToDel = fileDeque.pollLast();
                                 Integer remove = countsOfFramesInEachFile.remove(fileToDel);
-                                totalCountFrames -= remove;
+                                totalCountFrames -= remove;//Удаляем все временные файлы, в случае если камеры будут отключены.
                                 fileToDel.delete();
                                 fpsList.remove(0);
                             } catch (Exception e) {
@@ -215,12 +216,14 @@ public class VideoBytesSaver {
                                                         byte[] remove = buffMapImages.remove(aLong);
                                                         if (remove != null) {
                                                             try {
-                                                                countImagesInFile++;
                                                                 fileOutputStream.write(remove);
+                                                                countImagesInFile++;
                                                             } catch (Exception e) {
                                                                 log.error(e.getMessage());
                                                                 e.printStackTrace();
                                                             }
+                                                        } else {
+                                                          totalCountFrames--;//in case when temporary stream was not converted to byte array, but was added null to collection
                                                         }
                                                     }
                                                 }
@@ -301,7 +304,7 @@ public class VideoBytesSaver {
                                                 File fileToSave = fileDeque.pollLast();
                                                 if (fileToSave != null) {
                                                     Integer remove = countsOfFramesInEachFile.remove(fileToSave);
-                                                    totalCountFrames -= remove;//Не здесь
+                                                    totalCountFrames -= remove;//Отнимаем количество кадров, которое пересохранили в конце сохранения видео.
                                                     secondsCount++;
                                                     boolean reSave = fileToSave.renameTo(new File(destFolder, fileToSave.getName()));
                                                     if (!reSave) {
@@ -332,13 +335,11 @@ public class VideoBytesSaver {
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
 
-
                                     System.out.println("Сохранили файл. Группа - " + cameraGroupNumber + ". " +
                                             "Кадров - " + currentTotalCountImage + ". " +
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
                                     System.out.println("Путь к файлу - " + path);
-
 
                                     enableSaveVideo = false;
                                 }
@@ -350,12 +351,7 @@ public class VideoBytesSaver {
                                             File fileToDel = fileDeque.pollLast();
                                             if (fileToDel != null) {
                                                 Integer remove = countsOfFramesInEachFile.remove(fileToDel);
-                                                totalCountFrames -= remove;
-                                                int framesBeforeCalculating = totalCountFrames;
-                                                int b = 0;
-                                                for (File file : countsOfFramesInEachFile.keySet()) {
-                                                    b += countsOfFramesInEachFile.get(file);
-                                                }
+                                                totalCountFrames -= remove;//отнимаем количество кадров, которое было в временном файле, который удалили.
 
                                                 if (eventsFramesNumber.size() != 0) {
                                                     Map<Integer, Boolean> temporaryMap = new HashMap<>();
@@ -383,7 +379,6 @@ public class VideoBytesSaver {
                     }
                     oneSecond = false;
                 } else {
-
                     MainVideoCreator.isSaveVideoEnable();
                     try {
                         Thread.sleep(1);
@@ -406,9 +401,10 @@ public class VideoBytesSaver {
         while (dequeImagesTime.contains(time)) {
             time++;
         }
+
         if (!dequeImagesTime.contains(time)) {
             dequeImagesTime.addFirst(time);
-            buffMapImages.put(time, bytes);
+            buffMapImages.put(time, bytes);//здесь складываем байты в кучку
             totalFPS++;
             totalCountFrames++;
         }
