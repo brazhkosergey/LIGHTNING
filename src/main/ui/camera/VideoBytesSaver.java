@@ -216,15 +216,23 @@ public class VideoBytesSaver {
                                                         byte[] remove = buffMapImages.remove(aLong);
                                                         if (remove != null) {
                                                             try {
-                                                                fileOutputStream.write(remove);
                                                                 countImagesInFile++;
+                                                                fileOutputStream.write(remove);
                                                             } catch (Exception e) {
                                                                 log.error(e.getMessage());
                                                                 e.printStackTrace();
                                                             }
                                                         } else {
-                                                          totalCountFrames--;//in case when temporary stream was not converted to byte array, but was added null to collection
+                                                            log.error(cameraGroupNumber+" Количество кадров - "+totalCountFrames);
+                                                            System.out.println(cameraGroupNumber+" Количество кадров - "+totalCountFrames);
+
+                                                            totalCountFrames = totalCountFrames-1;//in case when temporary stream was not converted to byte array, but was added null to collection
+
+                                                            log.error(cameraGroupNumber+" Потеряли кадр , байты пришли в виде НУЛЛ "+totalCountFrames);
+                                                            System.out.println(cameraGroupNumber+" Потеряли кадр , байты пришли в виде НУЛЛ "+totalCountFrames);
                                                         }
+                                                    } else {
+                                                        log.error("Потеряли кадр, время байта - НУЛЛ");
                                                     }
                                                 }
                                             }

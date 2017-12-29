@@ -218,9 +218,7 @@ public class VideoCatcher {
                                     bytesForImagesToShowDeque.addFirst(bytes);
                                     showImage = false;
                                 }
-                                if (bytes != null) {
-                                    videoBytesSaver.addImageBytes(l, bytes);
-                                }
+                                videoBytesSaver.addImageBytes(l, bytes);
                                 fps++;
                             }
                         }
