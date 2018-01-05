@@ -211,14 +211,14 @@ public class VideoCatcher {
                                 temporaryStream.write(t);
                                 temporaryStream.write(x);
                             } else if (x == 217 && t == 255) {//конец изображения
-                                long l = System.currentTimeMillis();
+                                long timeOfImageReceive = System.currentTimeMillis();
                                 byte[] bytes = temporaryStream.toByteArray();
 
                                 if (showImage) {
                                     bytesForImagesToShowDeque.addFirst(bytes);
                                     showImage = false;
                                 }
-                                videoBytesSaver.addImageBytes(l, bytes);
+                                videoBytesSaver.addImageBytes(timeOfImageReceive, bytes);
                                 fps++;
                             }
                         }

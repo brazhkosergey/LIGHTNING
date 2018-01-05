@@ -223,17 +223,16 @@ public class VideoBytesSaver {
                                                                 e.printStackTrace();
                                                             }
                                                         } else {
-                                                            log.error(cameraGroupNumber+" Количество кадров - "+totalCountFrames);
-                                                            System.out.println(cameraGroupNumber+" Количество кадров - "+totalCountFrames);
-
+//                                                            log.error(cameraGroupNumber+" Количество кадров - "+totalCountFrames);
+//                                                            System.out.println(cameraGroupNumber+" Количество кадров - "+totalCountFrames);
                                                             totalCountFrames = totalCountFrames-1;//in case when temporary stream was not converted to byte array, but was added null to collection
-
-                                                            log.error(cameraGroupNumber+" Потеряли кадр , байты пришли в виде НУЛЛ "+totalCountFrames);
-                                                            System.out.println(cameraGroupNumber+" Потеряли кадр , байты пришли в виде НУЛЛ "+totalCountFrames);
+//                                                            log.error(cameraGroupNumber+" Потеряли кадр , байты пришли в виде НУЛЛ "+totalCountFrames);
+//                                                            System.out.println(cameraGroupNumber+" Потеряли кадр , байты пришли в виде НУЛЛ "+totalCountFrames);
                                                         }
-                                                    } else {
-                                                        log.error("Потеряли кадр, время байта - НУЛЛ");
                                                     }
+//                                                    else {
+//                                                        log.error("Потеряли кадр, время байта - НУЛЛ");
+//                                                    }
                                                 }
                                             }
                                         }
@@ -342,13 +341,11 @@ public class VideoBytesSaver {
                                             "Кадров - " + currentTotalCountImage + ". " +
                                             "Файлов в буфере " + size + ". " +
                                             "Сохранили секунд " + secondsCount);
-
-                                    System.out.println("Сохранили файл. Группа - " + cameraGroupNumber + ". " +
-                                            "Кадров - " + currentTotalCountImage + ". " +
-                                            "Файлов в буфере " + size + ". " +
-                                            "Сохранили секунд " + secondsCount);
-                                    System.out.println("Путь к файлу - " + path);
-
+//                                    System.out.println("Сохранили файл. Группа - " + cameraGroupNumber + ". " +
+//                                            "Кадров - " + currentTotalCountImage + ". " +
+//                                            "Файлов в буфере " + size + ". " +
+//                                            "Сохранили секунд " + secondsCount);
+//                                    System.out.println("Путь к файлу - " + path);
                                     enableSaveVideo = false;
                                 }
                             } else {
